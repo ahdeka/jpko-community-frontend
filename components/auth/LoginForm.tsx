@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { authApi } from '@/lib/api/auth'
 import { ApiError } from '@/lib/api/client'
+import { useAuth } from '@/lib/auth-context'
 
 interface FieldErrors {
   email?: string
@@ -13,6 +14,7 @@ interface FieldErrors {
 
 export default function LoginForm() {
   const router = useRouter()
+  const { fetchUser } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
@@ -40,6 +42,7 @@ export default function LoginForm() {
     setLoading(true)
     try {
       await authApi.login({ email, password })
+      await fetchUser()
       router.push('/')
     } catch (e) {
       if (e instanceof ApiError) {

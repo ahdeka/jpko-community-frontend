@@ -3,24 +3,23 @@ import { User } from '@/types'
 
 export const authApi = {
 
-  // 회원가입
   signup: (body: {
     email: string
     password: string
     nickname: string
   }) => apiClient.post<void>('/api/auth/signup', body),
 
-  // 로그인
   login: (body: {
     email: string
     password: string
-  }) => apiClient.post<User>('/api/auth/login', body),
+  }) => apiClient.post<void>('/api/auth/login', body),
 
-  // 로그아웃
+  me: () =>
+    apiClient.get<User>('/api/auth/me'),
+
   logout: () =>
     apiClient.post<void>('/api/auth/logout'),
 
-  // 토큰 갱신
   refresh: () =>
     apiClient.post<void>('/api/auth/refresh'),
 }

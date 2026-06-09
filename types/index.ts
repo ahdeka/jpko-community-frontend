@@ -19,6 +19,8 @@ export interface PageResponse<T> {
 
 // 유저
 export interface User {
+  id: number;
+  email: string;
   nickname: string;
   role: 'USER' | 'ADMIN';
 }
