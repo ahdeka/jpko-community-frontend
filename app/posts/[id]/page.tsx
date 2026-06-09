@@ -31,7 +31,7 @@ export default async function PostPage({
   return (
     <div>
       <PostDetail post={post} />
-      <CommentList comments={comments} />
+      <CommentList postId={postId} comments={comments} />
     </div>
   )
 }

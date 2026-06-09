@@ -8,6 +8,7 @@ import { ApiError } from '@/lib/api/client'
 
 interface AuthContextType {
   user: User | null
+  isLoading: boolean
   fetchUser: () => Promise<void>
   logout: () => Promise<void>
 }
@@ -16,6 +17,7 @@ const AuthContext = createContext<AuthContextType | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   const fetchUser = useCallback(async () => {
     try {
@@ -25,6 +27,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (e instanceof ApiError && e.status === 401) {
         setUser(null)
       }
+    } finally {
+      setIsLoading(false)
     }
   }, [])
 
@@ -40,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, fetchUser, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, fetchUser, logout }}>
       {children}
     </AuthContext.Provider>
   )

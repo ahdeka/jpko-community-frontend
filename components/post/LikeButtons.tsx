@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { likesApi } from '@/lib/api/likes'
 import { ApiError } from '@/lib/api/client'
+import { useAuth } from '@/lib/auth-context'
 
 interface Props {
   postId: number
@@ -11,6 +13,8 @@ interface Props {
 }
 
 export default function LikeButtons({ postId, initialLikeCount, initialDislikeCount }: Props) {
+  const router = useRouter()
+  const { user } = useAuth()
   const [likeCount, setLikeCount] = useState(initialLikeCount)
   const [dislikeCount, setDislikeCount] = useState(initialDislikeCount)
   const [myType, setMyType] = useState<'LIKE' | 'DISLIKE' | null>(null)
@@ -27,6 +31,10 @@ export default function LikeButtons({ postId, initialLikeCount, initialDislikeCo
   }, [postId])
 
   const toggle = async (type: 'LIKE' | 'DISLIKE') => {
+    if (!user) {
+      router.push('/login')
+      return
+    }
     try {
       const res = await likesApi.toggle(postId, type)
       if (!res.data) return
@@ -35,7 +43,7 @@ export default function LikeButtons({ postId, initialLikeCount, initialDislikeCo
       setMyType(res.data.myType)
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) {
-        // 로그인 필요 — 추후 로그인 페이지 연동 시 처리
+        router.push('/login')
       }
     }
   }

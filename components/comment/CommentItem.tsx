@@ -1,7 +1,12 @@
+'use client'
+
+import { useState } from 'react'
 import type { Comment } from '@/types'
+import CommentForm from './CommentForm'
 
 interface Props {
   comment: Comment
+  postId: number
   isReply?: boolean
 }
 
@@ -12,7 +17,9 @@ function formatDate(dateString: string): string {
   })
 }
 
-export default function CommentItem({ comment, isReply = false }: Props) {
+export default function CommentItem({ comment, postId, isReply = false }: Props) {
+  const [showReplyForm, setShowReplyForm] = useState(false)
+
   return (
     <li className={isReply ? 'pl-6 border-l-2 border-gray-100' : ''}>
       <div className="py-3">
@@ -25,14 +32,29 @@ export default function CommentItem({ comment, isReply = false }: Props) {
               <span className="text-xs text-gray-400">{formatDate(comment.createdAt)}</span>
             </div>
             <p className="text-sm text-gray-800 whitespace-pre-wrap">{comment.content}</p>
+            {!isReply && (
+              <button
+                onClick={() => setShowReplyForm(prev => !prev)}
+                className="mt-1.5 text-xs text-gray-400 hover:text-gray-600"
+              >
+                {showReplyForm ? '취소' : '답글'}
+              </button>
+            )}
           </>
+        )}
+        {showReplyForm && (
+          <CommentForm
+            postId={postId}
+            parentId={comment.id}
+            onCancel={() => setShowReplyForm(false)}
+          />
         )}
       </div>
 
       {comment.replies.length > 0 && (
         <ul>
           {comment.replies.map(reply => (
-            <CommentItem key={reply.id} comment={reply} isReply />
+            <CommentItem key={reply.id} comment={reply} postId={postId} isReply />
           ))}
         </ul>
       )}
