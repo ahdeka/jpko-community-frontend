@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { postsApi } from '@/lib/api/posts'
 import { commentsApi } from '@/lib/api/comments'
+import { authHeaders } from '@/lib/api/server'
 import { ApiError } from '@/lib/api/client'
 import PostDetail from '@/components/post/PostDetail'
 import CommentList from '@/components/comment/CommentList'
@@ -12,10 +13,11 @@ export default async function PostPage({
 }) {
   const { id } = await params
   const postId = Number(id)
+  const headers = await authHeaders()
 
   const [postRes, commentsRes] = await Promise.allSettled([
-    postsApi.getById(postId),
-    commentsApi.getByPostId(postId),
+    postsApi.getById(postId, { headers }),
+    commentsApi.getByPostId(postId, { headers }),
   ])
 
   if (postRes.status === 'rejected') {

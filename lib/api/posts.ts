@@ -16,8 +16,8 @@ export const postsApi = {
     ),
 
   // 게시글 상세
-  getById: (postId: number) =>
-    apiClient.get<PostDetail>(`/api/posts/${postId}`),
+  getById: (postId: number, options?: RequestInit) =>
+    apiClient.get<PostDetail>(`/api/posts/${postId}`, options),
 
   // 게시글 작성
   create: (body: {

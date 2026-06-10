@@ -1,8 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import type { Comment } from '@/types'
 import CommentForm from './CommentForm'
+import { commentsApi } from '@/lib/api/comments'
+import { ApiError } from '@/lib/api/client'
 
 interface Props {
   comment: Comment
@@ -18,7 +21,22 @@ function formatDate(dateString: string): string {
 }
 
 export default function CommentItem({ comment, postId, isReply = false }: Props) {
+  const router = useRouter()
   const [showReplyForm, setShowReplyForm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  async function handleDelete() {
+    if (!confirm('댓글을 삭제하시겠습니까?')) return
+
+    setDeleting(true)
+    try {
+      await commentsApi.delete(comment.id)
+      router.refresh()
+    } catch (e) {
+      if (e instanceof ApiError) alert(e.message)
+      setDeleting(false)
+    }
+  }
 
   return (
     <li className={isReply ? 'pl-6 border-l-2 border-gray-100' : ''}>
@@ -32,13 +50,26 @@ export default function CommentItem({ comment, postId, isReply = false }: Props)
               <span className="text-xs text-gray-400">{formatDate(comment.createdAt)}</span>
             </div>
             <p className="text-sm text-gray-800 whitespace-pre-wrap">{comment.content}</p>
-            {!isReply && (
-              <button
-                onClick={() => setShowReplyForm(prev => !prev)}
-                className="mt-1.5 text-xs text-gray-400 hover:text-gray-600"
-              >
-                {showReplyForm ? '취소' : '답글'}
-              </button>
+            {(!isReply || comment.isOwner) && (
+              <div className="flex items-center gap-2 mt-1.5">
+                {!isReply && (
+                  <button
+                    onClick={() => setShowReplyForm(prev => !prev)}
+                    className="text-xs text-gray-400 hover:text-gray-600"
+                  >
+                    {showReplyForm ? '취소' : '답글'}
+                  </button>
+                )}
+                {comment.isOwner && (
+                  <button
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="text-xs text-gray-400 hover:text-red-500 disabled:opacity-50"
+                  >
+                    {deleting ? '삭제 중...' : '삭제'}
+                  </button>
+                )}
+              </div>
             )}
           </>
         )}

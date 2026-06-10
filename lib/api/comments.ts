@@ -4,8 +4,8 @@ import { Comment } from '@/types'
 export const commentsApi = {
 
   // 댓글 목록
-  getByPostId: (postId: number) =>
-    apiClient.get<Comment[]>(`/api/posts/${postId}/comments`),
+  getByPostId: (postId: number, options?: RequestInit) =>
+    apiClient.get<Comment[]>(`/api/posts/${postId}/comments`, options),
 
   // 댓글 작성
   create: (postId: number, body: {

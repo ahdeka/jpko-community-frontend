@@ -52,6 +52,7 @@ export interface PostResponse {
 // 게시글 상세용
 export interface PostDetail extends PostSummary {
   content: string;
+  isOwner: boolean;
   likeCount: number;
   dislikeCount: number;
 }
@@ -61,6 +62,7 @@ export interface Comment {
   id: number;
   author: string;
   anonymous: boolean;
+  isOwner: boolean;
   content: string;
   deleted: boolean;
   createdAt: string;
