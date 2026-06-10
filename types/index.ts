@@ -33,13 +33,6 @@ export interface Category {
   displayOrder: number;
 }
 
-// 태그
-export interface Tag {
-  id: number;
-  name: string;
-  fixed: boolean;
-}
-
 // 게시글 목록용
 export interface PostSummary {
   id: number;
@@ -48,7 +41,6 @@ export interface PostSummary {
   author: string;
   anonymous: boolean;
   viewCount: number;
-  tags: Tag[];
   createdAt: string;
 }
 

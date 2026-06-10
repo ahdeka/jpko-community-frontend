@@ -20,6 +20,9 @@ export default function Header() {
       <nav className="flex items-center gap-3 text-sm">
         {user ? (
           <>
+            <Link href="/posts/new" className="text-gray-600 hover:text-gray-900">
+              글쓰기
+            </Link>
             <span className="text-gray-600">{user.nickname}</span>
             <button
               onClick={handleLogout}

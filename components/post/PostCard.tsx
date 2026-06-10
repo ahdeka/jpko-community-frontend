@@ -19,16 +19,6 @@ export default function PostCard({ post }: Props) {
             <span className="text-sm font-medium truncate">
               {post.title}
             </span>
-            {/* 태그 */}
-            {post.tags.length > 0 && (
-              <div className="flex gap-1">
-                {post.tags.map(tag => (
-                  <span key={tag.id} className="text-xs bg-gray-100 px-1 rounded">
-                    {tag.name}
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* 작성자 + 날짜 + 조회수 */}

@@ -19,11 +19,6 @@ export default function PostDetail({ post }: Props) {
       <div className="border-b pb-4 mb-4">
         <div className="flex items-center gap-2 mb-2">
           <span className="text-xs text-blue-600">[{post.categoryName}]</span>
-          {post.tags.map(tag => (
-            <span key={tag.id} className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">
-              {tag.name}
-            </span>
-          ))}
         </div>
         <h1 className="text-xl font-bold mb-3">{post.title}</h1>
         <div className="flex items-center gap-3 text-sm text-gray-500">

@@ -25,7 +25,6 @@ export const postsApi = {
     title: string
     content: string
     anonymous: boolean
-    tags: string[]
   }) => apiClient.post<PostResponse>('/api/posts', body),
 
   // 게시글 삭제
