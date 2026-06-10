@@ -41,7 +41,24 @@ export interface PostSummary {
   author: string;
   anonymous: boolean;
   viewCount: number;
+  commentCount: number;
   createdAt: string;
+}
+
+// 홈 화면 위젯용 (mock, 추후 API 연동 예정)
+export interface PopularPost {
+  id: number;
+  title: string;
+}
+
+export interface Notice {
+  id: number;
+  title: string;
+}
+
+export interface PopularTag {
+  id: number;
+  label: string; // '#도쿄취업' 형태
 }
 
 // 게시글 작성/수정 응답용

@@ -1,19 +1,20 @@
 import { PostSummary } from '@/types'
-import PostCard from './PostCard'
+import PostRow from './PostRow'
 
 interface Props {
   posts: PostSummary[]
+  showCategory?: boolean
 }
 
-export default function PostList({ posts }: Props) {
+export default function PostList({ posts, showCategory = false }: Props) {
   if (posts.length === 0) {
-    return <p className="text-gray-500 text-center py-10">게시글이 없습니다.</p>
+    return <p className="text-neutral-500 text-center py-10">게시글이 없습니다.</p>
   }
 
   return (
-    <ul className="divide-y divide-gray-200">
+    <ul className="divide-y divide-neutral-800">
       {posts.map(post => (
-        <PostCard key={post.id} post={post} />
+        <PostRow key={post.id} post={post} showCategory={showCategory} />
       ))}
     </ul>
   )

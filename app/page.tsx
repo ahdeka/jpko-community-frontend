@@ -1,25 +1,34 @@
-import { postsApi } from '@/lib/api/posts'
-import PostList from '@/components/post/PostList'
-import type { PostSummary } from '@/types'
+import { categoriesApi } from '@/lib/api/categories'
+import RecentPostsSection from '@/components/post/RecentPostsSection'
+import CategorySection from '@/components/post/CategorySection'
+import PopularPostsSection from '@/components/home/PopularPostsSection'
+import WeeklyPopularSection from '@/components/home/WeeklyPopularSection'
+import NoticeSection from '@/components/home/NoticeSection'
+import PopularTagsSection from '@/components/home/PopularTagsSection'
+import type { Category } from '@/types'
 
 export default async function Home() {
-  let posts: PostSummary[] = []
-  let failed = false
+  let categories: Category[] = []
 
   try {
-    const response = await postsApi.getAll()
-    posts = response.data?.content ?? []
-  } catch {
-    failed = true
-  }
+    const res = await categoriesApi.getAll()
+    categories = (res.data ?? []).slice().sort((a, b) => a.displayOrder - b.displayOrder)
+  } catch {}
 
   return (
-    <div>
-      <h1 className="text-xl font-bold mb-4">전체 글</h1>
-      {failed
-        ? <p className="text-gray-500 text-center py-10">게시글을 불러오지 못했습니다.</p>
-        : <PostList posts={posts} />
-      }
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+      <div className="flex flex-col gap-6 min-w-0">
+        <PopularPostsSection />
+        <RecentPostsSection />
+        {categories.map(category => (
+          <CategorySection key={category.id} category={category} />
+        ))}
+      </div>
+      <aside className="flex flex-col gap-6">
+        <WeeklyPopularSection />
+        <NoticeSection />
+        <PopularTagsSection />
+      </aside>
     </div>
   )
 }
