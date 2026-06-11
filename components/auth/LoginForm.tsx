@@ -65,7 +65,7 @@ export default function LoginForm() {
           placeholder="이메일"
           value={email}
           onChange={e => setEmail(e.target.value)}
-          className="w-full border rounded px-3 py-2 text-sm outline-none focus:border-blue-400"
+          className="w-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 rounded px-3 py-2 text-sm outline-none focus:border-blue-400 dark:focus:border-blue-500"
         />
         {fieldErrors.email && (
           <p className="text-xs text-red-500 mt-1">{fieldErrors.email}</p>
@@ -78,7 +78,7 @@ export default function LoginForm() {
           placeholder="비밀번호"
           value={password}
           onChange={e => setPassword(e.target.value)}
-          className="w-full border rounded px-3 py-2 text-sm outline-none focus:border-blue-400"
+          className="w-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 rounded px-3 py-2 text-sm outline-none focus:border-blue-400 dark:focus:border-blue-500"
         />
         {fieldErrors.password && (
           <p className="text-xs text-red-500 mt-1">{fieldErrors.password}</p>
@@ -97,9 +97,9 @@ export default function LoginForm() {
         {loading ? '로그인 중...' : '로그인'}
       </button>
 
-      <p className="text-xs text-center text-gray-500">
+      <p className="text-xs text-center text-gray-500 dark:text-neutral-400">
         계정이 없으신가요?{' '}
-        <Link href="/signup" className="text-blue-600 hover:underline">
+        <Link href="/signup" className="text-blue-600 dark:text-blue-400 hover:underline">
           회원가입
         </Link>
       </p>

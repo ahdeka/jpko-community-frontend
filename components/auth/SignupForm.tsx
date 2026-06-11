@@ -83,7 +83,7 @@ export default function SignupForm() {
           placeholder="이메일"
           value={email}
           onChange={e => setEmail(e.target.value)}
-          className="w-full border rounded px-3 py-2 text-sm outline-none focus:border-blue-400"
+          className="w-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 rounded px-3 py-2 text-sm outline-none focus:border-blue-400 dark:focus:border-blue-500"
         />
         {fieldErrors.email && (
           <p className="text-xs text-red-500 mt-1">{fieldErrors.email}</p>
@@ -96,7 +96,7 @@ export default function SignupForm() {
           placeholder="비밀번호 (8자 이상)"
           value={password}
           onChange={e => setPassword(e.target.value)}
-          className="w-full border rounded px-3 py-2 text-sm outline-none focus:border-blue-400"
+          className="w-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 rounded px-3 py-2 text-sm outline-none focus:border-blue-400 dark:focus:border-blue-500"
         />
         {fieldErrors.password && (
           <p className="text-xs text-red-500 mt-1">{fieldErrors.password}</p>
@@ -109,7 +109,7 @@ export default function SignupForm() {
           placeholder="닉네임 (2~20자)"
           value={nickname}
           onChange={e => setNickname(e.target.value)}
-          className="w-full border rounded px-3 py-2 text-sm outline-none focus:border-blue-400"
+          className="w-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 rounded px-3 py-2 text-sm outline-none focus:border-blue-400 dark:focus:border-blue-500"
         />
         {fieldErrors.nickname && (
           <p className="text-xs text-red-500 mt-1">{fieldErrors.nickname}</p>
@@ -128,9 +128,9 @@ export default function SignupForm() {
         {loading ? '가입 중...' : '회원가입'}
       </button>
 
-      <p className="text-xs text-center text-gray-500">
+      <p className="text-xs text-center text-gray-500 dark:text-neutral-400">
         이미 계정이 있으신가요?{' '}
-        <Link href="/login" className="text-blue-600 hover:underline">
+        <Link href="/login" className="text-blue-600 dark:text-blue-400 hover:underline">
           로그인
         </Link>
       </p>

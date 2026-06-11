@@ -28,8 +28,8 @@ export default function CommentForm({ postId, parentId, onCancel }: Props) {
   if (!user) {
     if (isReply) return null
     return (
-      <div className="mt-4 py-4 text-center text-sm text-gray-500 border rounded">
-        <Link href="/login" className="text-blue-600 hover:underline">로그인</Link>
+      <div className="mt-4 py-4 text-center text-sm text-gray-500 dark:text-neutral-400 border border-gray-300 dark:border-neutral-700 rounded">
+        <Link href="/login" className="text-blue-600 dark:text-blue-400 hover:underline">로그인</Link>
         {' '}후 댓글을 작성할 수 있습니다.
       </div>
     )
@@ -75,11 +75,11 @@ export default function CommentForm({ postId, parentId, onCancel }: Props) {
         placeholder={isReply ? '답글을 입력하세요.' : '댓글을 입력하세요.'}
         rows={isReply ? 2 : 3}
         maxLength={500}
-        className="w-full border rounded px-3 py-2 text-sm outline-none focus:border-blue-400 resize-none"
+        className="w-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 rounded px-3 py-2 text-sm outline-none focus:border-blue-400 dark:focus:border-blue-500 resize-none"
       />
       {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
       <div className="flex justify-between items-center mt-2">
-        <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
+        <label className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-neutral-400 cursor-pointer select-none">
           <input
             type="checkbox"
             checked={anonymous}
@@ -93,7 +93,7 @@ export default function CommentForm({ postId, parentId, onCancel }: Props) {
             <button
               type="button"
               onClick={onCancel}
-              className="px-3 py-1 text-xs text-gray-500 hover:text-gray-700"
+              className="px-3 py-1 text-xs text-gray-500 hover:text-gray-700 dark:text-neutral-400 dark:hover:text-neutral-200"
             >
               취소
             </button>

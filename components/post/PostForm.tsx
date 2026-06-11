@@ -27,8 +27,8 @@ export default function PostForm({ categories }: Props) {
 
   if (!user) {
     return (
-      <div className="py-10 text-center text-sm text-gray-500">
-        <Link href="/login" className="text-blue-600 hover:underline">로그인</Link>
+      <div className="py-10 text-center text-sm text-gray-500 dark:text-neutral-400">
+        <Link href="/login" className="text-blue-600 dark:text-blue-400 hover:underline">로그인</Link>
         {' '}후 글을 작성할 수 있습니다.
       </div>
     )
@@ -79,7 +79,7 @@ export default function PostForm({ categories }: Props) {
         <select
           value={categoryId}
           onChange={e => setCategoryId(e.target.value ? Number(e.target.value) : '')}
-          className="w-full border rounded px-3 py-2 text-sm outline-none focus:border-blue-400"
+          className="w-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 rounded px-3 py-2 text-sm outline-none focus:border-blue-400 dark:focus:border-blue-500"
         >
           <option value="">카테고리 선택</option>
           {categories.map(c => (
@@ -96,7 +96,7 @@ export default function PostForm({ categories }: Props) {
           value={title}
           onChange={e => setTitle(e.target.value)}
           maxLength={100}
-          className="w-full border rounded px-3 py-2 text-sm outline-none focus:border-blue-400"
+          className="w-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 rounded px-3 py-2 text-sm outline-none focus:border-blue-400 dark:focus:border-blue-500"
         />
         {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title}</p>}
       </div>
@@ -107,7 +107,7 @@ export default function PostForm({ categories }: Props) {
           value={content}
           onChange={e => setContent(e.target.value)}
           rows={12}
-          className="w-full border rounded px-3 py-2 text-sm outline-none focus:border-blue-400 resize-none"
+          className="w-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 rounded px-3 py-2 text-sm outline-none focus:border-blue-400 dark:focus:border-blue-500 resize-none"
         />
         {errors.content && <p className="text-xs text-red-500 mt-1">{errors.content}</p>}
       </div>
@@ -115,7 +115,7 @@ export default function PostForm({ categories }: Props) {
       {errors.form && <p className="text-xs text-red-500">{errors.form}</p>}
 
       <div className="flex justify-between items-center">
-        <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
+        <label className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-neutral-400 cursor-pointer select-none">
           <input
             type="checkbox"
             checked={anonymous}

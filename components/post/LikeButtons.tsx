@@ -49,13 +49,13 @@ export default function LikeButtons({ postId, initialLikeCount, initialDislikeCo
   }
 
   return (
-    <div className="flex gap-2 justify-center py-4 border-t border-b mt-4">
+    <div className="flex gap-2 justify-center py-4 border-t border-b border-gray-200 dark:border-neutral-800 mt-4">
       <button
         onClick={() => toggle('LIKE')}
         className={`px-5 py-2 rounded border text-sm transition-colors ${
           myType === 'LIKE'
-            ? 'bg-blue-50 border-blue-400 text-blue-700'
-            : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+            ? 'bg-blue-50 border-blue-400 text-blue-700 dark:bg-blue-950/40 dark:border-blue-500 dark:text-blue-300'
+            : 'border-gray-300 text-gray-600 hover:bg-gray-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800'
         }`}
       >
         좋아요 {likeCount}
@@ -64,8 +64,8 @@ export default function LikeButtons({ postId, initialLikeCount, initialDislikeCo
         onClick={() => toggle('DISLIKE')}
         className={`px-5 py-2 rounded border text-sm transition-colors ${
           myType === 'DISLIKE'
-            ? 'bg-red-50 border-red-400 text-red-700'
-            : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+            ? 'bg-red-50 border-red-400 text-red-700 dark:bg-red-950/40 dark:border-red-500 dark:text-red-300'
+            : 'border-gray-300 text-gray-600 hover:bg-gray-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800'
         }`}
       >
         싫어요 {dislikeCount}

@@ -25,7 +25,7 @@ export default async function RootLayout({
 
   return (
     <html lang="ko">
-      <body className="bg-neutral-950 text-neutral-100">
+      <body className="bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
         <AuthProvider>
           <div className="max-w-6xl mx-auto px-4 py-6">
             <Header categories={categories} />

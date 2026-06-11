@@ -21,26 +21,26 @@ export default function Header({ categories }: Props) {
   }
 
   return (
-    <header className="border-b border-neutral-800 pb-4 mb-6">
+    <header className="border-b border-neutral-200 dark:border-neutral-800 pb-4 mb-6">
       <div className="flex justify-between items-center mb-3">
         <Link href="/" className="font-extrabold text-xl text-orange-500">JPKO</Link>
         <nav className="flex items-center gap-3 text-sm">
           {user ? (
             <>
-              <Link href="/posts/new" className="text-neutral-400 hover:text-neutral-200">
+              <Link href="/posts/new" className="text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-200">
                 글쓰기
               </Link>
-              <span className="text-neutral-400">{user.nickname}</span>
+              <span className="text-neutral-600 dark:text-neutral-400">{user.nickname}</span>
               <button
                 onClick={handleLogout}
-                className="text-neutral-500 hover:text-neutral-300"
+                className="text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
               >
                 로그아웃
               </button>
             </>
           ) : (
             <>
-              <Link href="/login" className="text-neutral-400 hover:text-neutral-200">
+              <Link href="/login" className="text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-200">
                 로그인
               </Link>
               <Link
@@ -59,8 +59,8 @@ export default function Header({ categories }: Props) {
           href="/"
           className={
             pathname === '/'
-              ? 'font-semibold text-white whitespace-nowrap'
-              : 'text-neutral-400 hover:text-neutral-200 whitespace-nowrap'
+              ? 'font-semibold text-neutral-900 dark:text-white whitespace-nowrap'
+              : 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-200 whitespace-nowrap'
           }
         >
           전체
@@ -74,8 +74,8 @@ export default function Header({ categories }: Props) {
               href={href}
               className={
                 active
-                  ? 'font-semibold text-white whitespace-nowrap'
-                  : 'text-neutral-400 hover:text-neutral-200 whitespace-nowrap'
+                  ? 'font-semibold text-neutral-900 dark:text-white whitespace-nowrap'
+                  : 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-200 whitespace-nowrap'
               }
             >
               {category.name}

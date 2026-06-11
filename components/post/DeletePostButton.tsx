@@ -31,7 +31,7 @@ export default function DeletePostButton({ postId }: Props) {
     <button
       onClick={handleDelete}
       disabled={loading}
-      className="text-xs text-gray-400 hover:text-red-500 disabled:opacity-50"
+      className="text-xs text-gray-400 hover:text-red-500 dark:text-neutral-500 dark:hover:text-red-400 disabled:opacity-50"
     >
       {loading ? '삭제 중...' : '삭제'}
     </button>

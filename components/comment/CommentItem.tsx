@@ -39,23 +39,23 @@ export default function CommentItem({ comment, postId, isReply = false }: Props)
   }
 
   return (
-    <li className={isReply ? 'pl-6 border-l-2 border-gray-100' : ''}>
+    <li className={isReply ? 'pl-6 border-l-2 border-gray-200 dark:border-neutral-800' : ''}>
       <div className="py-3">
         {comment.deleted ? (
-          <p className="text-sm text-gray-400 italic">삭제된 댓글입니다.</p>
+          <p className="text-sm text-gray-400 dark:text-neutral-500 italic">삭제된 댓글입니다.</p>
         ) : (
           <>
             <div className="flex items-center gap-2 mb-1">
               <span className="text-sm font-medium">{comment.author}</span>
-              <span className="text-xs text-gray-400">{formatDate(comment.createdAt)}</span>
+              <span className="text-xs text-gray-400 dark:text-neutral-500">{formatDate(comment.createdAt)}</span>
             </div>
-            <p className="text-sm text-gray-800 whitespace-pre-wrap">{comment.content}</p>
+            <p className="text-sm text-gray-800 dark:text-neutral-200 whitespace-pre-wrap">{comment.content}</p>
             {(!isReply || comment.isOwner) && (
               <div className="flex items-center gap-2 mt-1.5">
                 {!isReply && (
                   <button
                     onClick={() => setShowReplyForm(prev => !prev)}
-                    className="text-xs text-gray-400 hover:text-gray-600"
+                    className="text-xs text-gray-400 hover:text-gray-600 dark:text-neutral-500 dark:hover:text-neutral-300"
                   >
                     {showReplyForm ? '취소' : '답글'}
                   </button>
@@ -64,7 +64,7 @@ export default function CommentItem({ comment, postId, isReply = false }: Props)
                   <button
                     onClick={handleDelete}
                     disabled={deleting}
-                    className="text-xs text-gray-400 hover:text-red-500 disabled:opacity-50"
+                    className="text-xs text-gray-400 hover:text-red-500 dark:text-neutral-500 dark:hover:text-red-400 disabled:opacity-50"
                   >
                     {deleting ? '삭제 중...' : '삭제'}
                   </button>

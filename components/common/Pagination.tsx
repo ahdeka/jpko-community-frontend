@@ -20,7 +20,7 @@ export default function Pagination({ currentPage, totalPages, basePath }: Props)
   return (
     <nav className="flex justify-center items-center gap-1 mt-6 text-sm">
       {windowStart > 0 && (
-        <Link href={hrefFor(windowStart - 1)} className="px-2 py-1 text-neutral-500 hover:text-neutral-200">
+        <Link href={hrefFor(windowStart - 1)} className="px-2 py-1 text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200">
           이전
         </Link>
       )}
@@ -31,14 +31,14 @@ export default function Pagination({ currentPage, totalPages, basePath }: Props)
           className={
             page === currentPage
               ? 'px-2.5 py-1 rounded bg-orange-500 text-white font-medium'
-              : 'px-2.5 py-1 rounded text-neutral-400 hover:bg-neutral-800'
+              : 'px-2.5 py-1 rounded text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800'
           }
         >
           {page + 1}
         </Link>
       ))}
       {windowEnd < totalPages && (
-        <Link href={hrefFor(windowEnd)} className="px-2 py-1 text-neutral-500 hover:text-neutral-200">
+        <Link href={hrefFor(windowEnd)} className="px-2 py-1 text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200">
           다음
         </Link>
       )}

@@ -17,12 +17,12 @@ function formatDate(dateString: string): string {
 export default function PostDetail({ post }: Props) {
   return (
     <div>
-      <div className="border-b pb-4 mb-4">
+      <div className="border-b border-gray-200 dark:border-neutral-800 pb-4 mb-4">
         <div className="flex items-center gap-2 mb-2">
-          <span className="text-xs text-blue-600">[{post.categoryName}]</span>
+          <span className="text-xs text-blue-600 dark:text-blue-400">[{post.categoryName}]</span>
         </div>
         <h1 className="text-xl font-bold mb-3">{post.title}</h1>
-        <div className="flex items-center justify-between text-sm text-gray-500">
+        <div className="flex items-center justify-between text-sm text-gray-500 dark:text-neutral-400">
           <div className="flex items-center gap-3">
             <span>{post.author}</span>
             <span>{formatDate(post.createdAt)}</span>
