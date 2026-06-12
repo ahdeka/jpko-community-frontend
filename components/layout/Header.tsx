@@ -57,9 +57,9 @@ export default function Header({ categories }: Props) {
 
         <nav className="flex items-center gap-4 text-sm overflow-x-auto py-3">
           <Link
-            href="/"
+            href="/posts"
             className={
-              pathname === '/'
+              pathname === '/posts'
                 ? 'font-semibold text-neutral-900 dark:text-white whitespace-nowrap'
                 : 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-200 whitespace-nowrap'
             }
