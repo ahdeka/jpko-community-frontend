@@ -1,17 +1,17 @@
 import { apiClient } from './client'
-import { PageResponse, PostSummary, PostDetail, PostResponse } from '@/types'
+import { PostListResponse, PostDetail, PostResponse } from '@/types'
 
 export const postsApi = {
 
   // 전체 게시글 목록
   getAll: (page = 0, size = 20) =>
-    apiClient.get<PageResponse<PostSummary>>(
+    apiClient.get<PostListResponse>(
       `/api/posts?page=${page}&size=${size}`
     ),
 
   // 카테고리별 게시글 목록
   getByCategory: (categoryId: number, page = 0, size = 20) =>
-    apiClient.get<PageResponse<PostSummary>>(
+    apiClient.get<PostListResponse>(
       `/api/posts/category/${categoryId}?page=${page}&size=${size}`
     ),
 

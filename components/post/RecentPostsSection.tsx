@@ -10,7 +10,7 @@ export default async function RecentPostsSection() {
 
   try {
     const res = await postsApi.getAll(0, RECENT_POSTS_LIMIT)
-    posts = res.data?.content ?? []
+    posts = res.data?.posts?.content ?? []
   } catch {}
 
   return (

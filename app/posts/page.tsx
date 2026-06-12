@@ -13,8 +13,8 @@ export default async function AllPostsPage({
   const pageNumber = Math.max(0, Number(page) || 0)
 
   const res = await postsApi.getAll(pageNumber, PAGE_SIZE).catch(() => null)
-  const posts = res?.data?.content ?? []
-  const totalPages = res?.data?.totalPages ?? 0
+  const posts = res?.data?.posts?.content ?? []
+  const totalPages = res?.data?.posts?.totalPages ?? 0
 
   return (
     <div>

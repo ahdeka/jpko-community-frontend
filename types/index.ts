@@ -45,6 +45,22 @@ export interface PostSummary {
   createdAt: string;
 }
 
+// 공지사항 목록 / 게시판 상단 고정 노출용
+export interface NoticeSummary {
+  id: number;
+  title: string;
+  author: string;
+  viewCount: number;
+  pinned: boolean;
+  createdAt: string;
+}
+
+// 게시글 목록 응답 (상단 고정 공지 + 게시글 페이지)
+export interface PostListResponse {
+  pinnedNotices: NoticeSummary[];
+  posts: PageResponse<PostSummary>;
+}
+
 // 홈 화면 위젯용 (mock, 추후 API 연동 예정)
 export interface PopularPost {
   id: number;

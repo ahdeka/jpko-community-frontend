@@ -23,8 +23,8 @@ export default async function CategoryPage({
   if (!category) notFound()
 
   const postsRes = await postsApi.getByCategory(id, pageNumber, PAGE_SIZE).catch(() => null)
-  const posts = postsRes?.data?.content ?? []
-  const totalPages = postsRes?.data?.totalPages ?? 0
+  const posts = postsRes?.data?.posts?.content ?? []
+  const totalPages = postsRes?.data?.posts?.totalPages ?? 0
 
   return (
     <div>

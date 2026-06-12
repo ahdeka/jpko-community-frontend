@@ -14,7 +14,7 @@ export default async function CategorySection({ category }: Props) {
 
   try {
     const res = await postsApi.getByCategory(category.id, 0, PREVIEW_POSTS_LIMIT)
-    posts = res.data?.content ?? []
+    posts = res.data?.posts?.content ?? []
   } catch {}
 
   return (
