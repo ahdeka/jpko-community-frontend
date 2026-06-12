@@ -11,7 +11,7 @@ interface Props {
 
 export default function SectionCard({ title, bulletColor, href, linkLabel, children }: Props) {
   return (
-    <section className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-900">
+    <section className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-800">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className={`inline-block h-2 w-2 rounded-full ${bulletColor}`} />

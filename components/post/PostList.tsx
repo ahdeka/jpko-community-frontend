@@ -12,7 +12,7 @@ export default function PostList({ posts, showCategory = false }: Props) {
   }
 
   return (
-    <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
+    <ul className="divide-y divide-neutral-200 border-y border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
       {posts.map(post => (
         <PostRow key={post.id} post={post} showCategory={showCategory} />
       ))}

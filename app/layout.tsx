@@ -25,11 +25,13 @@ export default async function RootLayout({
 
   return (
     <html lang="ko">
-      <body className="bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
+      <body className="bg-neutral-100 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
         <AuthProvider>
-          <div className="max-w-6xl mx-auto px-4 py-6">
-            <Header categories={categories} />
-            <main>{children}</main>
+          <Header categories={categories} />
+          <div className="max-w-5xl mx-auto px-4 pb-6">
+            <main className="rounded-b-lg border border-t-0 border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900 sm:p-6">
+              {children}
+            </main>
           </div>
         </AuthProvider>
       </body>
