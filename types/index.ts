@@ -42,6 +42,8 @@ export interface PostSummary {
   anonymous: boolean;
   viewCount: number;
   commentCount: number;
+  likeCount: number;
+  hasImage: boolean;
   createdAt: string;
 }
 
