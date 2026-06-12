@@ -15,31 +15,9 @@ export class ApiError extends Error {
   }
 }
 
-// accessToken 만료(401) 시 refreshToken으로 재발급을 시도한다.
-// 동시에 여러 요청이 401을 받아도 refresh 호출은 한 번만 일어나도록 Promise를 공유한다.
-let refreshPromise: Promise<boolean> | null = null
-
-function refreshAccessToken(): Promise<boolean> {
-  refreshPromise ??= fetch(`${BASE_URL}/api/auth/refresh`, {
-    method: 'POST',
-    credentials: 'include',
-  })
-    .then(res => res.ok)
-    .catch(() => false)
-    .finally(() => {
-      refreshPromise = null
-    })
-
-  return refreshPromise
-}
-
-// 이 엔드포인트들에서 발생한 401은 토큰 만료가 아닌 인증 자체의 실패이므로 재발급을 시도하지 않는다.
-const REFRESH_EXEMPT_ENDPOINTS = ['/api/auth/refresh', '/api/auth/login', '/api/auth/signup']
-
 async function request<T>(
   endpoint: string,
-  options?: RequestInit,
-  isRetry = false
+  options?: RequestInit
 ): Promise<ApiResponse<T>> {
 
   if (!BASE_URL) {
@@ -57,19 +35,6 @@ async function request<T>(
     credentials: 'include',
     signal: signal ?? AbortSignal.timeout(10_000),
   })
-
-  // 클라이언트(브라우저)에서 401을 받으면 accessToken 재발급 후 한 번만 재시도한다.
-  if (
-    response.status === 401 &&
-    !isRetry &&
-    typeof window !== 'undefined' &&
-    !REFRESH_EXEMPT_ENDPOINTS.includes(endpoint)
-  ) {
-    const refreshed = await refreshAccessToken()
-    if (refreshed) {
-      return request<T>(endpoint, options, true)
-    }
-  }
 
   if (!response.ok) {
     let message = '요청에 실패했습니다.'
