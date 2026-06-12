@@ -18,11 +18,14 @@ export default async function CategoryPage({
   const id = Number(categoryId)
   const pageNumber = Math.max(0, Number(page) || 0)
 
-  const categoriesRes = await categoriesApi.getAll().catch(() => null)
+  const [categoriesRes, postsRes] = await Promise.all([
+    categoriesApi.getAll().catch(() => null),
+    postsApi.getByCategory(id, pageNumber, PAGE_SIZE).catch(() => null),
+  ])
+
   const category = categoriesRes?.data?.find(c => c.id === id)
   if (!category) notFound()
 
-  const postsRes = await postsApi.getByCategory(id, pageNumber, PAGE_SIZE).catch(() => null)
   const posts = postsRes?.data?.posts?.content ?? []
   const totalPages = postsRes?.data?.posts?.totalPages ?? 0
 

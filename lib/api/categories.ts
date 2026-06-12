@@ -2,5 +2,5 @@ import { apiClient } from './client'
 import { Category } from '@/types'
 
 export const categoriesApi = {
-  getAll: () => apiClient.get<Category[]>('/api/categories'),
+  getAll: () => apiClient.get<Category[]>('/api/categories', { cache: 'force-cache' }),
 }
