@@ -9,6 +9,16 @@ interface Props {
   categories: Category[]
 }
 
+// 비로그인 상태 프로필(로그인) 아이콘
+function UserIcon() {
+  return (
+    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 20c0-4.42 3.58-7 8-7s8 2.58 8 7" />
+    </svg>
+  )
+}
+
 export default function Header({ categories }: Props) {
   const { user, logout } = useAuth()
   const router = useRouter()
@@ -40,17 +50,13 @@ export default function Header({ categories }: Props) {
                 </button>
               </>
             ) : (
-              <>
-                <Link href="/login" className="text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-200">
-                  로그인
-                </Link>
-                <Link
-                  href="/signup"
-                  className="bg-orange-500 text-white px-3 py-1 rounded text-xs hover:bg-orange-600"
-                >
-                  회원가입
-                </Link>
-              </>
+              <Link
+                href="/login"
+                aria-label="로그인"
+                className="flex items-center justify-center w-8 h-8 rounded-full bg-neutral-700 text-white hover:bg-neutral-600 dark:bg-neutral-600 dark:hover:bg-neutral-500"
+              >
+                <UserIcon />
+              </Link>
             )}
           </nav>
         </div>

@@ -97,12 +97,12 @@ export default function LoginForm() {
         {loading ? '로그인 중...' : '로그인'}
       </button>
 
-      <p className="text-xs text-center text-gray-500 dark:text-neutral-400">
-        계정이 없으신가요?{' '}
-        <Link href="/signup" className="text-blue-600 dark:text-blue-400 hover:underline">
-          회원가입
-        </Link>
-      </p>
+      <Link
+        href="/signup"
+        className="text-sm text-center text-blue-600 dark:text-blue-400 hover:underline"
+      >
+        계정 만들기
+      </Link>
     </form>
   )
 }
