@@ -5,6 +5,8 @@ import { AuthProvider } from '@/lib/auth-context'
 import Header from '@/components/layout/Header'
 import { categoriesApi } from '@/lib/api/categories'
 import type { Category } from '@/types'
+import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 export const metadata: Metadata = {
   title: 'JPKO Community',
@@ -34,6 +36,10 @@ export default async function RootLayout({
             </main>
           </div>
         </AuthProvider>
+        {/* 사용자 방문/페이지뷰 추적용 */}
+        <Analytics />
+        {/* Core Web Vitals(로딩 성능) 측정용 */}
+        <SpeedInsights />
       </body>
     </html>
   )
