@@ -66,17 +66,6 @@ export interface PostListResponse {
 // 게시글 검색 범위
 export type SearchType = 'TITLE' | 'TITLE_CONTENT';
 
-// 홈 화면 위젯용 (mock, 추후 API 연동 예정)
-export interface Notice {
-  id: number;
-  title: string;
-}
-
-export interface PopularTag {
-  id: number;
-  label: string; // '#도쿄취업' 형태
-}
-
 // 게시글 작성/수정 응답용
 export interface PostResponse {
   id: number

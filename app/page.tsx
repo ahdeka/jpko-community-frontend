@@ -4,7 +4,6 @@ import CategorySection from '@/components/post/CategorySection'
 import PopularPostsSection from '@/components/home/PopularPostsSection'
 import WeeklyPopularSection from '@/components/home/WeeklyPopularSection'
 import NoticeSection from '@/components/home/NoticeSection'
-import PopularTagsSection from '@/components/home/PopularTagsSection'
 import type { Category } from '@/types'
 
 export default async function Home() {
@@ -27,7 +26,6 @@ export default async function Home() {
       <aside className="flex flex-col gap-6">
         <WeeklyPopularSection />
         <NoticeSection />
-        <PopularTagsSection />
       </aside>
     </div>
   )

@@ -103,7 +103,7 @@ export default function Header({ categories }: Props) {
             전체
           </Link>
           {categories.map(category => {
-            const href = `/posts/category/${category.id}`
+            const href = `/posts/category/${category.slug}`
             const active = pathname === href
             return (
               <Link

@@ -21,7 +21,7 @@ export default async function CategorySection({ category }: Props) {
     <SectionCard
       title={category.name}
       bulletColor="bg-green-500"
-      href={`/posts/category/${category.id}`}
+      href={`/posts/category/${category.slug}`}
       linkLabel="게시판 가기"
     >
       <PostList posts={posts} />
