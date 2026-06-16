@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Form from 'next/form'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import type { Category } from '@/types'
@@ -19,6 +20,16 @@ function UserIcon() {
   )
 }
 
+// 검색 아이콘
+function SearchIcon() {
+  return (
+    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="7" />
+      <path d="m21 21-4.35-4.35" />
+    </svg>
+  )
+}
+
 export default function Header({ categories }: Props) {
   const { user, logout } = useAuth()
   const router = useRouter()
@@ -33,9 +44,28 @@ export default function Header({ categories }: Props) {
   return (
     <header className="w-full border-b border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
       <div className="max-w-5xl mx-auto px-4">
-        <div className="flex justify-between items-center py-3 border-b border-neutral-200 dark:border-neutral-800">
-          <Link href="/" className="font-extrabold text-xl text-orange-500">JPKO</Link>
-          <nav className="flex items-center gap-3 text-sm">
+        <div className="flex justify-between items-center gap-3 py-3 border-b border-neutral-200 dark:border-neutral-800">
+          <Link href="/" className="font-extrabold text-xl text-orange-500 shrink-0">JPKO</Link>
+          <Form action="/posts/search" className="flex-1 max-w-xs">
+            <div className="relative">
+              <input
+                type="search"
+                name="keyword"
+                placeholder="검색"
+                minLength={2}
+                required
+                className="w-full rounded-full border border-neutral-200 bg-neutral-100 py-1.5 pl-3 pr-9 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-orange-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+              />
+              <button
+                type="submit"
+                aria-label="검색"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+              >
+                <SearchIcon />
+              </button>
+            </div>
+          </Form>
+          <nav className="flex items-center gap-3 text-sm shrink-0">
             {user ? (
               <>
                 <Link href="/posts/new" className="text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-200">

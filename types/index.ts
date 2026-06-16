@@ -63,12 +63,10 @@ export interface PostListResponse {
   posts: PageResponse<PostSummary>;
 }
 
-// 홈 화면 위젯용 (mock, 추후 API 연동 예정)
-export interface PopularPost {
-  id: number;
-  title: string;
-}
+// 게시글 검색 범위
+export type SearchType = 'TITLE' | 'TITLE_CONTENT';
 
+// 홈 화면 위젯용 (mock, 추후 API 연동 예정)
 export interface Notice {
   id: number;
   title: string;

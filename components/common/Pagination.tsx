@@ -6,16 +6,21 @@ interface Props {
   currentPage: number // 0-based
   totalPages: number
   basePath: string
+  searchParams?: Record<string, string>
 }
 
-export default function Pagination({ currentPage, totalPages, basePath }: Props) {
+export default function Pagination({ currentPage, totalPages, basePath, searchParams }: Props) {
   if (totalPages <= 1) return null
 
   const windowStart = Math.floor(currentPage / PAGE_WINDOW) * PAGE_WINDOW
   const windowEnd = Math.min(totalPages, windowStart + PAGE_WINDOW)
   const pages = Array.from({ length: windowEnd - windowStart }, (_, i) => windowStart + i)
 
-  const hrefFor = (page: number) => `${basePath}?page=${page}`
+  const hrefFor = (page: number) => {
+    const params = new URLSearchParams(searchParams)
+    params.set('page', String(page))
+    return `${basePath}?${params.toString()}`
+  }
 
   return (
     <nav className="flex justify-center items-center gap-1 mt-6 text-sm">

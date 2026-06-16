@@ -1,11 +1,14 @@
 import SectionCard from '@/components/common/SectionCard'
 import RankedPostList from '@/components/common/RankedPostList'
-import { MOCK_WEEKLY_POPULAR_POSTS } from '@/lib/mock-data'
+import { postsApi } from '@/lib/api/posts'
 
-export default function WeeklyPopularSection() {
+export default async function WeeklyPopularSection() {
+  const res = await postsApi.getPopular(7, 5).catch(() => null)
+  const posts = res?.data ?? []
+
   return (
     <SectionCard title="주간 인기글" bulletColor="bg-orange-500">
-      <RankedPostList posts={MOCK_WEEKLY_POPULAR_POSTS} columns={1} />
+      <RankedPostList posts={posts} columns={1} />
     </SectionCard>
   )
 }
