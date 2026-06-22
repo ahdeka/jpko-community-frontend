@@ -6,19 +6,37 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { postsApi } from '@/lib/api/posts'
 import { ApiError } from '@/lib/api/client'
+import TiptapEditor, { MAX_CONTENT_LENGTH } from './TiptapEditor'
 import type { Category } from '@/types'
 
 interface Props {
   categories: Category[]
+  mode?: 'create' | 'edit'
+  postId?: number
+  initialCategoryId?: number
+  initialTitle?: string
+  initialContent?: string
 }
 
-export default function PostForm({ categories }: Props) {
+// HTML에서 태그를 제거한 순수 텍스트 (빈 본문 판별용)
+function stripTags(html: string): string {
+  return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()
+}
+
+export default function PostForm({
+  categories,
+  mode = 'create',
+  postId,
+  initialCategoryId,
+  initialTitle = '',
+  initialContent = '',
+}: Props) {
   const router = useRouter()
   const { user, isLoading } = useAuth()
 
-  const [categoryId, setCategoryId] = useState<number | ''>('')
-  const [title, setTitle] = useState('')
-  const [content, setContent] = useState('')
+  const [categoryId, setCategoryId] = useState<number | ''>(initialCategoryId ?? '')
+  const [title, setTitle] = useState(initialTitle)
+  const [content, setContent] = useState(initialContent)
   const [anonymous, setAnonymous] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
@@ -34,12 +52,19 @@ export default function PostForm({ categories }: Props) {
     )
   }
 
+  // 이미지만 있고 텍스트가 없어도 유효한 본문으로 인정 (백엔드 @NotBlank는 HTML 기준)
+  const hasImage = /<img\b/i.test(content)
+  const plainText = stripTags(content)
+  const contentLength = content.length // 백엔드 @Size가 검사하는 HTML 길이
+  const overLimit = contentLength > MAX_CONTENT_LENGTH
+
   function validate(): Record<string, string> {
     const errs: Record<string, string> = {}
     if (!categoryId) errs.category = '카테고리를 선택해주세요.'
     if (!title.trim()) errs.title = '제목을 입력해주세요.'
     else if (title.length > 100) errs.title = '제목은 100자 이하여야 합니다.'
-    if (!content.trim()) errs.content = '내용을 입력해주세요.'
+    if (!plainText && !hasImage) errs.content = '내용을 입력해주세요.'
+    else if (overLimit) errs.content = `본문은 ${MAX_CONTENT_LENGTH.toLocaleString()}자 이하여야 합니다.`
     return errs
   }
 
@@ -55,18 +80,26 @@ export default function PostForm({ categories }: Props) {
     setLoading(true)
 
     try {
-      const res = await postsApi.create({
+      const body = {
         categoryId: categoryId as number,
         title: title.trim(),
-        content: content.trim(),
-        anonymous,
-      })
-      router.push(`/posts/${res.data!.id}`)
+        content,
+      }
+      const res =
+        mode === 'edit' && postId != null
+          ? await postsApi.update(postId, body)
+          : await postsApi.create({ ...body, anonymous })
+
+      const id = res.data?.id ?? postId
+      router.push(`/posts/${id}`)
+      router.refresh()
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) {
         router.push('/login')
       } else if (e instanceof ApiError) {
         setErrors({ form: e.message })
+      } else {
+        setErrors({ form: '요청에 실패했습니다.' })
       }
     } finally {
       setLoading(false)
@@ -102,34 +135,39 @@ export default function PostForm({ categories }: Props) {
       </div>
 
       <div>
-        <textarea
-          placeholder="내용을 입력하세요."
-          value={content}
-          onChange={e => setContent(e.target.value)}
-          rows={12}
-          className="w-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 rounded px-3 py-2 text-sm outline-none focus:border-blue-400 dark:focus:border-blue-500 resize-none"
-        />
-        {errors.content && <p className="text-xs text-red-500 mt-1">{errors.content}</p>}
+        <TiptapEditor content={initialContent} onChange={setContent} />
+        <div className="flex items-center justify-between mt-1">
+          {errors.content
+            ? <p className="text-xs text-red-500">{errors.content}</p>
+            : <span />}
+          <span className={`text-xs ${overLimit ? 'text-red-500' : 'text-gray-400 dark:text-neutral-500'}`}>
+            {contentLength.toLocaleString()} / {MAX_CONTENT_LENGTH.toLocaleString()}
+          </span>
+        </div>
       </div>
 
       {errors.form && <p className="text-xs text-red-500">{errors.form}</p>}
 
       <div className="flex justify-between items-center">
-        <label className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-neutral-400 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={anonymous}
-            onChange={e => setAnonymous(e.target.checked)}
-            className="w-3 h-3"
-          />
-          익명
-        </label>
+        {mode === 'create' ? (
+          <label className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-neutral-400 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={anonymous}
+              onChange={e => setAnonymous(e.target.checked)}
+              className="w-3 h-3"
+            />
+            익명
+          </label>
+        ) : (
+          <span />
+        )}
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || overLimit}
           className="px-6 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50"
         >
-          {loading ? '등록 중...' : '등록'}
+          {loading ? '저장 중...' : mode === 'edit' ? '수정' : '등록'}
         </button>
       </div>
     </form>

@@ -44,12 +44,24 @@ export const postsApi = {
     apiClient.get<PostDetail>(`/api/posts/${postId}`, options),
 
   // 게시글 작성
+  // content는 에디터가 만든 HTML 문자열. 이미지는 이미 /api/images/upload로
+  // 업로드되어 content 안에 <img src="..."> 형태로 인라인 포함된 상태로 전송된다.
   create: (body: {
     categoryId: number
     title: string
     content: string
     anonymous: boolean
   }) => apiClient.post<PostResponse>('/api/posts', body),
+
+  // 게시글 수정 (작성 후 30분 이내만, 백엔드에서 권한·시간 재검증)
+  update: (
+    postId: number,
+    body: {
+      categoryId: number
+      title: string
+      content: string
+    }
+  ) => apiClient.put<PostResponse>(`/api/posts/${postId}`, body),
 
   // 게시글 삭제
   delete: (postId: number) =>
