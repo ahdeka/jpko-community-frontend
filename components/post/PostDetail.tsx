@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import type { PostDetail as PostDetailData } from '@/types'
 import LikeButtons from './LikeButtons'
 import DeletePostButton from './DeletePostButton'
@@ -28,13 +29,29 @@ export default function PostDetail({ post }: Props) {
             <span>{formatDate(post.createdAt)}</span>
             <span>조회 {post.viewCount}</span>
           </div>
-          {post.isOwner && <DeletePostButton postId={post.id} />}
+          {post.isOwner && (
+            <div className="flex items-center gap-3">
+              <Link
+                href={`/posts/${post.id}/edit`}
+                className="text-xs text-gray-400 hover:text-blue-500 dark:text-neutral-500 dark:hover:text-blue-400"
+              >
+                수정
+              </Link>
+              <DeletePostButton postId={post.id} />
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="min-h-40 py-6 text-sm leading-relaxed whitespace-pre-wrap">
-        {post.content}
-      </div>
+      {/*
+        content는 백엔드가 Jsoup Safelist.relaxed()로 sanitize한 HTML이다.
+        생성·수정 모든 경로에서 서버가 sanitize하므로 저장된 값은 XSS 안전하며,
+        그 신뢰를 전제로 dangerouslySetInnerHTML로 렌더링한다.
+      */}
+      <div
+        className="post-content min-h-40 py-6 text-sm leading-relaxed"
+        dangerouslySetInnerHTML={{ __html: post.content }}
+      />
 
       <LikeButtons
         postId={post.id}

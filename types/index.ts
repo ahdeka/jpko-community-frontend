@@ -72,6 +72,8 @@ export interface PostResponse {
 }
 
 // 게시글 상세용
+// content는 백엔드가 Jsoup으로 sanitize한 HTML 문자열이며, 이미지는
+// 별도 배열이 아니라 content 안에 <img> 태그로 인라인 포함된다.
 export interface PostDetail extends PostSummary {
   content: string;
   isOwner: boolean;
