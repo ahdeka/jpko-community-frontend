@@ -26,10 +26,12 @@ async function request<T>(
 
   const { headers: extraHeaders, signal, ...restOptions } = options ?? {}
 
+  const isFormData = restOptions.body instanceof FormData
+
   const response = await fetch(`${BASE_URL}${endpoint}`, {
     ...restOptions,
     headers: {
-      ...(restOptions.body !== undefined && { 'Content-Type': 'application/json' }),
+      ...(!isFormData && restOptions.body !== undefined && { 'Content-Type': 'application/json' }),
       ...extraHeaders,
     },
     credentials: 'include',
@@ -60,7 +62,7 @@ export const apiClient = {
     request<T>(endpoint, {
       ...options,
       method: 'POST',
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: body instanceof FormData ? body : body !== undefined ? JSON.stringify(body) : undefined,
     }),
 
   put: <T>(endpoint: string, body?: unknown, options?: RequestInit) =>
