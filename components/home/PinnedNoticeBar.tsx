@@ -1,0 +1,27 @@
+import type { NoticeSummary } from '@/types'
+
+interface Props {
+  notices: NoticeSummary[]
+}
+
+// 고정 공지 상단 띠. 표시할 공지가 없으면 빈 카드 대신 아무것도 렌더하지 않는다.
+export default function PinnedNoticeBar({ notices }: Props) {
+  if (notices.length === 0) return null
+
+  return (
+    <section className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-950/30">
+      <ul className="flex flex-col gap-1.5">
+        {notices.map(notice => (
+          <li key={notice.id} className="flex items-center gap-2 min-w-0">
+            <span className="shrink-0 rounded bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+              공지
+            </span>
+            <span className="truncate text-sm text-neutral-800 dark:text-neutral-100">
+              {notice.title}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
