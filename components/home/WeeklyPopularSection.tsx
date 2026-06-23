@@ -7,7 +7,7 @@ export default async function WeeklyPopularSection() {
   const posts = res?.data ?? []
 
   return (
-    <SectionCard title="주간 인기글" bulletColor="bg-orange-500">
+    <SectionCard title="인기글" bulletColor="bg-orange-500">
       <RankedPostList posts={posts} columns={1} />
     </SectionCard>
   )
