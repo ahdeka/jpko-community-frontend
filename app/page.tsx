@@ -9,6 +9,11 @@ import type { Category, NoticeSummary, PostSummary } from '@/types'
 
 const RECENT_POSTS_LIMIT = 6
 
+// 메인 페이지를 매 요청마다 동적 렌더한다(/posts 목록 페이지와 동일).
+// - 캐시 옵션 없는 fetch(게시글 목록)는 no-store가 되어 매번 최신 글을 받는다.
+// - revalidate를 지정한 fetch(카테고리 3600)는 그대로 캐시되어 불필요한 호출을 막는다.
+export const revalidate = 0
+
 export default async function Home() {
   // 카테고리 목록과 게시글 목록을 병렬로 조회한다.
   // 고정 공지(pinnedNotices)는 /api/posts 응답에 함께 내려오므로 별도 요청이 필요 없다.
