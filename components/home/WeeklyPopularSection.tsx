@@ -8,7 +8,7 @@ export default async function WeeklyPopularSection() {
 
   return (
     <SectionCard title="인기글" bulletColor="bg-orange-500">
-      <RankedPostList posts={posts} columns={1} />
+      <RankedPostList posts={posts} />
     </SectionCard>
   )
 }
