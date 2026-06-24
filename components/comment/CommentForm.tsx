@@ -10,13 +10,18 @@ import { ApiError } from '@/lib/api/client'
 interface Props {
   postId: number
   parentId?: number
+  // 답글 대상 작성자명. 넘어오면 입력창에 '@닉네임 '을 미리 채워준다.
+  // 백엔드 변경 없이 멘션을 본문 텍스트에 그대로 실어 보내기 위한 방식이며,
+  // 사용자가 원치 않으면 직접 지울 수 있으므로 멘션을 강제하지 않는다.
+  mention?: string
   onCancel?: () => void
 }
 
-export default function CommentForm({ postId, parentId, onCancel }: Props) {
+export default function CommentForm({ postId, parentId, mention, onCancel }: Props) {
   const router = useRouter()
   const { user, isLoading } = useAuth()
-  const [content, setContent] = useState('')
+  // 폼은 '답글' 버튼을 누를 때마다 새로 마운트되므로, 초기값으로 prefill하면 충분하다.
+  const [content, setContent] = useState(mention ? `@${mention} ` : '')
   const [anonymous, setAnonymous] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
