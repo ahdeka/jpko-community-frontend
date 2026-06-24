@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { PostDetail as PostDetailData } from '@/types'
 import LikeButtons from './LikeButtons'
+import PostActions from './PostActions'
 import DeletePostButton from './DeletePostButton'
 
 interface Props {
@@ -58,6 +59,9 @@ export default function PostDetail({ post }: Props) {
         initialLikeCount={post.likeCount}
         initialDislikeCount={post.dislikeCount}
       />
+
+      {/* 좋아요와 댓글 영역을 구분선으로 나누는 하단 액션 바(목록/공유/신고). */}
+      <PostActions />
     </div>
   )
 }
