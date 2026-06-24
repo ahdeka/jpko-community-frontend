@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Form from 'next/form'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
+import UserMenu from './UserMenu'
 import type { Category } from '@/types'
 
 interface Props {
@@ -67,18 +68,7 @@ export default function Header({ categories }: Props) {
           </Form>
           <nav className="flex items-center gap-3 text-sm shrink-0">
             {user ? (
-              <>
-                <Link href="/posts/new" className="text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-200">
-                  글쓰기
-                </Link>
-                <span className="text-neutral-600 dark:text-neutral-400">{user.nickname}</span>
-                <button
-                  onClick={handleLogout}
-                  className="text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
-                >
-                  로그아웃
-                </button>
-              </>
+              <UserMenu nickname={user.nickname} onLogout={handleLogout} />
             ) : (
               <Link
                 href="/login"
