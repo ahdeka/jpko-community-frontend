@@ -6,6 +6,7 @@ export const authApi = {
   signup: (body: {
     email: string
     password: string
+    passwordConfirm: string
     nickname: string
   }) => apiClient.post<void>('/api/auth/signup', body),
 
