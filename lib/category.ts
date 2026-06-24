@@ -4,6 +4,8 @@
 // (약칭이 많아지면 백엔드 Category에 shortName 필드를 두는 쪽으로 옮기는 게 좋다.)
 const SHORT_LABELS: Record<string, string> = {
   워킹홀리데이: '워홀',
+  자유게시판: '자유',
+  일본생활: '생활',
 }
 
 export function categoryShortLabel(name: string): string {
