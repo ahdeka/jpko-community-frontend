@@ -11,7 +11,7 @@ interface Props {
 export default function RecentPostsSection({ posts }: Props) {
   return (
     <SectionCard title="최신 글" bulletColor="bg-blue-500" href="/posts" linkLabel="전체보기">
-      <PostList posts={posts} showCategory />
+      <PostList posts={posts} showCategory compact />
     </SectionCard>
   )
 }

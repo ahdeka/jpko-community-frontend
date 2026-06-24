@@ -1,32 +1,17 @@
 import Link from 'next/link'
 import { PostSummary } from '@/types'
 import { formatRelativeTime } from '@/lib/format'
+import { categoryShortLabel } from '@/lib/category'
+import ImageBadge from '@/components/common/ImageBadge'
 
 const CATEGORY_BADGE_STYLE = 'bg-neutral-200 text-neutral-600 dark:bg-neutral-700/40 dark:text-neutral-300'
 
 interface Props {
   post: PostSummary
   showCategory?: boolean
-}
-
-// 이미지 포함 게시글 아이콘
-function ImageIcon() {
-  return (
-    <svg className="w-3.5 h-3.5 shrink-0 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="18" height="18" rx="2" />
-      <circle cx="8.5" cy="8.5" r="1.5" />
-      <path d="M21 15l-5-5L5 21" />
-    </svg>
-  )
-}
-
-// 텍스트만 있는 게시글 아이콘
-function TextIcon() {
-  return (
-    <svg className="w-3.5 h-3.5 shrink-0 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 6h16M4 12h16M4 18h10" />
-    </svg>
-  )
+  // 메인 페이지 미리보기용. true면 좋아요 수·작성시간 줄을 숨겨 가볍게 보여준다.
+  // (/posts 등 전용 목록에서는 false로 풀 메타데이터를 유지)
+  compact?: boolean
 }
 
 // 좋아요 아이콘
@@ -39,18 +24,18 @@ function LikeIcon() {
   )
 }
 
-export default function PostRow({ post, showCategory = false }: Props) {
+export default function PostRow({ post, showCategory = false, compact = false }: Props) {
   return (
     <li className="hover:bg-neutral-100 dark:hover:bg-neutral-800/60">
       <Link href={`/posts/${post.id}`} className="flex items-center justify-between gap-3 py-2.5">
         <div className="flex flex-col gap-1 min-w-0">
           <div className="flex items-center gap-2 min-w-0">
-            {post.hasImage ? <ImageIcon /> : <TextIcon />}
             {showCategory && (
               <span className={`shrink-0 text-xs px-1.5 py-0.5 rounded ${CATEGORY_BADGE_STYLE}`}>
-                {post.categoryName}
+                {categoryShortLabel(post.categoryName)}
               </span>
             )}
+            {post.hasImage && <ImageBadge />}
             <span className="text-sm truncate text-neutral-800 dark:text-neutral-200">{post.title}</span>
             {post.commentCount > 0 && (
               <span className="shrink-0 text-xs text-orange-500 font-medium">
@@ -59,13 +44,15 @@ export default function PostRow({ post, showCategory = false }: Props) {
             )}
           </div>
 
-          <div className="flex items-center gap-2 text-xs text-neutral-500">
-            <span className="flex items-center gap-0.5">
-              <LikeIcon />
-              {post.likeCount}
-            </span>
-            <span>{formatRelativeTime(post.createdAt)}</span>
-          </div>
+          {!compact && (
+            <div className="flex items-center gap-2 text-xs text-neutral-500">
+              <span className="flex items-center gap-0.5">
+                <LikeIcon />
+                {post.likeCount}
+              </span>
+              <span>{formatRelativeTime(post.createdAt)}</span>
+            </div>
+          )}
         </div>
 
         <span className="shrink-0 text-xs text-neutral-500">{post.author}</span>
