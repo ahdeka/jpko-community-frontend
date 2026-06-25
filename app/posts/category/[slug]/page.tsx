@@ -34,6 +34,8 @@ export default async function CategoryPage({
   const postsRes = await postsApi.getByCategory(category.id, pageNumber, PAGE_SIZE).catch(() => null)
   const posts = postsRes?.data?.posts?.content ?? []
   const totalPages = postsRes?.data?.posts?.totalPages ?? 0
+  // 상단 고정 공지는 백엔드가 0페이지에서만 내려준다.
+  const pinnedNotices = pageNumber === 0 ? (postsRes?.data?.pinnedNotices ?? []) : []
 
   return (
     <div>
@@ -42,7 +44,8 @@ export default async function CategoryPage({
         <h1 className="text-xl font-bold">{category.name}</h1>
         <WriteButton />
       </div>
-      <PostList posts={posts} />
+      {/* 고정 공지는 PostList 내부에서 게시글 행 위에 어두운 배경으로 함께 렌더된다 */}
+      <PostList posts={posts} pinnedNotices={pinnedNotices} />
       <Pagination currentPage={pageNumber} totalPages={totalPages} basePath={`/posts/category/${category.slug}`} />
       {/* 목록 우측 하단 글쓰기 버튼 */}
       <div className="mt-4 flex justify-end">
