@@ -48,12 +48,44 @@ export interface PostSummary {
 }
 
 // 공지사항 목록 / 게시판 상단 고정 노출용
+// 백엔드 NoticeSummaryResponse와 1:1 대응한다.
+// (목록 응답에는 author/content가 내려오지 않는다 — 상세에서만 제공)
 export interface NoticeSummary {
   id: number;
   title: string;
+  viewCount: number;
+  pinned: boolean;     // 게시판 상단 고정 여부
+  featured: boolean;   // 메인 상단 중요 공지 여부
+  createdAt: string;
+}
+
+// 공지사항 상세용 (백엔드 NoticeDetailResponse)
+export interface NoticeDetail {
+  id: number;
+  title: string;
+  content: string;     // 백엔드가 sanitize한 HTML
   author: string;
   viewCount: number;
   pinned: boolean;
+  featured: boolean;
+  createdAt: string;
+}
+
+// 마이페이지 - 내가 쓴 글 (백엔드 MyPostResponse)
+export interface MyPost {
+  id: number;
+  categoryName: string;
+  title: string;
+  viewCount: number;
+  createdAt: string;
+}
+
+// 마이페이지 - 내가 쓴 댓글 (백엔드 MyCommentResponse)
+export interface MyComment {
+  id: number;
+  postId: number;       // 클릭 시 원본 게시글로 이동
+  postTitle: string;
+  content: string;
   createdAt: string;
 }
 

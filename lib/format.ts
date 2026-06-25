@@ -14,3 +14,12 @@ export function formatRelativeTime(dateString: string): string {
 
   return date.toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })
 }
+
+// 상세/대시보드에서 쓰는 절대 날짜 표시 ("2026. 06. 25.")
+export function formatDate(dateString: string): string {
+  return new Date(dateString).toLocaleDateString('ko-KR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  })
+}
