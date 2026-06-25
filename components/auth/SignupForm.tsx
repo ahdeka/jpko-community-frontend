@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { authApi } from '@/lib/api/auth'
 import { ApiError } from '@/lib/api/client'
+import { useRedirectIfAuthenticated } from '@/lib/use-auth-guard'
 
 type FieldName = 'email' | 'password' | 'passwordConfirm' | 'nickname'
 type FieldErrors = Partial<Record<FieldName, string>>
@@ -14,6 +15,8 @@ const inputClass =
 
 export default function SignupForm() {
   const router = useRouter()
+  // 이미 로그인한 사용자는 홈으로 돌려보낸다(뒤로가기·주소창 직접 진입 차단)
+  const { blocked } = useRedirectIfAuthenticated()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [passwordConfirm, setPasswordConfirm] = useState('')
@@ -132,6 +135,9 @@ export default function SignupForm() {
   const passwordError = visibleError('password')
   const passwordConfirmError = visibleError('passwordConfirm')
   const nicknameError = visibleError('nickname')
+
+  // 로그인 상태가 확정되어 리다이렉트가 진행 중이면 폼 대신 빈 화면을 잠시 보여준다
+  if (blocked) return null
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { postsApi } from '@/lib/api/posts'
 import { ApiError } from '@/lib/api/client'
+import { useUnsavedChanges } from '@/lib/use-unsaved-changes'
 import TiptapEditor, { MAX_CONTENT_LENGTH } from './TiptapEditor'
 import type { Category } from '@/types'
 
@@ -40,6 +41,17 @@ export default function PostForm({
   const [anonymous, setAnonymous] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
+  // 저장이 끝나면(submitted) 이탈 경고를 해제해, 저장 직후 이동에는 경고가 뜨지 않게 한다.
+  const [submitted, setSubmitted] = useState(false)
+
+  // 입력이 초기값과 달라졌으면 "작성 중"으로 보고 이탈 시 경고한다.
+  // (단순 비교로 충분 — Tiptap은 실제 편집이 있을 때만 onChange를 발생시키므로
+  //  에디터에 포커스만 줬다고 해서 content가 바뀌지는 않는다.)
+  const isDirty =
+    title !== initialTitle ||
+    content !== initialContent ||
+    categoryId !== (initialCategoryId ?? '')
+  useUnsavedChanges(isDirty && !submitted)
 
   if (isLoading) return null
 
@@ -91,6 +103,7 @@ export default function PostForm({
           : await postsApi.create({ ...body, anonymous })
 
       const id = res.data?.id ?? postId
+      setSubmitted(true) // 이탈 경고 해제 후 이동
       router.push(`/posts/${id}`)
       router.refresh()
     } catch (e) {

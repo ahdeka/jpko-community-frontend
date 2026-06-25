@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { noticesApi } from '@/lib/api/notices'
 import { ApiError } from '@/lib/api/client'
+import { useUnsavedChanges } from '@/lib/use-unsaved-changes'
 import TiptapEditor, { MAX_CONTENT_LENGTH } from '@/components/post/TiptapEditor'
 
 interface Props {
@@ -38,6 +39,16 @@ export default function NoticeForm({
   const [featured, setFeatured] = useState(initialFeatured)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
+  // 저장이 끝나면 이탈 경고 해제 (저장 직후 목록 이동에는 경고가 뜨지 않게)
+  const [submitted, setSubmitted] = useState(false)
+
+  // 제목·본문·노출옵션 중 하나라도 초기값과 다르면 "작성 중"으로 보고 이탈 시 경고
+  const isDirty =
+    title !== initialTitle ||
+    content !== initialContent ||
+    pinned !== initialPinned ||
+    featured !== initialFeatured
+  useUnsavedChanges(isDirty && !submitted)
 
   const hasImage = /<img\b/i.test(content)
   const plainText = stripTags(content)
@@ -71,6 +82,7 @@ export default function NoticeForm({
       } else {
         await noticesApi.create(body)
       }
+      setSubmitted(true) // 이탈 경고 해제 후 이동
       router.push('/admin/notices')
       router.refresh()
     } catch (err) {

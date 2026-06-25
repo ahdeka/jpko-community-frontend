@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { authApi } from '@/lib/api/auth'
 import { ApiError } from '@/lib/api/client'
 import { useAuth } from '@/lib/auth-context'
+import { useRedirectIfAuthenticated } from '@/lib/use-auth-guard'
 
 interface FieldErrors {
   email?: string
@@ -15,6 +16,8 @@ interface FieldErrors {
 export default function LoginForm() {
   const router = useRouter()
   const { fetchUser } = useAuth()
+  // 이미 로그인한 사용자는 홈으로 돌려보낸다(뒤로가기·주소창 직접 진입 차단)
+  const { blocked } = useRedirectIfAuthenticated()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
@@ -43,7 +46,8 @@ export default function LoginForm() {
     try {
       await authApi.login({ email, password })
       await fetchUser()
-      router.push('/')
+      // replace로 이동해 히스토리에 로그인 페이지를 남기지 않는다
+      router.replace('/')
     } catch (e) {
       if (e instanceof ApiError) {
         if (e.code === 'WRONG_PASSWORD' || e.code === 'USER_NOT_FOUND') {
@@ -56,6 +60,9 @@ export default function LoginForm() {
       setLoading(false)
     }
   }
+
+  // 로그인 상태가 확정되어 리다이렉트가 진행 중이면 폼 대신 빈 화면을 잠시 보여준다
+  if (blocked) return null
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
