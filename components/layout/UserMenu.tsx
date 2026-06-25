@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import Link from 'next/link'
+import type { User } from '@/types'
 
 interface Props {
-  nickname: string
+  user: User
   onLogout: () => void
 }
 
@@ -17,11 +19,13 @@ function UserIcon() {
   )
 }
 
-// 닉네임(왼쪽) + 프로필 아이콘(오른쪽). 아이콘을 누르면 설정/로그아웃 메뉴가 열린다.
-// 마이페이지·설정은 아직 백엔드 기능이 없어 자리만 잡아두고 준비 중임을 안내한다.
-export default function UserMenu({ nickname, onLogout }: Props) {
+// 닉네임(왼쪽) + 프로필 아이콘(오른쪽). 아이콘을 누르면 메뉴가 열린다.
+// 관리자(role === 'ADMIN')에게만 "관리자 페이지" 항목을 추가로 노출한다.
+export default function UserMenu({ user, onLogout }: Props) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+
+  const isAdmin = user.role === 'ADMIN'
 
   // 메뉴가 열려 있을 때만 바깥 클릭 리스너를 달아 닫는다.
   useEffect(() => {
@@ -32,11 +36,6 @@ export default function UserMenu({ nickname, onLogout }: Props) {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [open])
-
-  function handleNotReady(label: string) {
-    setOpen(false)
-    alert(`${label} 기능은 준비 중입니다.`)
-  }
 
   const menuItem =
     'block w-full px-4 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-700'
@@ -50,7 +49,7 @@ export default function UserMenu({ nickname, onLogout }: Props) {
         aria-label="내 메뉴"
         className="flex items-center gap-2"
       >
-        <span className="text-sm text-neutral-600 dark:text-neutral-400">{nickname}</span>
+        <span className="text-sm text-neutral-600 dark:text-neutral-400">{user.nickname}</span>
         <span className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-700 text-white hover:bg-neutral-600 dark:bg-neutral-600 dark:hover:bg-neutral-500">
           <UserIcon />
         </span>
@@ -59,17 +58,36 @@ export default function UserMenu({ nickname, onLogout }: Props) {
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-full z-20 mt-2 w-44 overflow-hidden rounded-lg border border-neutral-200 bg-white py-1 shadow-lg dark:border-neutral-700 dark:bg-neutral-800"
+          className="absolute right-0 top-full z-20 mt-2 w-48 overflow-hidden rounded-lg border border-neutral-200 bg-white py-1 shadow-lg dark:border-neutral-700 dark:bg-neutral-800"
         >
+          {/* 헤더: 닉네임 + 관리자 배지 */}
           <div className="border-b border-neutral-100 px-4 py-2.5 dark:border-neutral-700">
-            <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{nickname}</p>
+            <div className="flex items-center gap-2">
+              <p className="truncate text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+                {user.nickname}
+              </p>
+              {isAdmin && (
+                <span className="shrink-0 rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-bold text-orange-600 dark:bg-orange-500/20 dark:text-orange-400">
+                  관리자
+                </span>
+              )}
+            </div>
+            <p className="mt-0.5 truncate text-xs text-neutral-400 dark:text-neutral-500">{user.email}</p>
           </div>
-          <button type="button" role="menuitem" onClick={() => handleNotReady('마이페이지')} className={menuItem}>
+
+          <Link href="/mypage" role="menuitem" className={menuItem} onClick={() => setOpen(false)}>
             마이페이지
-          </button>
-          <button type="button" role="menuitem" onClick={() => handleNotReady('설정')} className={menuItem}>
-            설정
-          </button>
+          </Link>
+
+          {isAdmin && (
+            <Link href="/admin" role="menuitem" className={menuItem} onClick={() => setOpen(false)}>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-orange-500" />
+                관리자 페이지
+              </span>
+            </Link>
+          )}
+
           <div className="my-1 border-t border-neutral-100 dark:border-neutral-700" />
           <button
             type="button"

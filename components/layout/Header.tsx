@@ -68,7 +68,7 @@ export default function Header({ categories }: Props) {
           </Form>
           <nav className="flex items-center gap-3 text-sm shrink-0">
             {user ? (
-              <UserMenu nickname={user.nickname} onLogout={handleLogout} />
+              <UserMenu user={user} onLogout={handleLogout} />
             ) : (
               <Link
                 href="/login"
