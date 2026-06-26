@@ -4,6 +4,7 @@ import { postsApi } from '@/lib/api/posts'
 import PostList from '@/components/post/PostList'
 import Pagination from '@/components/common/Pagination'
 import WriteButton from '@/components/post/WriteButton'
+import { encodeListContext } from '@/lib/list-context'
 
 const PAGE_SIZE = 20
 
@@ -45,12 +46,16 @@ export default async function CategoryPage({
         <WriteButton />
       </div>
       {/* 고정 공지는 PostList 내부에서 게시글 행 위에 어두운 배경으로 함께 렌더된다 */}
-      <PostList posts={posts} pinnedNotices={pinnedNotices} />
-      <Pagination currentPage={pageNumber} totalPages={totalPages} basePath={`/posts/category/${category.slug}`} />
-      {/* 목록 우측 하단 글쓰기 버튼 */}
+      <PostList
+        posts={posts}
+        pinnedNotices={pinnedNotices}
+        listContext={encodeListContext({ from: 'cat', slug: category.slug, page: pageNumber })}
+      />
+      {/* 글쓰기 버튼을 페이지번호 위에 둔다 (비로그인이면 WriteButton이 null) */}
       <div className="mt-4 flex justify-end">
         <WriteButton />
       </div>
+      <Pagination currentPage={pageNumber} totalPages={totalPages} basePath={`/posts/category/${category.slug}`} />
     </div>
   )
 }

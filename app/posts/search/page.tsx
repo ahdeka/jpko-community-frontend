@@ -1,6 +1,7 @@
 import { postsApi } from '@/lib/api/posts'
 import PostList from '@/components/post/PostList'
 import Pagination from '@/components/common/Pagination'
+import { encodeListContext } from '@/lib/list-context'
 
 const PAGE_SIZE = 20
 
@@ -36,7 +37,11 @@ export default async function SearchPage({
         &apos;{trimmedKeyword}&apos; 검색 결과{' '}
         <span className="text-neutral-500 font-normal">({totalElements}건)</span>
       </h1>
-      <PostList posts={posts} showCategory />
+      <PostList
+        posts={posts}
+        showCategory
+        listContext={encodeListContext({ from: 'search', keyword: trimmedKeyword, page: pageNumber })}
+      />
       <Pagination
         currentPage={pageNumber}
         totalPages={totalPages}
