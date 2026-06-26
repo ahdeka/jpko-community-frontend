@@ -23,3 +23,15 @@ export function formatDate(dateString: string): string {
     day: '2-digit',
   })
 }
+
+// 게시글 상세에서 쓰는 정확한 날짜·시간 표시 ("2026.06.25 16:01:05")
+// 백엔드 LocalDateTime은 타임존 없는 ISO("...T16:01:05")로 내려오므로
+// new Date가 로컬 시각으로 해석한다(목록의 상대시간 표시와 동일 기준).
+export function formatDateTime(dateString: string): string {
+  const d = new Date(dateString)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return (
+    `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())} ` +
+    `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+  )
+}

@@ -1,19 +1,12 @@
 import Link from 'next/link'
 import type { PostDetail as PostDetailData } from '@/types'
+import { formatDateTime } from '@/lib/format'
 import LikeButtons from './LikeButtons'
 import PostActions from './PostActions'
 import DeletePostButton from './DeletePostButton'
 
 interface Props {
   post: PostDetailData
-}
-
-function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString('ko-KR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  })
 }
 
 export default function PostDetail({ post }: Props) {
@@ -27,7 +20,7 @@ export default function PostDetail({ post }: Props) {
         <div className="flex items-center justify-between text-sm text-gray-500 dark:text-neutral-400">
           <div className="flex items-center gap-3">
             <span>{post.author}</span>
-            <span>{formatDate(post.createdAt)}</span>
+            <span>{formatDateTime(post.createdAt)}</span>
             <span>조회 {post.viewCount}</span>
           </div>
           {post.isOwner && (
