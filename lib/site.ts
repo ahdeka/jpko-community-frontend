@@ -4,6 +4,9 @@ export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://jpkocommun
 export const SITE_NAME = 'JPKO Community'
 export const SITE_DESCRIPTION = '일본 생활·취업·유학·워킹홀리데이에 관심 있는 한국인 커뮤니티'
 
+// 문의·개인정보 관련 연락처. 운영용 주소로 교체하세요(환경변수 우선).
+export const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? 'contact@jpkocommunity.site'
+
 // 검색엔진 색인 허용 여부.
 // 보안·법령 게이트가 끝나기 전에는 크롤링을 열지 않기 위해 환경변수로 제어한다.
 // (NEXT_PUBLIC_ALLOW_INDEXING=true 일 때만 색인 허용 — 기본은 차단)
