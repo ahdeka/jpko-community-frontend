@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import { categoriesApi } from '@/lib/api/categories'
 import { postsApi } from '@/lib/api/posts'
@@ -5,8 +6,24 @@ import PostList from '@/components/post/PostList'
 import Pagination from '@/components/common/Pagination'
 import WriteButton from '@/components/post/WriteButton'
 import { encodeListContext } from '@/lib/list-context'
+import { SITE_NAME } from '@/lib/site'
 
 const PAGE_SIZE = 20
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
+  const { slug } = await params
+  const res = await categoriesApi.getAll().catch(() => null)
+  const category = (res?.data ?? []).find(c => c.slug === slug)
+  if (!category) return { title: '게시판' }
+  return {
+    title: category.name,
+    description: `${SITE_NAME}의 ${category.name} 게시판입니다.`,
+  }
+}
 
 export default async function CategoryPage({
   params,

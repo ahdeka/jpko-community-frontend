@@ -1,8 +1,11 @@
+import { cache } from 'react'
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { noticesApi } from '@/lib/api/notices'
 import { postsApi } from '@/lib/api/posts'
 import { ApiError } from '@/lib/api/client'
 import { encodeListContext } from '@/lib/list-context'
+import { excerpt } from '@/lib/site'
 import NoticeDetail from '@/components/notice/NoticeDetail'
 import PostList from '@/components/post/PostList'
 import Pagination from '@/components/common/Pagination'
@@ -10,6 +13,31 @@ import WriteButton from '@/components/post/WriteButton'
 
 // 공지 상세 하단에 보여줄 전체글 수 (게시글 목록과 동일)
 const LIST_SIZE = 20
+
+// generateMetadata와 페이지가 공지를 한 번만 조회하도록 캐시(조회수 이중 증가 방지).
+const getNotice = cache((noticeId: number) => noticesApi.getById(noticeId))
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}): Promise<Metadata> {
+  const { id } = await params
+  const noticeId = Number(id)
+  if (!Number.isFinite(noticeId)) return {}
+
+  const res = await getNotice(noticeId).catch(() => null)
+  const notice = res?.data
+  if (!notice) return { title: '공지사항' }
+
+  const description = excerpt(notice.content)
+  return {
+    title: notice.title,
+    description,
+    openGraph: { type: 'article', title: notice.title, description },
+    twitter: { card: 'summary_large_image', title: notice.title, description },
+  }
+}
 
 export default async function NoticePage({
   params,
@@ -25,7 +53,7 @@ export default async function NoticePage({
   // 공지 본문과 전체글 0페이지를 병렬 조회.
   // 전체글은 부가 노출이라 실패해도 공지 본문에는 영향 주지 않도록 catch로 격리한다.
   const [noticeRes, postsRes] = await Promise.all([
-    noticesApi.getById(noticeId).catch((err: unknown) => {
+    getNotice(noticeId).catch((err: unknown) => {
       if (err instanceof ApiError && err.status === 404) notFound()
       throw err
     }),

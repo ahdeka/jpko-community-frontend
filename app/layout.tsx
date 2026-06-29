@@ -7,10 +7,38 @@ import { categoriesApi } from '@/lib/api/categories'
 import type { Category } from '@/types'
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
+import { SITE_URL, SITE_NAME, SITE_DESCRIPTION, INDEXING_ENABLED } from '@/lib/site'
+
+const SITE_TITLE = `${SITE_NAME} - 일본 생활·취업·유학 한국인 커뮤니티`
 
 export const metadata: Metadata = {
-  title: 'JPKO Community',
-  description: '일본에 관심 있는 한국인 커뮤니티',
+  // 상대 OG/canonical URL을 절대경로로 만들기 위한 기준
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: SITE_TITLE,
+    // 하위 페이지는 "글 제목 | JPKO Community" 형태로 자동 구성
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  keywords: ['일본', '일본생활', '일본취업', '일본유학', '워킹홀리데이', '일본 커뮤니티', '한국인'],
+  openGraph: {
+    type: 'website',
+    siteName: SITE_NAME,
+    locale: 'ko_KR',
+    url: SITE_URL,
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+  },
+  // 보안·법령 게이트 전(기본)에는 색인을 차단한다. 게이트 통과 후 환경변수로 개방.
+  robots: INDEXING_ENABLED
+    ? { index: true, follow: true }
+    : { index: false, follow: false },
 }
 
 export default async function RootLayout({

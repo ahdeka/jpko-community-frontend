@@ -1,6 +1,9 @@
+import type { Metadata } from 'next'
 import { noticesApi } from '@/lib/api/notices'
 import NoticeList from '@/components/notice/NoticeList'
 import Pagination from '@/components/common/Pagination'
+
+export const metadata: Metadata = { title: '공지사항' }
 
 const PAGE_SIZE = 20
 

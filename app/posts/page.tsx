@@ -3,6 +3,9 @@ import PostList from '@/components/post/PostList'
 import Pagination from '@/components/common/Pagination'
 import WriteButton from '@/components/post/WriteButton'
 import { encodeListContext } from '@/lib/list-context'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = { title: '전체 글' }
 
 const PAGE_SIZE = 20
 

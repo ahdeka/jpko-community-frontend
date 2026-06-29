@@ -1,3 +1,5 @@
+import { cache } from 'react'
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { postsApi } from '@/lib/api/posts'
 import { commentsApi } from '@/lib/api/comments'
@@ -5,6 +7,7 @@ import { categoriesApi } from '@/lib/api/categories'
 import { authHeaders } from '@/lib/api/server'
 import { ApiError } from '@/lib/api/client'
 import { encodeListContext, parseListContext, type ListContext } from '@/lib/list-context'
+import { excerpt } from '@/lib/site'
 import PostDetail from '@/components/post/PostDetail'
 import PostList from '@/components/post/PostList'
 import Pagination from '@/components/common/Pagination'
@@ -14,6 +17,34 @@ import type { Category, PostDetail as PostDetailData, PostSummary } from '@/type
 
 // 상세 하단 목록 한 페이지에 보여줄 글 수 (목록 페이지와 동일)
 const LIST_SIZE = 20
+
+// generateMetadata와 페이지 본문이 같은 요청 안에서 게시글을 "한 번만" 조회하도록 캐시한다.
+// GET /posts/{id}는 백엔드에서 조회수를 증가시키므로, 캐시하지 않으면 한 번 방문에 조회수가 2 오른다.
+const getPost = cache((postId: number) =>
+  authHeaders().then(headers => postsApi.getById(postId, { headers }))
+)
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}): Promise<Metadata> {
+  const { id } = await params
+  const postId = Number(id)
+  if (!Number.isFinite(postId)) return {}
+
+  const res = await getPost(postId).catch(() => null)
+  const post = res?.data
+  if (!post) return { title: '게시글' }
+
+  const description = excerpt(post.content)
+  return {
+    title: post.title,
+    description,
+    openGraph: { type: 'article', title: post.title, description },
+    twitter: { card: 'summary_large_image', title: post.title, description },
+  }
+}
 
 // 상세 하단에 끼워 넣을 "목록" 데이터.
 interface SiblingList {
@@ -109,7 +140,7 @@ export default async function PostPage({
 
   // 게시글·댓글·카테고리를 병렬 조회. (카테고리는 하단 목록의 id/slug 해석에 쓰임)
   const [postRes, commentsRes, categoriesRes] = await Promise.allSettled([
-    postsApi.getById(postId, { headers }),
+    getPost(postId), // generateMetadata와 공유되는 캐시 조회 (조회수 1회만 증가)
     commentsApi.getByPostId(postId, { headers }),
     categoriesApi.getAll(),
   ])
