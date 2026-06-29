@@ -6,7 +6,8 @@ import Link from 'next/link'
 // 본문과 댓글 사이에 놓이는 하단 액션 바.
 // 좌측: 목록으로 이동 / 우측: 공유, 더보기(신고하기) 메뉴.
 // 공유·신고는 아직 기능이 없어 아이콘과 메뉴 자리만 잡아둔다.
-export default function PostActions() {
+// listHref: 좌측 "목록" 아이콘의 이동 경로(게시글=/posts, 공지=/notices 등).
+export default function PostActions({ listHref = '/posts' }: { listHref?: string }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -34,7 +35,7 @@ export default function PostActions() {
   return (
     <div className="flex items-center justify-between border-b border-gray-200 py-2 dark:border-neutral-800">
       {/* 목록으로 */}
-      <Link href="/posts" aria-label="목록으로" className={iconButton}>
+      <Link href={listHref} aria-label="목록으로" className={iconButton}>
         <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <line x1="8" y1="6" x2="21" y2="6" />
           <line x1="8" y1="12" x2="21" y2="12" />

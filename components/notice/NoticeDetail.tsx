@@ -1,7 +1,7 @@
-import Link from 'next/link'
 import type { NoticeDetail as NoticeDetailData } from '@/types'
 import { formatDate } from '@/lib/format'
 import NoticeBadges from './NoticeBadges'
+import PostActions from '@/components/post/PostActions'
 
 interface Props {
   notice: NoticeDetailData
@@ -11,6 +11,7 @@ export default function NoticeDetail({ notice }: Props) {
   return (
     <article>
       <div className="border-b border-neutral-200 dark:border-neutral-800 pb-4 mb-4">
+        {/* 공지·중요 배지는 좌측에 나란히 (fragment 두 배지가 한 덩어리로 묶이도록 단순 flex) */}
         <div className="mb-2 flex items-center gap-2">
           <NoticeBadges pinned={notice.pinned} featured={notice.featured} />
         </div>
@@ -31,14 +32,8 @@ export default function NoticeDetail({ notice }: Props) {
         dangerouslySetInnerHTML={{ __html: notice.content }}
       />
 
-      <div className="mt-6 flex justify-center border-t border-neutral-200 pt-4 dark:border-neutral-800">
-        <Link
-          href="/notices"
-          className="rounded-md border border-neutral-300 px-4 py-1.5 text-sm text-neutral-600 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
-        >
-          목록
-        </Link>
-      </div>
+      {/* 게시글 상세와 동일한 하단 액션 바. 목록 아이콘은 공지 목록(/notices)으로 이동. */}
+      <PostActions listHref="/notices" />
     </article>
   )
 }

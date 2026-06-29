@@ -44,6 +44,10 @@
 }
 .post-content img {
   max-width: 100%;
+  /* 큰 원본 사진이 본문 폭을 꽉 채우지 않도록 표시 크기를 제한(비율 자동 유지).
+     에디터 입력 영역과 상세 본문에 동일하게 적용된다. */
+  max-height: 480px;
+  width: auto;
   height: auto;
   border-radius: 0.375rem;
   margin: 0.5rem 0;

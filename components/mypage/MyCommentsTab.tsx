@@ -69,7 +69,24 @@ export default function MyCommentsTab() {
             >
               <p className="line-clamp-2 text-sm text-neutral-800 dark:text-neutral-100">{comment.content}</p>
               <div className="mt-1 flex items-center gap-2 text-xs text-neutral-400 dark:text-neutral-500">
-                <span className="truncate">on {comment.postTitle}</span>
+                {/* 이 댓글이 달린 원본 게시글을 나타내는 문서 아이콘 + 제목 */}
+                <span className="flex min-w-0 flex-1 items-center gap-1">
+                  <svg
+                    className="h-3.5 w-3.5 shrink-0"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                  </svg>
+                  <span className="sr-only">게시글: </span>
+                  <span className="truncate">{comment.postTitle}</span>
+                </span>
                 <span className="shrink-0">· {formatRelativeTime(comment.createdAt)}</span>
               </div>
             </Link>
