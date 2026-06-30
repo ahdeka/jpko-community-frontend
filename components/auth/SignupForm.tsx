@@ -136,11 +136,16 @@ export default function SignupForm() {
   const passwordConfirmError = visibleError('passwordConfirm')
   const nicknameError = visibleError('nickname')
 
-  // 로그인 상태가 확정되어 리다이렉트가 진행 중이면 폼 대신 빈 화면을 잠시 보여준다
-  if (blocked) return null
+  // 로그인 상태로 진입(다른 탭 로그인 등) 시 리다이렉트 진행 중에는 "회원가입" 문구 대신
+  // 이동 안내만 보여준다. 제목을 폼 안에 둬 blocked 시 제목까지 함께 사라지게 한다.
+  if (blocked) {
+    return <p className="py-10 text-center text-sm text-neutral-500 dark:text-neutral-400">이동 중…</p>
+  }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+    <>
+      <h1 className="mb-6 text-center text-xl font-bold">회원가입</h1>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
       <div>
         <input
           type="email"
@@ -251,7 +256,8 @@ export default function SignupForm() {
           로그인
         </Link>
       </p>
-    </form>
+      </form>
+    </>
   )
 }
 

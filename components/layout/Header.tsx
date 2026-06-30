@@ -32,7 +32,7 @@ function SearchIcon() {
 }
 
 export default function Header({ categories }: Props) {
-  const { user, logout } = useAuth()
+  const { user, isLoading, logout } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
 
@@ -67,7 +67,11 @@ export default function Header({ categories }: Props) {
             </div>
           </Form>
           <nav className="flex items-center gap-3 text-sm shrink-0">
-            {user ? (
+            {isLoading ? (
+              // 인증 확인 중에는 중립 스켈레톤을 보여, 로그인 사용자가 "로그인 아이콘 → 닉네임"으로
+              // 깜빡이는 것을 막는다. (로그아웃 사용자도 동일 자리에 부드럽게 로그인 아이콘이 들어옴)
+              <div className="h-8 w-8 animate-pulse rounded-full bg-neutral-200 dark:bg-neutral-700" aria-hidden="true" />
+            ) : user ? (
               <UserMenu user={user} onLogout={handleLogout} />
             ) : (
               <Link
