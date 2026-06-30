@@ -7,8 +7,15 @@ import Link from 'next/link'
 // 좌측: 목록으로 이동 / 우측: 공유, 더보기(신고하기) 메뉴.
 // 공유·신고는 아직 기능이 없어 아이콘과 메뉴 자리만 잡아둔다.
 // listHref: 좌측 "목록" 아이콘의 이동 경로(게시글=/posts, 공지=/notices 등).
-export default function PostActions({ listHref = '/posts' }: { listHref?: string }) {
+export default function PostActions({
+  listHref = '/posts',
+  shareTitle,
+}: {
+  listHref?: string
+  shareTitle?: string
+}) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   // 드롭다운이 열려 있을 때 메뉴 바깥을 클릭하면 닫는다.
@@ -29,6 +36,32 @@ export default function PostActions({ listHref = '/posts' }: { listHref?: string
     alert(`${label} 기능은 준비 중입니다.`)
   }
 
+  // 공유하기: 모바일 등 지원 환경에서는 네이티브 공유 시트(Web Share API),
+  // 미지원(대부분 데스크탑)에서는 현재 URL을 클립보드에 복사하고 "복사됨"을 잠깐 표시한다.
+  async function handleShare() {
+    const url = window.location.href
+    const title = shareTitle ?? document.title
+
+    if (typeof navigator.share === 'function') {
+      try {
+        await navigator.share({ title, url })
+      } catch {
+        // 사용자가 공유를 취소(AbortError)한 경우 등 — 조용히 무시
+      }
+      return
+    }
+
+    // 폴백: 링크 복사
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // 비보안 컨텍스트·구형 브라우저 등 clipboard 미지원 시 직접 복사 유도
+      window.prompt('아래 링크를 복사하세요', url)
+    }
+  }
+
   const iconButton =
     'flex h-9 w-9 items-center justify-center rounded text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200'
 
@@ -47,16 +80,23 @@ export default function PostActions({ listHref = '/posts' }: { listHref?: string
       </Link>
 
       <div className="flex items-center gap-1">
-        {/* 공유하기 (기능 준비 중) */}
-        <button type="button" onClick={() => handleNotReady('공유하기')} aria-label="공유하기" className={iconButton}>
-          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <circle cx="18" cy="5" r="3" />
-            <circle cx="6" cy="12" r="3" />
-            <circle cx="18" cy="19" r="3" />
-            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-          </svg>
-        </button>
+        {/* 공유하기: 네이티브 공유 또는 링크 복사 */}
+        <div className="relative">
+          <button type="button" onClick={handleShare} aria-label="공유하기" className={iconButton}>
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="18" cy="5" r="3" />
+              <circle cx="6" cy="12" r="3" />
+              <circle cx="18" cy="19" r="3" />
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+            </svg>
+          </button>
+          {copied && (
+            <span className="absolute right-0 top-full z-10 mt-1 whitespace-nowrap rounded bg-neutral-800 px-2 py-1 text-xs text-white shadow dark:bg-neutral-700">
+              링크 복사됨
+            </span>
+          )}
+        </div>
 
         {/* 더보기 메뉴 */}
         <div className="relative" ref={menuRef}>

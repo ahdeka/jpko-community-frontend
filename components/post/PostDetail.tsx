@@ -54,7 +54,7 @@ export default function PostDetail({ post }: Props) {
       />
 
       {/* 좋아요와 댓글 영역을 구분선으로 나누는 하단 액션 바(목록/공유/신고). */}
-      <PostActions />
+      <PostActions shareTitle={post.title} />
     </div>
   )
 }

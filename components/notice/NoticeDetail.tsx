@@ -33,7 +33,7 @@ export default function NoticeDetail({ notice }: Props) {
       />
 
       {/* 게시글 상세와 동일한 하단 액션 바. 목록 아이콘은 공지 목록(/notices)으로 이동. */}
-      <PostActions listHref="/notices" />
+      <PostActions listHref="/notices" shareTitle={notice.title} />
     </article>
   )
 }
