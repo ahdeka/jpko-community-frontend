@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useEditor, EditorContent, type Editor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
@@ -20,6 +20,25 @@ interface Props {
   onChange: (html: string) => void
 }
 
+// FileList에서 이미지 파일만 골라 배열로 (붙여넣기/드롭 공용)
+function imageFilesFrom(list: FileList | null | undefined): File[] {
+  if (!list) return []
+  return Array.from(list).filter(f => f.type.startsWith('image/'))
+}
+
+// 링크 입력값을 안전한 URL로 정규화. 허용 안 되면 null.
+//  - http/https/mailto 는 그대로 허용
+//  - 다른 스킴(javascript:, data: 등)은 거부 (에디터 미리보기 단계 XSS 방지)
+//  - 스킴이 없으면 https:// 를 붙여 보정 (예: "example.com" → "https://example.com")
+// 저장 시 백엔드 Jsoup도 protocols를 재차 검증하므로 이중 방어가 된다.
+function normalizeLinkUrl(input: string): string | null {
+  const url = input.trim()
+  if (!url) return null
+  if (/^(https?:\/\/|mailto:)/i.test(url)) return url
+  if (/^[a-z][a-z0-9+.-]*:/i.test(url)) return null // 그 외 스킴 거부
+  return `https://${url}`
+}
+
 // 현재 문서에 들어있는 이미지 노드 수 (백엔드 5장 제한과 맞추기 위함)
 function countImages(editor: Editor): number {
   let count = 0
@@ -34,9 +53,22 @@ export default function TiptapEditor({ content, onChange }: Props) {
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
 
+  // 붙여넣기/드롭 핸들러는 editor 생성 시점(마운트 전)에 한 번 등록되므로,
+  // 그 시점의 editor는 아직 null이다. 최신 클로저(유효한 editor 참조)를 항상
+  // 호출하기 위해 ref로 우회한다. ref 값은 렌더마다 아래에서 갱신된다.
+  const handleImageFilesRef = useRef<(files: File[]) => void>(() => {})
+
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      // StarterKit v3에는 underline/link/code/codeBlock/heading이 기본 포함된다.
+      // 링크는 에디터 안에서 클릭 시 페이지 이동을 막고(편집 방해 방지),
+      // 저장 가능한 안전한 프로토콜만 허용한다(javascript:, data: 차단 — 백엔드 Jsoup도 재차 필터).
+      StarterKit.configure({
+        link: {
+          openOnClick: false,
+          protocols: ['http', 'https', 'mailto'],
+        },
+      }),
       Image.configure({ inline: false, allowBase64: false }),
     ],
     content,
@@ -46,6 +78,22 @@ export default function TiptapEditor({ content, onChange }: Props) {
       attributes: {
         class:
           'post-content min-h-60 px-3 py-2 outline-none',
+      },
+      // 클립보드/드래그로 들어온 이미지 파일을 가로채 S3 업로드 후 삽입한다.
+      // (allowBase64:false라 기본 붙여넣기로는 이미지가 들어가지 않는다)
+      handlePaste: (_view, event) => {
+        const files = imageFilesFrom(event.clipboardData?.files)
+        if (files.length === 0) return false
+        event.preventDefault()
+        handleImageFilesRef.current(files)
+        return true
+      },
+      handleDrop: (_view, event) => {
+        const files = imageFilesFrom((event as DragEvent).dataTransfer?.files)
+        if (files.length === 0) return false
+        event.preventDefault()
+        handleImageFilesRef.current(files)
+        return true
       },
     },
     onUpdate: ({ editor }) => onChange(editor.getHTML()),
@@ -89,6 +137,20 @@ export default function TiptapEditor({ content, onChange }: Props) {
     }
   }
 
+  // 붙여넣기/드롭으로 들어온 여러 이미지를 순차 업로드한다.
+  // 순차로 처리해야 handleFiles 내부의 이미지 수 검사가 직전 삽입까지 반영된 문서를
+  // 보고 5장 제한을 정확히 지킨다(병렬이면 카운트 경쟁으로 제한을 넘길 수 있다).
+  async function handleImageFiles(files: File[]) {
+    for (const file of files) {
+      await handleFiles(file)
+    }
+  }
+  // 붙여넣기/드롭 핸들러가 최신 클로저(유효한 editor 참조)를 쓰도록 렌더 후 ref 갱신.
+  // 렌더 본문에서 ref.current를 직접 쓰지 않도록 effect로 분리한다.
+  useEffect(() => {
+    handleImageFilesRef.current = handleImageFiles
+  })
+
   // immediatelyRender:false 이므로 클라이언트 마운트 전까지 editor가 null일 수 있음
   if (!editor) {
     return (
@@ -130,6 +192,27 @@ export default function TiptapEditor({ content, onChange }: Props) {
 
 // ===== 툴바 =====
 
+// 링크 삽입/수정/해제. 선택 영역(없으면 커서가 놓인 링크 전체)에 링크를 건다.
+function setLink(editor: Editor) {
+  // 커서가 기존 링크 위에 있으면 그 URL을 기본값으로 보여준다.
+  const prevUrl = editor.getAttributes('link').href as string | undefined
+  const input = window.prompt('링크 URL을 입력하세요 (비우면 링크 해제)', prevUrl ?? '')
+  if (input === null) return // 취소
+
+  // extendMarkRange: 커서만 있어도 링크 전체 범위에 적용/해제되도록 확장
+  if (input.trim() === '') {
+    editor.chain().focus().extendMarkRange('link').unsetLink().run()
+    return
+  }
+
+  const url = normalizeLinkUrl(input)
+  if (!url) {
+    window.alert('사용할 수 없는 링크입니다. http/https 주소를 입력해주세요.')
+    return
+  }
+  editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
+}
+
 function Toolbar({
   editor,
   uploading,
@@ -147,10 +230,19 @@ function Toolbar({
       <Btn active={editor.isActive('italic')} onClick={() => editor.chain().focus().toggleItalic().run()}>
         <i>I</i>
       </Btn>
+      <Btn active={editor.isActive('underline')} onClick={() => editor.chain().focus().toggleUnderline().run()}>
+        <u>U</u>
+      </Btn>
       <Btn active={editor.isActive('strike')} onClick={() => editor.chain().focus().toggleStrike().run()}>
         <s>S</s>
       </Btn>
+      <Btn active={editor.isActive('code')} onClick={() => editor.chain().focus().toggleCode().run()}>
+        {'<>'}
+      </Btn>
       <Divider />
+      <Btn active={editor.isActive('heading', { level: 1 })} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}>
+        H1
+      </Btn>
       <Btn active={editor.isActive('heading', { level: 2 })} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>
         H2
       </Btn>
@@ -166,6 +258,18 @@ function Toolbar({
       </Btn>
       <Btn active={editor.isActive('blockquote')} onClick={() => editor.chain().focus().toggleBlockquote().run()}>
         인용
+      </Btn>
+      <Btn active={editor.isActive('codeBlock')} onClick={() => editor.chain().focus().toggleCodeBlock().run()}>
+        코드블록
+      </Btn>
+      <Divider />
+      <Btn active={editor.isActive('link')} onClick={() => setLink(editor)}>
+        🔗 링크
+      </Btn>
+      {/* 구분선(hr). StarterKit의 HorizontalRule 확장은 이미 포함돼 있어 명령만 연결하면 된다.
+          (isActive 상태가 없는 삽입형 명령이라 active는 항상 false) */}
+      <Btn active={false} onClick={() => editor.chain().focus().setHorizontalRule().run()}>
+        ― 구분선
       </Btn>
       <Divider />
       <Btn active={false} disabled={uploading} onClick={onPickImage}>

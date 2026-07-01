@@ -33,6 +33,11 @@
 .post-content {
   word-break: break-word;
 }
+.post-content h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 1.25rem 0 0.5rem;
+}
 .post-content h2 {
   font-size: 1.25rem;
   font-weight: 700;
@@ -45,6 +50,21 @@
 }
 .post-content p {
   margin: 0.5rem 0;
+}
+/* 빈 문단(Enter로 만든 빈 줄)은 내용이 없어 조회 화면에서 높이 0으로 접힌다.
+   에디터(ProseMirror)는 빈 문단에 trailing <br>을 넣어 한 줄 높이를 유지하지만,
+   조회 화면은 raw HTML이라 그 높이가 사라져 "줄바꿈이 없어진 것처럼" 보인다.
+   nbsp를 넣어 조회 화면에서도 빈 문단이 한 줄 높이를 갖도록 맞춘다.
+   (에디터의 빈 문단은 <br> 자식이 있어 :empty가 아니므로 이 규칙의 영향을 받지 않는다) */
+.post-content p:empty::before {
+  content: "\00a0";
+}
+/* 구분선. Tailwind preflight가 hr 기본 테두리를 지우므로 직접 지정한다.
+   (백엔드 Jsoup Safelist에 hr을 추가해야 저장 시 유지된다) */
+.post-content hr {
+  border: 0;
+  border-top: 1px solid var(--color-neutral-300, #d4d4d4);
+  margin: 1.25rem 0;
 }
 .post-content ul {
   list-style: disc;
@@ -65,6 +85,32 @@
 .post-content a {
   color: var(--color-blue-600, #2563eb);
   text-decoration: underline;
+}
+/* 인라인 코드. Tailwind preflight가 code 기본 스타일을 지우므로 직접 지정한다. */
+.post-content code {
+  background: var(--color-neutral-100, #f5f5f5);
+  color: var(--color-pink-600, #db2777);
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.25rem;
+  font-size: 0.9em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+/* 코드블록. pre 안의 code는 배경/색을 물려받지 않도록 초기화한다. */
+.post-content pre {
+  background: var(--color-neutral-900, #171717);
+  color: var(--color-neutral-100, #f5f5f5);
+  padding: 0.75rem 1rem;
+  border-radius: 0.375rem;
+  margin: 0.5rem 0;
+  overflow-x: auto;
+  font-size: 0.85rem;
+}
+.post-content pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
 }
 .post-content img {
   max-width: 100%;
