@@ -60,7 +60,7 @@ export default async function CategoryPage({
       {/* 목록 우측 상단 글쓰기 버튼 */}
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-bold">{category.name}</h1>
-        <WriteButton />
+        <WriteButton categorySlug={category.slug} />
       </div>
       {/* 고정 공지는 PostList 내부에서 게시글 행 위에 어두운 배경으로 함께 렌더된다 */}
       <PostList
@@ -70,7 +70,7 @@ export default async function CategoryPage({
       />
       {/* 글쓰기 버튼을 페이지번호 위에 둔다 (비로그인이면 WriteButton이 null) */}
       <div className="mt-4 flex justify-end">
-        <WriteButton />
+        <WriteButton categorySlug={category.slug} />
       </div>
       <Pagination currentPage={pageNumber} totalPages={totalPages} basePath={`/posts/category/${category.slug}`} />
     </div>

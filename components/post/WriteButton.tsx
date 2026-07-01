@@ -5,13 +5,26 @@ import { useAuth } from '@/lib/auth-context'
 
 // 글쓰기 버튼. 글 작성은 로그인이 필요하므로 비로그인 사용자에게는 표시하지 않는다.
 // 여러 위치(목록 우측 상단·하단)에서 재사용하므로 바깥 여백은 className으로 주입받는다.
-export default function WriteButton({ className = '' }: { className?: string }) {
+// categorySlug가 주어지면(카테고리 게시판에서 진입) 작성 페이지에 기본 카테고리를 넘긴다.
+// 값은 URL 쿼리로만 전달하는 "기본값 힌트"이며, /posts/new 에서 실제 카테고리 목록과 대조해
+// 검증하므로 임의의 값이 들어와도 안전하다.
+export default function WriteButton({
+  className = '',
+  categorySlug,
+}: {
+  className?: string
+  categorySlug?: string
+}) {
   const { user } = useAuth()
   if (!user) return null
 
+  const href = categorySlug
+    ? `/posts/new?category=${encodeURIComponent(categorySlug)}`
+    : '/posts/new'
+
   return (
     <Link
-      href="/posts/new"
+      href={href}
       className={`inline-flex items-center gap-1 rounded-md border border-neutral-300 bg-white px-2.5 py-1 text-xs font-medium text-neutral-800 shadow-sm transition-colors hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800 ${className}`}
     >
       {/* 아이콘만 브랜드 컬러(오렌지)로 포인트를 준다. 글씨는 검은색 계열. */}
