@@ -33,6 +33,17 @@
 .post-content {
   word-break: break-word;
 }
+/* 다중 공백 보존. 텍스트 블록에만 pre-wrap을 걸어 사용자가 입력한 연속 공백을 그대로
+   보여준다(컨테이너 전체에 걸면 블록 사이 줄바꿈 공백까지 살아나 빈 줄이 생길 수 있어
+   텍스트를 담는 요소로만 한정한다). 줄바꿈은 <br>/<p>가 담당하므로 공백만 보존하면 된다. */
+.post-content p,
+.post-content h1,
+.post-content h2,
+.post-content h3,
+.post-content li,
+.post-content blockquote {
+  white-space: pre-wrap;
+}
 .post-content h1 {
   font-size: 1.5rem;
   font-weight: 700;
@@ -58,6 +69,17 @@
    (에디터의 빈 문단은 <br> 자식이 있어 :empty가 아니므로 이 규칙의 영향을 받지 않는다) */
 .post-content p:empty::before {
   content: "\00a0";
+}
+/* Tiptap 빈 에디터 placeholder. Placeholder 확장이 첫 빈 노드에 .is-editor-empty 클래스와
+   data-placeholder 속성을 부여한다. 실제 문서 내용이 아니라 ::before로만 그려지므로 저장되는
+   HTML엔 포함되지 않고, 한 글자라도 입력되면 클래스가 사라져 자동으로 감춰진다.
+   float:left + height:0 으로 커서 위치/문단 높이에는 영향을 주지 않는다. */
+.post-content .is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--color-neutral-400, #a3a3a3);
+  float: left;
+  height: 0;
+  pointer-events: none;
 }
 /* 구분선. Tailwind preflight가 hr 기본 테두리를 지우므로 직접 지정한다.
    (백엔드 Jsoup Safelist에 hr을 추가해야 저장 시 유지된다) */

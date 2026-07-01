@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useEditor, EditorContent, type Editor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
+import { Placeholder } from '@tiptap/extensions'
 import { imagesApi } from '@/lib/api/images'
 import { ApiError } from '@/lib/api/client'
 
@@ -18,6 +19,8 @@ interface Props {
   content: string
   // 본문이 바뀔 때마다 HTML 문자열을 부모로 올림
   onChange: (html: string) => void
+  // 본문이 비어 있을 때 흐리게 보여줄 안내 문구. 입력이 시작되면 자동으로 사라진다.
+  placeholder?: string
 }
 
 // FileList에서 이미지 파일만 골라 배열로 (붙여넣기/드롭 공용)
@@ -48,7 +51,7 @@ function countImages(editor: Editor): number {
   return count
 }
 
-export default function TiptapEditor({ content, onChange }: Props) {
+export default function TiptapEditor({ content, onChange, placeholder = '내용을 입력하세요.' }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
@@ -70,8 +73,15 @@ export default function TiptapEditor({ content, onChange }: Props) {
         },
       }),
       Image.configure({ inline: false, allowBase64: false }),
+      // 빈 본문일 때 첫 문단에 안내 문구를 얹는다. 문구 자체는 실제 문서 내용이 아니라
+      // data-placeholder 속성 + CSS ::before로만 그려지므로 저장되는 content를 오염시키지 않는다.
+      Placeholder.configure({ placeholder }),
     ],
     content,
+    // 수정 모드에서 저장된 본문을 다시 불러올 때 연속 공백을 유지한다.
+    // true: 공백은 보존하되 줄바꿈은 공백으로 정규화(줄바꿈은 <br>/<p>가 담당하므로,
+    // 과거 저장분의 HTML 정렬용 줄바꿈이 빈 줄로 새어 들어오는 것을 막는다).
+    parseOptions: { preserveWhitespace: true },
     // Next.js 서버 렌더링 시 hydration mismatch 방지 (Tiptap 권장 설정)
     immediatelyRender: false,
     editorProps: {
