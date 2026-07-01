@@ -8,6 +8,9 @@ export const authApi = {
     password: string
     passwordConfirm: string
     nickname: string
+    // 백엔드 SignupRequest의 @AssertTrue 필드. 둘 다 true여야 가입이 통과된다.
+    termsAgreed: boolean
+    privacyAgreed: boolean
   }) => apiClient.post<void>('/api/auth/signup', body),
 
   login: (body: {

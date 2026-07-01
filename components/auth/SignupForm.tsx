@@ -6,12 +6,19 @@ import { useRouter } from 'next/navigation'
 import { authApi } from '@/lib/api/auth'
 import { ApiError } from '@/lib/api/client'
 import { useRedirectIfAuthenticated } from '@/lib/use-auth-guard'
+import RedirectingOverlay from './RedirectingOverlay'
 
-type FieldName = 'email' | 'password' | 'passwordConfirm' | 'nickname'
+type FieldName =
+  | 'email'
+  | 'password'
+  | 'passwordConfirm'
+  | 'nickname'
+  | 'termsAgreed'
+  | 'privacyAgreed'
 type FieldErrors = Partial<Record<FieldName, string>>
 
 const inputClass =
-  'w-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 rounded px-3 py-2 text-sm outline-none focus:border-blue-400 dark:focus:border-blue-500'
+  'w-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 rounded px-3 py-2 text-sm outline-none transition-colors focus:border-blue-400 dark:focus:border-blue-500'
 
 export default function SignupForm() {
   const router = useRouter()
@@ -21,6 +28,9 @@ export default function SignupForm() {
   const [password, setPassword] = useState('')
   const [passwordConfirm, setPasswordConfirm] = useState('')
   const [nickname, setNickname] = useState('')
+  // 약관/개인정보 동의 (백엔드 @AssertTrue 미러링: 둘 다 true여야 가입 가능)
+  const [termsAgreed, setTermsAgreed] = useState(false)
+  const [privacyAgreed, setPrivacyAgreed] = useState(false)
 
   // 필드를 한 번이라도 벗어났는지(blur) 기록. 입력 "도중"에 빨간 에러가 뜨는 걸 막기 위함.
   const [touched, setTouched] = useState<Partial<Record<FieldName, boolean>>>({})
@@ -66,8 +76,24 @@ export default function SignupForm() {
       errs.nickname = '닉네임은 2자 이상 20자 이하여야 합니다.'
     }
 
+    // 필수 동의 항목. 체크 해제 시 제출을 막는다(백엔드 거절 전에 클라이언트에서 선차단).
+    if (!termsAgreed) {
+      errs.termsAgreed = '이용약관에 동의해주세요.'
+    }
+    if (!privacyAgreed) {
+      errs.privacyAgreed = '개인정보처리방침에 동의해주세요.'
+    }
+
     return errs
-  }, [email, password, passwordConfirm, nickname])
+  }, [email, password, passwordConfirm, nickname, termsAgreed, privacyAgreed])
+
+  // "전체 동의" 체크박스 상태. 두 항목이 모두 켜져 있을 때만 켜진 것으로 본다.
+  const allAgreed = termsAgreed && privacyAgreed
+  function toggleAll() {
+    const next = !allAgreed
+    setTermsAgreed(next)
+    setPrivacyAgreed(next)
+  }
 
   // 화면에 실제로 보여줄 에러: 서버 에러 우선, 없으면 (touched 혹은 제출시도된) 클라이언트 에러.
   function visibleError(field: FieldName): string | undefined {
@@ -106,7 +132,7 @@ export default function SignupForm() {
 
     setLoading(true)
     try {
-      await authApi.signup({ email, password, passwordConfirm, nickname })
+      await authApi.signup({ email, password, passwordConfirm, nickname, termsAgreed, privacyAgreed })
       router.push('/login')
     } catch (e) {
       if (e instanceof ApiError) {
@@ -135,11 +161,13 @@ export default function SignupForm() {
   const passwordError = visibleError('password')
   const passwordConfirmError = visibleError('passwordConfirm')
   const nicknameError = visibleError('nickname')
+  const termsError = visibleError('termsAgreed')
+  const privacyError = visibleError('privacyAgreed')
 
-  // 로그인 상태로 진입(다른 탭 로그인 등) 시 리다이렉트 진행 중에는 "회원가입" 문구 대신
-  // 이동 안내만 보여준다. 제목을 폼 안에 둬 blocked 시 제목까지 함께 사라지게 한다.
+  // 로그인 상태로 진입(다른 탭 로그인 등) 시 리다이렉트 진행 중에는 폼 대신
+  // 전체 화면 로딩 오버레이만 잠깐 보여준다(좁은 카드 안 문구 대신 뷰포트 전체 전환).
   if (blocked) {
-    return <p className="py-10 text-center text-sm text-neutral-500 dark:text-neutral-400">이동 중…</p>
+    return <RedirectingOverlay />
   }
 
   return (
@@ -240,12 +268,45 @@ export default function SignupForm() {
         {nicknameError && <p className="text-xs text-red-500 mt-1">{nicknameError}</p>}
       </div>
 
+      {/* 약관·개인정보 동의 영역 */}
+      <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 p-3">
+        {/* 전체 동의: 두 필수 항목을 한 번에 토글한다 */}
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={allAgreed}
+            onChange={toggleAll}
+            className="h-4 w-4 accent-blue-600"
+          />
+          <span className="text-sm font-medium">전체 동의</span>
+        </label>
+
+        <div className="my-2.5 border-t border-neutral-200 dark:border-neutral-800" />
+
+        <AgreementRow
+          checked={termsAgreed}
+          onChange={() => setTermsAgreed(v => !v)}
+          error={termsError}
+          href="/terms"
+          label="이용약관"
+        />
+        <div className="mt-2">
+          <AgreementRow
+            checked={privacyAgreed}
+            onChange={() => setPrivacyAgreed(v => !v)}
+            error={privacyError}
+            href="/privacy"
+            label="개인정보처리방침"
+          />
+        </div>
+      </div>
+
       {apiError && <p className="text-xs text-red-500">{apiError}</p>}
 
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-blue-600 text-white py-2 rounded text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+        className="w-full bg-blue-600 text-white py-2 rounded text-sm font-medium transition-colors hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading ? '가입 중...' : '회원가입'}
       </button>
@@ -258,6 +319,50 @@ export default function SignupForm() {
       </p>
       </form>
     </>
+  )
+}
+
+// 필수 동의 항목 한 줄. 체크박스 + [필수] 배지 + 약관 본문 링크(새 탭).
+// 라벨 텍스트를 클릭하면 체크가 토글되지만, 링크 클릭은 페이지 이동만 하도록 분리한다.
+function AgreementRow({
+  checked,
+  onChange,
+  error,
+  href,
+  label,
+}: {
+  checked: boolean
+  onChange: () => void
+  error?: string
+  href: string
+  label: string
+}) {
+  return (
+    <div>
+      <label className="flex items-center gap-2 cursor-pointer select-none">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={onChange}
+          className="h-4 w-4 accent-blue-600"
+        />
+        <span className="text-sm text-neutral-700 dark:text-neutral-300">
+          <span className="text-red-500">[필수]</span>{' '}
+          <Link
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            // 링크 클릭이 라벨로 버블링돼 체크박스가 토글되는 것을 막는다
+            onClick={e => e.stopPropagation()}
+            className="text-blue-600 dark:text-blue-400 underline underline-offset-2"
+          >
+            {label}
+          </Link>
+          에 동의합니다.
+        </span>
+      </label>
+      {error && <p className="text-xs text-red-500 mt-1 ml-6">{error}</p>}
+    </div>
   )
 }
 

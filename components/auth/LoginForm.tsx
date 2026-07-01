@@ -7,11 +7,15 @@ import { authApi } from '@/lib/api/auth'
 import { ApiError } from '@/lib/api/client'
 import { useAuth } from '@/lib/auth-context'
 import { useRedirectIfAuthenticated } from '@/lib/use-auth-guard'
+import RedirectingOverlay from './RedirectingOverlay'
 
 interface FieldErrors {
   email?: string
   password?: string
 }
+
+const inputClass =
+  'w-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 rounded px-3 py-2 text-sm outline-none transition-colors focus:border-blue-400 dark:focus:border-blue-500'
 
 export default function LoginForm() {
   const router = useRouter()
@@ -61,10 +65,11 @@ export default function LoginForm() {
     }
   }
 
-  // 로그인 직후(또는 다른 탭에서 로그인) 리다이렉트 진행 중에는 "로그인" 문구 대신
-  // 이동 안내만 잠깐 보여준다. 제목을 폼 안에 둬 blocked 시 제목까지 함께 사라지게 한다.
+  // 로그인 직후(또는 다른 탭에서 로그인) 리다이렉트 진행 중에는 폼 대신
+  // 전체 화면 로딩 오버레이만 잠깐 보여준다. 좁은 카드 안에 문구를 넣지 않고
+  // 뷰포트 전체를 덮어, 자연스러운 페이지 전환처럼 보이게 한다.
   if (blocked) {
-    return <p className="py-10 text-center text-sm text-neutral-500 dark:text-neutral-400">이동 중…</p>
+    return <RedirectingOverlay />
   }
 
   return (
@@ -77,7 +82,7 @@ export default function LoginForm() {
           placeholder="이메일"
           value={email}
           onChange={e => setEmail(e.target.value)}
-          className="w-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 rounded px-3 py-2 text-sm outline-none focus:border-blue-400 dark:focus:border-blue-500"
+          className={inputClass}
         />
         {fieldErrors.email && (
           <p className="text-xs text-red-500 mt-1">{fieldErrors.email}</p>
@@ -90,7 +95,7 @@ export default function LoginForm() {
           placeholder="비밀번호"
           value={password}
           onChange={e => setPassword(e.target.value)}
-          className="w-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 rounded px-3 py-2 text-sm outline-none focus:border-blue-400 dark:focus:border-blue-500"
+          className={inputClass}
         />
         {fieldErrors.password && (
           <p className="text-xs text-red-500 mt-1">{fieldErrors.password}</p>
@@ -104,7 +109,7 @@ export default function LoginForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-blue-600 text-white py-2 rounded text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+        className="w-full bg-blue-600 text-white py-2 rounded text-sm font-medium transition-colors hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading ? '로그인 중...' : '로그인'}
       </button>
