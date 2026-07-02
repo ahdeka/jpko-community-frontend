@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
+import ShareModal from './ShareModal'
 
 // 본문과 댓글 사이에 놓이는 하단 액션 바.
 // 좌측: 목록으로 이동 / 우측: 공유, 더보기(신고하기) 메뉴.
@@ -15,7 +16,8 @@ export default function PostActions({
   shareTitle?: string
 }) {
   const [menuOpen, setMenuOpen] = useState(false)
-  const [copied, setCopied] = useState(false)
+  // 공유 모달에 넘길 데이터. null이면 닫힘. (데스크탑에서만 사용)
+  const [share, setShare] = useState<{ url: string; title: string } | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
   // 드롭다운이 열려 있을 때 메뉴 바깥을 클릭하면 닫는다.
@@ -36,13 +38,22 @@ export default function PostActions({
     alert(`${label} 기능은 준비 중입니다.`)
   }
 
-  // 공유하기: 모바일 등 지원 환경에서는 네이티브 공유 시트(Web Share API),
-  // 미지원(대부분 데스크탑)에서는 현재 URL을 클립보드에 복사하고 "복사됨"을 잠깐 표시한다.
+  // 공유하기: 모바일/터치 기기에서는 네이티브 공유 시트(Web Share API),
+  // 데스크탑에서는 우리가 만든 커스텀 공유 모달(ShareModal)을 띄운다.
+  //
+  // 데스크탑(Windows/Chrome 등)에서도 navigator.share가 존재하지만, 호출하면 OS가 그리는
+  // 공유창이 떠서 바깥 클릭으로 닫히지 않는 등 UX가 나쁘다(제어 불가 — OS 소유 UI).
+  // 그래서 "주 입력이 터치인 기기"(pointer: coarse)로만 네이티브 공유를 한정하고,
+  // 데스크탑은 배경 클릭·ESC로 닫히는 자체 모달을 쓴다.
   async function handleShare() {
     const url = window.location.href
     const title = shareTitle ?? document.title
 
-    if (typeof navigator.share === 'function') {
+    const isTouchPrimary =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(pointer: coarse)').matches
+
+    if (typeof navigator.share === 'function' && isTouchPrimary) {
       try {
         await navigator.share({ title, url })
       } catch {
@@ -51,15 +62,8 @@ export default function PostActions({
       return
     }
 
-    // 폴백: 링크 복사
-    try {
-      await navigator.clipboard.writeText(url)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch {
-      // 비보안 컨텍스트·구형 브라우저 등 clipboard 미지원 시 직접 복사 유도
-      window.prompt('아래 링크를 복사하세요', url)
-    }
+    // 데스크탑: 커스텀 공유 모달 열기
+    setShare({ url, title })
   }
 
   const iconButton =
@@ -80,23 +84,16 @@ export default function PostActions({
       </Link>
 
       <div className="flex items-center gap-1">
-        {/* 공유하기: 네이티브 공유 또는 링크 복사 */}
-        <div className="relative">
-          <button type="button" onClick={handleShare} aria-label="공유하기" className={iconButton}>
-            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <circle cx="18" cy="5" r="3" />
-              <circle cx="6" cy="12" r="3" />
-              <circle cx="18" cy="19" r="3" />
-              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-            </svg>
-          </button>
-          {copied && (
-            <span className="absolute right-0 top-full z-10 mt-1 whitespace-nowrap rounded bg-neutral-800 px-2 py-1 text-xs text-white shadow dark:bg-neutral-700">
-              링크 복사됨
-            </span>
-          )}
-        </div>
+        {/* 공유하기: 모바일=네이티브 공유, 데스크탑=커스텀 모달 */}
+        <button type="button" onClick={handleShare} aria-label="공유하기" className={iconButton}>
+          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="18" cy="5" r="3" />
+            <circle cx="6" cy="12" r="3" />
+            <circle cx="18" cy="19" r="3" />
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+          </svg>
+        </button>
 
         {/* 더보기 메뉴 */}
         <div className="relative" ref={menuRef}>
@@ -134,6 +131,14 @@ export default function PostActions({
           )}
         </div>
       </div>
+
+      {/* 데스크탑 공유 모달 (모바일은 네이티브 공유라 열리지 않음) */}
+      <ShareModal
+        open={share !== null}
+        onClose={() => setShare(null)}
+        url={share?.url ?? ''}
+        title={share?.title ?? ''}
+      />
     </div>
   )
 }
