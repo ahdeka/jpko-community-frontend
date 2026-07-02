@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { authApi } from '@/lib/api/auth'
 import { ApiError } from '@/lib/api/client'
+import { useAuth } from '@/lib/auth-context'
 import { useRedirectIfAuthenticated } from '@/lib/use-auth-guard'
 import RedirectingOverlay from './RedirectingOverlay'
 
@@ -22,6 +23,7 @@ const inputClass =
 
 export default function SignupForm() {
   const router = useRouter()
+  const { fetchUser } = useAuth()
   // 이미 로그인한 사용자는 홈으로 돌려보낸다(뒤로가기·주소창 직접 진입 차단)
   const { blocked } = useRedirectIfAuthenticated()
   const [email, setEmail] = useState('')
@@ -132,8 +134,12 @@ export default function SignupForm() {
 
     setLoading(true)
     try {
+      // 회원가입 성공 = 자동 로그인. 백엔드가 인증 쿠키를 내려주므로 로그인 폼과 동일하게
+      // 인증 상태(useAuth)를 갱신한 뒤 홈으로 이동한다.
       await authApi.signup({ email, password, passwordConfirm, nickname, termsAgreed, privacyAgreed })
-      router.push('/login')
+      await fetchUser()
+      // replace로 이동해 히스토리에 회원가입 페이지를 남기지 않는다(뒤로가기 시 폼으로 안 돌아감)
+      router.replace('/')
     } catch (e) {
       if (e instanceof ApiError) {
         // 서버 에러는 message가 아니라 code로 분기해 해당 필드에 매핑한다.
