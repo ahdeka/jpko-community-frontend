@@ -7,6 +7,7 @@ import { usersApi } from '@/lib/api/users'
 import MyPostsTab from '@/components/mypage/MyPostsTab'
 import MyCommentsTab from '@/components/mypage/MyCommentsTab'
 import ProfileSettings from '@/components/mypage/ProfileSettings'
+import EmailVerificationBanner from '@/components/mypage/EmailVerificationBanner'
 
 type Tab = 'posts' | 'comments' | 'profile'
 
@@ -86,7 +87,20 @@ export default function MyPage() {
                 </span>
               )}
             </div>
-            <p className="truncate text-xs text-neutral-400 dark:text-neutral-500">{user.email}</p>
+            <div className="flex items-center gap-1.5">
+              <p className="truncate text-xs text-neutral-400 dark:text-neutral-500">{user.email}</p>
+              {/* 미인증 사용자에게만 이메일 옆 노란 배지 노출 (상세 안내는 아래 배너에서) */}
+              {!user.emailVerified && (
+                <span className="inline-flex shrink-0 items-center gap-0.5 rounded bg-amber-100 px-1 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-500/20 dark:text-amber-400">
+                  <svg className="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                    <line x1="12" y1="9" x2="12" y2="13" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                  </svg>
+                  미인증
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -100,6 +114,9 @@ export default function MyPage() {
           </Link>
         )}
       </div>
+
+      {/* 이메일 미인증 경고 (인증 완료 시 자동으로 숨겨짐) */}
+      <EmailVerificationBanner />
 
       {/* 통계 카드 */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">

@@ -23,6 +23,9 @@ export interface User {
   email: string;
   nickname: string;
   role: 'USER' | 'ADMIN';
+  // 이메일 인증 여부. 미인증이어도 모든 기능은 이용 가능하며, 마이페이지에서 인증을 "권장"만 한다.
+  // 백엔드 /api/auth/me(UserInfoResponse)가 내려주는 값.
+  emailVerified: boolean;
 }
 
 // 카테고리
