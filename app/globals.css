@@ -1,7 +1,18 @@
 @import "tailwindcss";
 
+/* 수동 다크모드 전환.
+   Tailwind v4의 dark: 변형은 기본적으로 시스템 설정(prefers-color-scheme)을 따르는데,
+   아래처럼 재정의해 <html data-theme="dark">가 있을 때만 dark: 유틸리티가 적용되게 한다.
+   초기 테마(첫 페인트 값)는 app/layout.tsx의 인라인 스크립트가
+   localStorage → (없으면) 시스템 설정 순으로 결정해 data-theme 속성에 심는다. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
+}
+/* 다크를 선택하면 스크롤바·폼 컨트롤 등 네이티브 UI 색도 다크로 맞춘다. */
+[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 /* 폼 카드 진입 애니메이션: 살짝 아래에서 떠오르며 페이드인.

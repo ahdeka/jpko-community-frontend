@@ -55,7 +55,23 @@ export default async function RootLayout({
   } catch {}
 
   return (
-    <html lang="ko">
+    // data-theme 기본값은 "light"(SSR 결과). 아래 인라인 스크립트가 첫 페인트 전에
+    // localStorage/시스템 설정에 맞춰 값을 고쳐 넣으므로, 그 불일치는 정상이라
+    // suppressHydrationWarning으로 React 경고를 끈다.
+    <html lang="ko" data-theme="light" suppressHydrationWarning>
+      <head>
+        {/*
+          테마 깜빡임(FOUC) 방지: 브라우저가 HTML을 파싱하는 동안 "동기적으로" 실행되어
+          React 하이드레이션·첫 페인트보다 먼저 data-theme을 확정한다.
+          우선순위: 저장된 사용자 선택(localStorage) > 시스템 설정(prefers-color-scheme).
+          try/catch는 localStorage 접근이 막힌 환경(시크릿 모드 등)에서의 예외를 삼킨다.
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('theme');if(t!=='light'&&t!=='dark'){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body className="flex min-h-screen flex-col bg-neutral-100 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
         <AuthProvider>
           <Header categories={categories} />
