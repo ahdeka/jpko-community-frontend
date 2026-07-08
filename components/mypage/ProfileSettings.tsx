@@ -9,6 +9,9 @@ import { ApiError } from '@/lib/api/client'
 const inputClass =
   'w-full rounded border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-blue-400 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-blue-500'
 
+// 백엔드 UpdateNicknameRequest @Pattern 미러링: 한글(완성형)·영문·숫자만 허용(공백·특수문자 불가).
+const NICKNAME_RE = /^[가-힣a-zA-Z0-9]+$/
+
 // 백엔드 에러 code를 "비밀번호 변경" 화면 맥락에 맞는 메시지로 변환한다.
 // 백엔드는 에러 응답 code에 ErrorCode enum 이름(name())을 그대로 실어 보내므로,
 // 로그인과 메시지를 공유하는 WRONG_PASSWORD라도 code로 구분해 맥락별 안내가 가능하다.
@@ -49,9 +52,13 @@ export default function ProfileSettings() {
     setNickMsg(null)
 
     const trimmed = nickname.trim()
-    // 백엔드와 동일 기준(2~20자)으로 1차 검증
+    // 백엔드와 동일 기준(trim → 2~20자 → 한글·영문·숫자 패턴)으로 1차 검증
     if (trimmed.length < 2 || trimmed.length > 20) {
       setNickMsg({ type: 'error', text: '닉네임은 2~20자 사이여야 합니다.' })
+      return
+    }
+    if (!NICKNAME_RE.test(trimmed)) {
+      setNickMsg({ type: 'error', text: '닉네임은 한글, 영문, 숫자만 사용할 수 있습니다.' })
       return
     }
     if (trimmed === user?.nickname) {

@@ -30,7 +30,7 @@ export default function LoginForm() {
 
   function validate(): FieldErrors {
     const errs: FieldErrors = {}
-    if (!email) errs.email = '이메일을 입력해주세요.'
+    if (!email.trim()) errs.email = '이메일을 입력해주세요.'
     if (!password) errs.password = '비밀번호를 입력해주세요.'
     return errs
   }
@@ -48,7 +48,9 @@ export default function LoginForm() {
 
     setLoading(true)
     try {
-      await authApi.login({ email, password })
+      // 백엔드 LoginRequest가 email을 trim().toLowerCase()로 정규화하므로, 저장된 값과
+      // 확실히 매칭되도록 전송값도 동일하게 맞춘다(대소문자·공백 차이로 인한 로그인 실패 방지).
+      await authApi.login({ email: email.trim().toLowerCase(), password })
       await fetchUser()
       // replace로 이동해 히스토리에 로그인 페이지를 남기지 않는다
       router.replace('/')

@@ -21,6 +21,10 @@ type FieldErrors = Partial<Record<FieldName, string>>
 const inputClass =
   'w-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 rounded px-3 py-2 text-sm outline-none transition-colors focus:border-blue-400 dark:focus:border-blue-500'
 
+// 백엔드 SignupRequest @Pattern 미러링: 한글(완성형)·영문·숫자만 허용(공백·특수문자 불가).
+// 백엔드는 trim() 후 이 패턴을 검사하므로 프론트도 trim한 값 기준으로 검사한다.
+const NICKNAME_RE = /^[가-힣a-zA-Z0-9]+$/
+
 export default function SignupForm() {
   const router = useRouter()
   const { fetchUser } = useAuth()
@@ -52,9 +56,12 @@ export default function SignupForm() {
   const clientErrors = useMemo<FieldErrors>(() => {
     const errs: FieldErrors = {}
 
-    if (!email) {
+    // 백엔드가 email을 trim().toLowerCase()로 정규화하므로, 형식 검증도 trim한 값 기준으로 한다
+    // (앞뒤 공백만 있는 입력이 형식 오류로 오탐되는 것을 방지).
+    const trimmedEmail = email.trim()
+    if (!trimmedEmail) {
       errs.email = '이메일을 입력해주세요.'
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
       errs.email = '이메일 형식이 올바르지 않습니다.'
     }
 
@@ -72,10 +79,14 @@ export default function SignupForm() {
       errs.passwordConfirm = '비밀번호와 비밀번호 확인이 일치하지 않습니다.'
     }
 
-    if (!nickname) {
+    // 백엔드는 nickname을 trim() 후 @Size(2~20) + @Pattern(한글·영문·숫자)로 검사한다. 동일 순서로 미러링.
+    const trimmedNickname = nickname.trim()
+    if (!trimmedNickname) {
       errs.nickname = '닉네임을 입력해주세요.'
-    } else if (nickname.length < 2 || nickname.length > 20) {
+    } else if (trimmedNickname.length < 2 || trimmedNickname.length > 20) {
       errs.nickname = '닉네임은 2자 이상 20자 이하여야 합니다.'
+    } else if (!NICKNAME_RE.test(trimmedNickname)) {
+      errs.nickname = '닉네임은 한글, 영문, 숫자만 사용할 수 있습니다.'
     }
 
     // 필수 동의 항목. 체크 해제 시 제출을 막는다(백엔드 거절 전에 클라이언트에서 선차단).
@@ -136,7 +147,15 @@ export default function SignupForm() {
     try {
       // 회원가입 성공 = 자동 로그인. 백엔드가 인증 쿠키를 내려주므로 로그인 폼과 동일하게
       // 인증 상태(useAuth)를 갱신한 뒤 홈으로 이동한다.
-      await authApi.signup({ email, password, passwordConfirm, nickname, termsAgreed, privacyAgreed })
+      // 백엔드가 어차피 정규화하지만, 전송값도 저장될 값과 일치시켜 혼선을 줄인다.
+      await authApi.signup({
+        email: email.trim().toLowerCase(),
+        password,
+        passwordConfirm,
+        nickname: nickname.trim(),
+        termsAgreed,
+        privacyAgreed,
+      })
       await fetchUser()
       // replace로 이동해 히스토리에 회원가입 페이지를 남기지 않는다(뒤로가기 시 폼으로 안 돌아감)
       router.replace('/')
