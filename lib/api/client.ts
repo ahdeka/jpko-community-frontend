@@ -17,6 +17,10 @@ export class ApiError extends Error {
 
 const REFRESH_ENDPOINT = '/api/auth/refresh'
 
+// 재발급까지 실패한 401(세션 만료)을 브라우저 전역에 알리는 이벤트 이름.
+// client.ts는 React 밖이라 Context를 직접 못 건드리므로, AuthProvider가 이 이벤트를 구독해 로그인 상태를 정리한다.
+export const SESSION_EXPIRED_EVENT = 'auth:session-expired'
+
 // 이 엔드포인트들의 401은 "액세스 토큰 만료"가 아니라 그 자체가 정상적인 인증 응답이므로
 // 재발급 재시도 대상에서 제외한다.
 //  - refresh: 여기서 재발급을 다시 부르면 무한 재귀가 된다(엣지케이스 ①).
@@ -26,23 +30,30 @@ function isAuthFlow(endpoint: string): boolean {
   return endpoint.startsWith('/api/auth/') && !endpoint.startsWith('/api/auth/me')
 }
 
+// refresh 시도 결과를 3가지로 구분한다.
+//  - 'refreshed'   : 재발급 성공 → 원래 요청을 재시도할 수 있다.
+//  - 'unauthorized': refreshToken도 만료/무효(refresh가 4xx 응답) → 세션 만료 확정.
+//  - 'error'       : 네트워크/타임아웃 등으로 refresh 요청 자체가 실패 → 세션 만료로 단정하지 않는다.
+type RefreshResult = 'refreshed' | 'unauthorized' | 'error'
+
 // 진행 중인 refresh 요청을 하나로 공유(single-flight)하기 위한 모듈 레벨 상태.
 // 동시에 여러 요청이 401을 받아도 refresh는 딱 한 번만 나가고, 나머지는 그 결과를 기다린다(엣지케이스 ②).
 // 브라우저에서만 사용하므로 서버(RSC) 요청 간에 공유될 일은 없다.
-let refreshPromise: Promise<boolean> | null = null
+let refreshPromise: Promise<RefreshResult> | null = null
 
-// refreshToken 쿠키로 새 accessToken 재발급을 시도한다. 성공 여부만 반환.
+// refreshToken 쿠키로 새 accessToken 재발급을 시도한다.
 // 반드시 raw fetch로 호출한다 — request()를 거치지 않으므로 refresh가 401이어도
 // 다시 refresh를 부르는 재귀가 원천적으로 불가능하다(엣지케이스 ①).
-function refreshAccessToken(): Promise<boolean> {
+function refreshAccessToken(): Promise<RefreshResult> {
   if (!refreshPromise) {
     refreshPromise = fetch(`${BASE_URL}${REFRESH_ENDPOINT}`, {
       method: 'POST',
       credentials: 'include',
       signal: AbortSignal.timeout(10_000),
     })
-      .then(res => res.ok)
-      .catch(() => false)
+      // 응답을 받았으면 성공(2xx)/인증거부(그 외)를 구분한다. 응답 자체가 없으면(throw) 네트워크 오류다.
+      .then((res): RefreshResult => (res.ok ? 'refreshed' : 'unauthorized'))
+      .catch((): RefreshResult => 'error')
       // 성공이든 실패든 상태를 비워, 다음 401은 새 refresh를 시작할 수 있게 한다.
       .finally(() => { refreshPromise = null })
   }
@@ -84,14 +95,19 @@ async function request<T>(
       typeof window !== 'undefined' &&
       !isAuthFlow(endpoint)
     ) {
-      const refreshed = await refreshAccessToken()
-      if (refreshed) {
+      const result = await refreshAccessToken()
+      if (result === 'refreshed') {
         // 재발급 성공 → 브라우저 accessToken 쿠키가 갱신된 상태. 같은 요청을 딱 한 번 재시도.
         // (body가 string/FormData라 동일 옵션으로 재전송해도 안전하다.)
         return request<T>(endpoint, options, false)
       }
-      // 재발급 실패(refreshToken도 만료/무효) → 아래로 떨어져 401을 그대로 던진다.
-      // 호출부(PostForm 등)가 이 401을 받아 /login으로 보내는 로그아웃 처리를 하게 된다.
+      if (result === 'unauthorized') {
+        // refreshToken도 만료/무효 → 세션 만료 확정. 전역에 알려, 살아있던 로그인 상태(Context)를
+        // 즉시 정리하게 한다. 이 처리가 없으면 "쿠키는 사라졌는데 헤더는 로그인 상태"인 불일치가 남는다.
+        window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT))
+      }
+      // 'error'(네트워크/타임아웃)는 세션 만료로 단정하지 않는다 — 일시적 장애로 로그아웃되는 것을 막는다.
+      // 어느 경우든 아래로 떨어져 원래의 401 에러를 그대로 던지므로, 호출부의 개별 처리도 그대로 동작한다.
     }
 
     let message = '요청에 실패했습니다.'
