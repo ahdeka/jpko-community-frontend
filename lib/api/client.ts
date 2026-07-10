@@ -150,9 +150,13 @@ export const apiClient = {
       body: body !== undefined ? JSON.stringify(body) : undefined,
     }),
 
-  delete: <T>(endpoint: string, options?: RequestInit) =>
+  // DELETE도 body를 실을 수 있게 한다(회원 탈퇴처럼 서버가 @RequestBody로 비밀번호를 요구하는 경우).
+  // 기존 호출부는 모두 endpoint만 넘기므로 body 인자 추가는 하위 호환된다.
+  // body가 있으면 request()가 Content-Type: application/json을 자동으로 붙인다.
+  delete: <T>(endpoint: string, body?: unknown, options?: RequestInit) =>
     request<T>(endpoint, {
       ...options,
       method: 'DELETE',
+      body: body !== undefined ? JSON.stringify(body) : undefined,
     }),
 }

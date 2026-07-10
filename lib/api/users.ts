@@ -26,4 +26,11 @@ export const usersApi = {
     newPassword: string
     newPasswordConfirm: string
   }) => apiClient.patch<void>('/api/users/me/password', body),
+
+  // 회원 탈퇴. 본인 확인용으로 현재 비밀번호를 함께 보낸다.
+  // 성공 시 백엔드가 응답에서 accessToken·refreshToken 쿠키를 삭제하므로
+  // 프론트는 클라이언트 로그인 상태만 비워주면 된다.
+  // 실패 code: WRONG_PASSWORD(비밀번호 불일치), ALREADY_WITHDRAWN(이미 탈퇴).
+  withdraw: (password: string) =>
+    apiClient.delete<void>('/api/users/me', { password }),
 }

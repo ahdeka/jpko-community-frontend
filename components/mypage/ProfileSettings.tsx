@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { usersApi } from '@/lib/api/users'
 import { ApiError } from '@/lib/api/client'
+import WithdrawModal from '@/components/mypage/WithdrawModal'
 
 // 입력 공통 스타일 (게시글 폼과 동일 톤)
 const inputClass =
@@ -81,6 +82,9 @@ export default function ProfileSettings() {
       setNickLoading(false)
     }
   }
+
+  // ===== 회원 탈퇴 =====
+  const [withdrawOpen, setWithdrawOpen] = useState(false)
 
   // ===== 비밀번호 변경 =====
   const [currentPassword, setCurrentPassword] = useState('')
@@ -193,6 +197,26 @@ export default function ProfileSettings() {
           </button>
         </form>
       </section>
+
+      <div className="border-t border-neutral-100 dark:border-neutral-800" />
+
+      {/* 회원 탈퇴 (위험 구역) — 되돌릴 수 없는 작업이라 시각적으로 구분하고,
+          실제 확인/처리는 모달에서만 진행한다. */}
+      <section>
+        <h3 className="mb-1 text-sm font-bold text-red-600 dark:text-red-500">회원 탈퇴</h3>
+        <p className="mb-3 text-xs text-neutral-500 dark:text-neutral-400">
+          탈퇴 시 계정이 비활성화되며 되돌릴 수 없습니다.
+        </p>
+        <button
+          type="button"
+          onClick={() => setWithdrawOpen(true)}
+          className="rounded-md border border-red-300 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-500/40 dark:text-red-500 dark:hover:bg-red-500/10"
+        >
+          회원 탈퇴
+        </button>
+      </section>
+
+      <WithdrawModal open={withdrawOpen} onClose={() => setWithdrawOpen(false)} />
     </div>
   )
 }

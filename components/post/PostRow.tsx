@@ -3,6 +3,7 @@ import { PostSummary } from '@/types'
 import { formatRelativeTime } from '@/lib/format'
 import { categoryShortLabel } from '@/lib/category'
 import ImageBadge from '@/components/common/ImageBadge'
+import AuthorName from '@/components/common/AuthorName'
 
 const CATEGORY_BADGE_STYLE = 'bg-neutral-200 text-neutral-600 dark:bg-neutral-700/40 dark:text-neutral-300'
 
@@ -94,7 +95,7 @@ export default function PostRow({
       <li className={liClass}>
         <Link href={href} className="flex items-center justify-between gap-3 py-2.5">
           {titleRow}
-          <span className="shrink-0 text-xs text-neutral-500">{post.author}</span>
+          <AuthorName author={post.author} className="shrink-0 text-xs text-neutral-500" />
         </Link>
       </li>
     )
@@ -110,12 +111,12 @@ export default function PostRow({
             {/* 모바일 전용 메타: 좋아요(주황)·시간 + 작성자 (데스크탑은 컬럼으로 분리) */}
             <div className="mt-1 flex items-center gap-2 text-xs text-neutral-500 md:hidden">
               <LikeTimeMeta likeCount={post.likeCount} createdAt={post.createdAt} />
-              <span className="ml-auto truncate pl-2">{post.author}</span>
+              <AuthorName author={post.author} className="ml-auto truncate pl-2" />
             </div>
           </div>
 
           {/* 데스크탑 전용 컬럼: 글쓴이 · 작성일 · 조회 · 추천 */}
-          <span className="hidden md:block truncate text-center text-xs text-neutral-500">{post.author}</span>
+          <AuthorName author={post.author} className="hidden md:block truncate text-center text-xs text-neutral-500" />
           <span className="hidden md:block text-center text-xs text-neutral-400">{formatRelativeTime(post.createdAt)}</span>
           <span className="hidden md:block text-center text-xs text-neutral-500 tabular-nums">{post.viewCount}</span>
           <span className="hidden md:block text-center text-xs font-medium text-orange-400 tabular-nums">{post.likeCount}</span>
@@ -134,7 +135,7 @@ export default function PostRow({
             <LikeTimeMeta likeCount={post.likeCount} createdAt={post.createdAt} />
           </div>
         </div>
-        <span className="shrink-0 text-xs text-neutral-500">{post.author}</span>
+        <AuthorName author={post.author} className="shrink-0 text-xs text-neutral-500" />
       </Link>
     </li>
   )

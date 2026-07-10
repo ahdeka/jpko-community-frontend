@@ -2,6 +2,7 @@ import type { NoticeDetail as NoticeDetailData } from '@/types'
 import { formatDate } from '@/lib/format'
 import NoticeBadges from './NoticeBadges'
 import PostActions from '@/components/post/PostActions'
+import AuthorName from '@/components/common/AuthorName'
 
 interface Props {
   notice: NoticeDetailData
@@ -17,7 +18,7 @@ export default function NoticeDetail({ notice }: Props) {
         </div>
         <h1 className="mb-3 text-xl font-bold">{notice.title}</h1>
         <div className="flex items-center gap-3 text-sm text-neutral-500 dark:text-neutral-400">
-          <span>{notice.author}</span>
+          <AuthorName author={notice.author} />
           <span>{formatDate(notice.createdAt)}</span>
           <span>조회 {notice.viewCount}</span>
         </div>

@@ -4,6 +4,7 @@ import { formatDateTime } from '@/lib/format'
 import LikeButtons from './LikeButtons'
 import PostActions from './PostActions'
 import DeletePostButton from './DeletePostButton'
+import AuthorName from '@/components/common/AuthorName'
 
 interface Props {
   post: PostDetailData
@@ -19,7 +20,7 @@ export default function PostDetail({ post }: Props) {
         <h1 className="text-xl font-bold mb-3">{post.title}</h1>
         <div className="flex items-center justify-between text-sm text-gray-500 dark:text-neutral-400">
           <div className="flex items-center gap-3">
-            <span>{post.author}</span>
+            <AuthorName author={post.author} />
             <span>{formatDateTime(post.createdAt)}</span>
             <span>조회 {post.viewCount}</span>
           </div>

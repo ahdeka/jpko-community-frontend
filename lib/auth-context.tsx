@@ -11,6 +11,10 @@ interface AuthContextType {
   isLoading: boolean
   fetchUser: () => Promise<void>
   logout: () => Promise<void>
+  // 서버가 이미 세션을 종료한 뒤(회원 탈퇴 등) 클라이언트 로그인 상태만 즉시 비운다.
+  // logout()과 달리 /api/auth/logout을 호출하지 않는다 — 탈퇴 응답이 이미 쿠키를 지웠으므로
+  // 추가 호출은 불필요하고, 인증 없는 상태라 401만 유발할 수 있다.
+  clearAuth: () => void
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
@@ -54,8 +58,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }
 
+  const clearAuth = useCallback(() => {
+    setUser(null)
+  }, [])
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, fetchUser, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, fetchUser, logout, clearAuth }}>
       {children}
     </AuthContext.Provider>
   )
