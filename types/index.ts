@@ -17,15 +17,44 @@ export interface PageResponse<T> {
   size: number;
 }
 
+// 유저 권한(role) — 접근 제어 축. 백엔드 UserRole enum과 1:1.
+export type UserRole = 'USER' | 'ADMIN';
+
+// 계정 상태(status) — 백엔드 UserStatus enum과 1:1.
+//  ACTIVE: 정상 / SUSPENDED: 관리자 정지 / DELETED: 탈퇴(익명화)
+// 관리자 API로는 ACTIVE·SUSPENDED만 지정 가능하며, DELETED는 회원 탈퇴로만 진입한다(읽기 전용).
+export type UserStatus = 'ACTIVE' | 'SUSPENDED' | 'DELETED';
+
+// 유저 등급(grade) — role과 무관한 별개의 뱃지성 축(사무라이 계급 테마).
+// 관리자가 수동 부여하며, 낮은 순 → 높은 순으로 나열한다.
+// 백엔드 UserGrade enum과 1:1이며, SHOGUN(쇼군)은 운영진(ADMIN) 전용이다.
+export type UserGrade = 'ASHIGARU' | 'SAMURAI' | 'HATAMOTO' | 'DAIMYO' | 'SHOGUN';
+
 // 유저
 export interface User {
   id: number;
   email: string;
   nickname: string;
-  role: 'USER' | 'ADMIN';
+  role: UserRole;
   // 이메일 인증 여부. 미인증이어도 모든 기능은 이용 가능하며, 마이페이지에서 인증을 "권장"만 한다.
   // 백엔드 /api/auth/me(UserInfoResponse)가 내려주는 값.
   emailVerified: boolean;
+  // 유저 등급. 백엔드는 enum 상수("ASHIGARU" 등)로만 내려주며,
+  // 한글 이름·설명·색상은 프론트(lib/grade.ts)가 매핑한다.
+  grade: UserGrade;
+}
+
+// 관리자 회원 관리 목록 항목 (백엔드 AdminUserResponse와 1:1)
+export interface AdminUser {
+  id: number;
+  email: string;
+  nickname: string;
+  role: UserRole;
+  status: UserStatus;
+  grade: UserGrade;
+  displayGradeName: string;  // 등급 한글 표기 (예: "아시가루") — 백엔드 enum 표시명
+  emailVerified: boolean;
+  createdAt: string;
 }
 
 // 카테고리

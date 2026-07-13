@@ -65,6 +65,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         <nav className="flex gap-1 overflow-x-auto sm:flex-col sm:gap-0.5">
           {navItem('/admin', '대시보드', true)}
           {navItem('/admin/notices', '공지사항 관리')}
+          {navItem('/admin/users', '회원 관리')}
         </nav>
       </aside>
 

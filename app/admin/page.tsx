@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useAuth } from '@/lib/auth-context'
 import { noticesApi } from '@/lib/api/notices'
 import { postsApi } from '@/lib/api/posts'
+import { adminApi } from '@/lib/api/admin'
 import { formatDate } from '@/lib/format'
 import type { NoticeSummary } from '@/types'
 
@@ -34,6 +35,7 @@ export default function AdminDashboard() {
   // 실제 수치: 공지 총 개수 / 게시글 총 개수 (공개 목록 응답의 totalElements 활용)
   const [noticeCount, setNoticeCount] = useState<number | null>(null)
   const [postCount, setPostCount] = useState<number | null>(null)
+  const [userCount, setUserCount] = useState<number | null>(null)
   const [recentNotices, setRecentNotices] = useState<NoticeSummary[]>([])
 
   useEffect(() => {
@@ -51,6 +53,11 @@ export default function AdminDashboard() {
       .then(res => { if (!cancelled) setPostCount(res.data?.posts?.totalElements ?? 0) })
       .catch(() => { if (!cancelled) setPostCount(0) })
 
+    // 전체 회원 수: 관리자 회원 목록의 totalElements만 활용(1건만 받아 오버헤드 최소화)
+    adminApi.getUsers('', 0, 1)
+      .then(res => { if (!cancelled) setUserCount(res.data?.totalElements ?? 0) })
+      .catch(() => { if (!cancelled) setUserCount(0) })
+
     return () => { cancelled = true }
   }, [])
 
@@ -67,11 +74,11 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard label="전체 공지" value={noticeCount} accent="text-orange-500" />
         <StatCard label="전체 게시글" value={postCount} />
-        <StatCard label="전체 회원" value={null} />
+        <StatCard label="전체 회원" value={userCount} />
         <StatCard label="신고 접수" value={null} />
       </div>
       <p className="-mt-3 text-[11px] text-neutral-400 dark:text-neutral-500">
-        ※ 회원·신고 통계는 백엔드 준비 후 연동 예정입니다.
+        ※ 신고 통계는 백엔드 준비 후 연동 예정입니다.
       </p>
 
       {/* 빠른 작업 */}
@@ -105,6 +112,21 @@ export default function AdminDashboard() {
             <div>
               <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">공지사항 관리</p>
               <p className="text-xs text-neutral-400">목록·수정·삭제</p>
+            </div>
+          </Link>
+
+          <Link
+            href="/admin/users"
+            className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-4 hover:border-orange-300 hover:bg-orange-50/40 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-orange-500/40 dark:hover:bg-orange-500/5"
+          >
+            <span className="flex h-9 w-9 items-center justify-center rounded-md bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-300">
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">회원 관리</p>
+              <p className="text-xs text-neutral-400">등급·상태 변경</p>
             </div>
           </Link>
         </div>

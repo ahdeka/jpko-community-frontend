@@ -8,6 +8,8 @@ import MyPostsTab from '@/components/mypage/MyPostsTab'
 import MyCommentsTab from '@/components/mypage/MyCommentsTab'
 import ProfileSettings from '@/components/mypage/ProfileSettings'
 import EmailVerificationBanner from '@/components/mypage/EmailVerificationBanner'
+import GradeInfoPopover from '@/components/common/GradeInfoPopover'
+import { gradeMeta } from '@/lib/grade'
 
 type Tab = 'posts' | 'comments' | 'profile'
 
@@ -122,12 +124,20 @@ export default function MyPage() {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <StatCard label="내가 쓴 글" value={postCount} accent="text-neutral-900 dark:text-white" />
         <StatCard label="내가 쓴 댓글" value={commentCount} accent="text-neutral-900 dark:text-white" />
-        {/* 등급 카드는 숫자가 아닌 텍스트라 별도로 렌더 */}
+        {/* 등급 카드: "회원 등급" 라벨 우측에 설명(?) 팝오버, 본문엔 등급명 + 간단한 계층 표기 */}
         <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-800/50">
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">회원 등급</p>
-          <p className={`mt-1 text-2xl font-bold ${isAdmin ? 'text-orange-500' : 'text-neutral-900 dark:text-white'}`}>
-            {isAdmin ? '관리자' : '일반회원'}
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">회원 등급</p>
+            <GradeInfoPopover grade={user.grade} />
+          </div>
+          <div className="mt-1 flex items-baseline gap-1.5">
+            <span className="text-2xl font-bold text-neutral-900 dark:text-white">
+              {gradeMeta(user.grade).label}
+            </span>
+            <span className="text-xs text-neutral-400 dark:text-neutral-500">
+              {gradeMeta(user.grade).tier}
+            </span>
+          </div>
         </div>
       </div>
 
