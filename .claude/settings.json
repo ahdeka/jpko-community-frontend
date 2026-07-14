@@ -8,7 +8,9 @@
       "Bash(echo \"EXIT:$?\")",
       "Bash(grep -rniE \"ipAddress|ip_address|private String ip|maskedIp|ip마스\" src/main/java/com/jpkocommunity/domain/post/entity/Post.java src/main/java/com/jpkocommunity/domain/comment/entity/Comment.java)",
       "Bash(grep -rniE \"@Scheduled|@EnableScheduling|cron|deleteOlderThan|6.?개월|retention|purge|cleanup\" src/main/java)",
-      "Bash(grep -rniE \"ip|expir|createdAt\" src/main/java/com/jpkocommunity/domain/auth/entity/RefreshToken.java)"
+      "Bash(grep -rniE \"ip|expir|createdAt\" src/main/java/com/jpkocommunity/domain/auth/entity/RefreshToken.java)",
+      "Bash(./gradlew compileJava -q)",
+      "Bash(echo \"exit: $?\")"
     ]
   }
 }

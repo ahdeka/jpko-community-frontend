@@ -163,3 +163,25 @@ export interface LikeStatus {
   dislikeCount: number;
   myType: 'LIKE' | 'DISLIKE' | null;
 }
+
+// 알림 종류 — 백엔드 NotificationType enum과 1:1.
+//  COMMENT: 내 게시글에 댓글 / REPLY: 내 댓글에 답글 / LIKE: 내 게시글에 좋아요
+export type NotificationType = 'COMMENT' | 'REPLY' | 'LIKE';
+
+// 알림 (백엔드 NotificationResponse record와 1:1)
+// ⚠️ 키 이름 주의: 백엔드 record의 boolean 컴포넌트는 "선언명 그대로" 직렬화된다.
+//    (PostDetailResponse의 isOwner 컴포넌트가 JSON "isOwner"로 나가는 것과 동일 규칙)
+//    그래서 여기서는 anonymous/read가 아니라 isAnonymous/isRead가 정확한 키다.
+export interface Notification {
+  id: number;
+  type: NotificationType;
+  isAnonymous: boolean;       // 익명 댓글/답글로 생긴 알림인지
+  senderName: string | null;  // 익명이면 백엔드가 null로 내려줌
+  postId: number;             // 클릭 시 이동할 원본 게시글
+  // 알림 대상 게시글 제목. 백엔드 NotificationResponse에 postTitle이 추가되면 채워진다.
+  // 아직 배포 전이거나 값이 없으면 undefined/null일 수 있어, 렌더 시 "회원님의 게시글"로 폴백한다.
+  postTitle?: string | null;
+  commentId: number | null;   // 댓글/답글 알림이면 해당 댓글 id, 좋아요면 null
+  isRead: boolean;
+  createdAt: string;
+}

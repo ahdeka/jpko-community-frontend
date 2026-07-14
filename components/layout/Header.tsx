@@ -5,6 +5,7 @@ import Form from 'next/form'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import UserMenu from './UserMenu'
+import NotificationBell from './NotificationBell'
 import type { Category } from '@/types'
 
 interface Props {
@@ -72,7 +73,10 @@ export default function Header({ categories }: Props) {
               // 깜빡이는 것을 막는다. (로그아웃 사용자도 동일 자리에 부드럽게 로그인 아이콘이 들어옴)
               <div className="h-8 w-8 animate-pulse rounded-full bg-neutral-200 dark:bg-neutral-700" aria-hidden="true" />
             ) : user ? (
-              <UserMenu user={user} onLogout={handleLogout} />
+              <>
+                <NotificationBell />
+                <UserMenu user={user} onLogout={handleLogout} />
+              </>
             ) : (
               <Link
                 href="/login"
