@@ -10,7 +10,13 @@
       "Bash(grep -rniE \"@Scheduled|@EnableScheduling|cron|deleteOlderThan|6.?개월|retention|purge|cleanup\" src/main/java)",
       "Bash(grep -rniE \"ip|expir|createdAt\" src/main/java/com/jpkocommunity/domain/auth/entity/RefreshToken.java)",
       "Bash(./gradlew compileJava -q)",
-      "Bash(echo \"exit: $?\")"
+      "Bash(echo \"exit: $?\")",
+      "Skill(artifact-design)",
+      "Skill(artifact-design:*)",
+      "Bash(findstr \":8080\")",
+      "Bash(curl -s -m 5 \"http://localhost:8080/api/posts?page=0&size=2\")",
+      "Bash(curl -s -m 8 \"http://localhost:8080/api/posts?page=0&size=3\")",
+      "Bash(git restore *)"
     ]
   }
 }
