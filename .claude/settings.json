@@ -16,7 +16,8 @@
       "Bash(findstr \":8080\")",
       "Bash(curl -s -m 5 \"http://localhost:8080/api/posts?page=0&size=2\")",
       "Bash(curl -s -m 8 \"http://localhost:8080/api/posts?page=0&size=3\")",
-      "Bash(git restore *)"
+      "Bash(git restore *)",
+      "PowerShell(Set-Location \"c:\\\\Users\\\\3031426\\\\Desktop\\\\Github\\\\jpko-community\"; .\\\\gradlew.bat compileJava -q 2>&1 | Select-Object -Last 25; \"exit: $LASTEXITCODE\")"
     ]
   }
 }

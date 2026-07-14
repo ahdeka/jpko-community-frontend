@@ -86,6 +86,7 @@ export default function CommentItem({ comment, postId, isReply = false, rootId }
           <div className="flex items-center justify-between bg-gray-100 px-3 py-2 dark:bg-neutral-800/60">
             <AuthorName
               author={comment.author}
+              isAdmin={comment.adminAuthor}
               className="text-sm font-semibold text-gray-800 dark:text-neutral-100"
             />
             <span className="text-xs text-gray-400 dark:text-neutral-500">{formatRelativeTime(comment.createdAt)}</span>

@@ -20,7 +20,7 @@ export default function PostDetail({ post }: Props) {
         <h1 className="text-xl font-bold mb-3">{post.title}</h1>
         <div className="flex items-center justify-between text-sm text-gray-500 dark:text-neutral-400">
           <div className="flex items-center gap-3">
-            <AuthorName author={post.author} />
+            <AuthorName author={post.author} isAdmin={post.adminAuthor} />
             <span>{formatDateTime(post.createdAt)}</span>
             <span>조회 {post.viewCount}</span>
           </div>

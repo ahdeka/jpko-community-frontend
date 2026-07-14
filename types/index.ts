@@ -71,6 +71,9 @@ export interface PostSummary {
   categoryName: string;
   title: string;
   author: string;
+  // 작성자가 운영진(ADMIN)인지 — 닉네임 옆 "운영진" 뱃지 표시용.
+  // 백엔드는 익명 글이면 false로 내려준다(운영진이 익명으로 써도 신원 노출 방지).
+  adminAuthor: boolean;
   anonymous: boolean;
   viewCount: number;
   commentCount: number;
@@ -149,6 +152,8 @@ export interface PostDetail extends PostSummary {
 export interface Comment {
   id: number;
   author: string;
+  // 작성자가 운영진(ADMIN)인지. 백엔드는 삭제·익명 댓글이면 false로 내려준다.
+  adminAuthor: boolean;
   anonymous: boolean;
   isOwner: boolean;
   content: string;
