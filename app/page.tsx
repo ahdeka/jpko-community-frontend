@@ -10,6 +10,11 @@ import type { Category, NoticeSummary, PostSummary } from '@/types'
 
 const RECENT_POSTS_LIMIT = 6
 
+// 메인페이지 한정: 자유게시판을 최신글 바로 아래(카테고리 섹션 맨 앞)에 노출한다.
+// DB의 display_order(자유게시판=6)는 게시판 목록·헤더 등에서 그대로 쓰이므로 건드리지 않고,
+// 메인페이지 렌더 순서만 이 slug를 최우선으로 끌어올린다.
+const PRIORITY_CATEGORY_SLUG = 'free'
+
 // 메인 페이지를 매 요청마다 동적 렌더한다(/posts 목록 페이지와 동일).
 // - 캐시 옵션 없는 fetch(게시글 목록)는 no-store가 되어 매번 최신 글을 받는다.
 // - revalidate를 지정한 fetch(카테고리 3600)는 그대로 캐시되어 불필요한 호출을 막는다.
@@ -27,7 +32,14 @@ export default async function Home() {
 
   const categories: Category[] = (categoriesRes?.data ?? [])
     .slice()
-    .sort((a, b) => a.displayOrder - b.displayOrder)
+    .sort((a, b) => {
+      // 자유게시판을 맨 앞으로. slug는 unique라 둘 다 우선순위일 수 없다.
+      const aPriority = a.slug === PRIORITY_CATEGORY_SLUG
+      const bPriority = b.slug === PRIORITY_CATEGORY_SLUG
+      if (aPriority !== bPriority) return aPriority ? -1 : 1
+      // 그 외에는 기존 displayOrder 오름차순 유지.
+      return a.displayOrder - b.displayOrder
+    })
 
   const featuredNotices: NoticeSummary[] = featuredRes?.data ?? []
   const recentPosts: PostSummary[] = postListRes?.data?.posts?.content ?? []
