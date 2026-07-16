@@ -169,14 +169,13 @@ export default function AdminReportsPage() {
     }
   }
 
-  const filterButton = (active: boolean) =>
-    active
-      ? 'rounded-md bg-orange-500 px-2.5 py-1 text-xs font-medium text-white'
-      : 'rounded-md px-2.5 py-1 text-xs text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800'
+  // 필터 select 공통 스타일. 회원 관리 페이지의 등급 select와 동일한 톤을 쓴다.
+  const filterSelect =
+    'rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-xs text-neutral-700 outline-none focus:border-orange-400 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:focus:border-orange-500'
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-bold">
           신고 관리
           {!loading && !error && (
@@ -185,48 +184,36 @@ export default function AdminReportsPage() {
             </span>
           )}
         </h1>
-        <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-          같은 대상에 접수된 신고는 하나로 묶어 보여줍니다. 대상을 삭제하면 조치 완료로 처리됩니다.
-        </p>
-      </div>
 
-      {/* 필터 */}
-      <div className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-3 dark:border-neutral-800 sm:flex-row sm:items-center sm:gap-6">
-        <div className="flex items-center gap-1">
-          <span className="mr-1 text-[11px] font-medium text-neutral-400">상태</span>
-          <button type="button" className={filterButton(status === undefined)} onClick={() => changeFilter({ status: undefined })}>
-            전체
-          </button>
-          {REPORT_STATUSES.map(s => (
-            <button key={s.value} type="button" className={filterButton(status === s.value)} onClick={() => changeFilter({ status: s.value })}>
-              {s.label}
-            </button>
-          ))}
-        </div>
+        {/*
+          필터. 버튼 나열은 라벨과 값이 뒤섞여 읽기 어려워서 드롭다운으로 둔다.
+          선택하지 않은 상태('')는 undefined로 바꿔 백엔드에 파라미터를 아예 보내지 않는다(=전체).
+        */}
+        <div className="flex items-center gap-2">
+          <select
+            aria-label="처리 상태 필터"
+            className={filterSelect}
+            value={status ?? ''}
+            onChange={e => changeFilter({ status: (e.target.value || undefined) as ReportStatus | undefined })}
+          >
+            <option value="">모든 상태</option>
+            {REPORT_STATUSES.map(s => (
+              <option key={s.value} value={s.value}>{s.label}</option>
+            ))}
+          </select>
 
-        <div className="flex items-center gap-1">
-          <span className="mr-1 text-[11px] font-medium text-neutral-400">종류</span>
-          <button type="button" className={filterButton(targetType === undefined)} onClick={() => changeFilter({ targetType: undefined })}>
-            전체
-          </button>
-          <button type="button" className={filterButton(targetType === 'POST')} onClick={() => changeFilter({ targetType: 'POST' })}>
-            게시글
-          </button>
-          <button type="button" className={filterButton(targetType === 'COMMENT')} onClick={() => changeFilter({ targetType: 'COMMENT' })}>
-            댓글
-          </button>
+          <select
+            aria-label="신고 종류 필터"
+            className={filterSelect}
+            value={targetType ?? ''}
+            onChange={e => changeFilter({ targetType: (e.target.value || undefined) as ReportTargetType | undefined })}
+          >
+            <option value="">모든 종류</option>
+            <option value="POST">게시글</option>
+            <option value="COMMENT">댓글</option>
+          </select>
         </div>
       </div>
-
-      {/*
-        상태 필터가 걸리면 백엔드가 그 상태의 신고만 남긴 뒤 집계하므로,
-        신고 건수가 "전체 건수"가 아니라 "해당 상태의 건수"가 된다. 숫자를 오해하지 않도록 알린다.
-      */}
-      {status !== undefined && !loading && !error && reports.length > 0 && (
-        <p className="-mt-2 text-[11px] text-neutral-400 dark:text-neutral-500">
-          ※ 상태 필터가 적용되어, 신고 건수는 &lsquo;{statusMeta(status).label}&rsquo; 상태인 신고만 센 값입니다.
-        </p>
-      )}
 
       {loading ? (
         <p className="py-12 text-center text-sm text-neutral-400">불러오는 중…</p>
@@ -295,11 +282,19 @@ export default function AdminReportsPage() {
                     </p>
                   </div>
 
-                  {/* 신고 건수 + 상세 토글 */}
+                  {/* 신고 건수 + 상세 토글.
+                      상태 필터가 걸리면 백엔드가 그 상태의 신고만 남긴 뒤 COUNT하므로 건수의 의미가
+                      "전체"에서 "그 상태의 건수"로 바뀐다. 화면에 상시 안내를 두면 시끄러워서
+                      숫자에 마우스를 올렸을 때만 알려준다. */}
                   <button
                     type="button"
                     onClick={() => toggleExpand(report)}
                     aria-expanded={isExpanded}
+                    title={
+                      status
+                        ? `'${statusMeta(status).label}' 상태인 신고 ${report.reportCount}건 (필터 기준)`
+                        : `접수된 신고 ${report.reportCount}건`
+                    }
                     className="flex shrink-0 items-center gap-1 self-start rounded px-2 py-1 text-xs text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800 sm:self-auto"
                   >
                     <span className="font-semibold text-red-500">{report.reportCount}</span>건

@@ -68,7 +68,12 @@
       "Bash(curl -s -b u.jar -X POST http://localhost:8080/api/reports -H 'Content-Type: application/json' -d '{\"targetType\":\"COMMENT\",\"targetId\":__TRACKED_VAR__,\"reason\":\"ABUSE\"}')",
       "Bash(curl -s -b u.jar \"http://localhost:8080/api/users/me/reports?page=0&size=1\")",
       "Bash(cat)",
-      "Bash(rm -f /tmp/cleanup2.sql /tmp/cleanup-ids.txt /tmp/u.jar /tmp/a.jar)"
+      "Bash(rm -f /tmp/cleanup2.sql /tmp/cleanup-ids.txt /tmp/u.jar /tmp/a.jar)",
+      "Bash(npx tsc *)",
+      "Bash(echo \"TSC EXIT: $?\")",
+      "Bash(npx next *)",
+      "Bash(curl -s -m 10 -o /dev/null -w \"/admin/reports → HTTP %{http_code}\\\\n\" \"http://localhost:3000/admin/reports\")",
+      "Bash(curl -s -m 10 \"http://localhost:3000/admin/reports\")"
     ],
     "additionalDirectories": [
       "\\tmp"
