@@ -73,7 +73,9 @@
       "Bash(echo \"TSC EXIT: $?\")",
       "Bash(npx next *)",
       "Bash(curl -s -m 10 -o /dev/null -w \"/admin/reports → HTTP %{http_code}\\\\n\" \"http://localhost:3000/admin/reports\")",
-      "Bash(curl -s -m 10 \"http://localhost:3000/admin/reports\")"
+      "Bash(curl -s -m 10 \"http://localhost:3000/admin/reports\")",
+      "WebFetch(domain:jpkocommunity.site)",
+      "Bash(grep -n -A 40 \"^### \\\\`alternates\\\\`\" generate-metadata.md)"
     ],
     "additionalDirectories": [
       "\\tmp"

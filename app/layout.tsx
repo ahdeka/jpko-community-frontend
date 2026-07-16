@@ -23,6 +23,11 @@ export const metadata: Metadata = {
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
   keywords: ['일본', '일본생활', '일본취업', '일본유학', '워킹홀리데이', '일본 커뮤니티', '한국인'],
+  // 정본 URL 선언. './'는 Next가 "현재 라우트 경로"로 치환하므로(resolveRelativeUrl),
+  // 각 페이지가 자기 경로의 canonical을 자동으로 갖는다. (예: /posts/34 → {metadataBase}/posts/34)
+  // 하위 페이지가 alternates를 따로 정의하지 않는 한 이 설정이 상속된다.
+  // 목적: apex·vercel.app·쿼리스트링이 붙은 주소로 들어와도 정본(www)을 한 곳으로 모은다.
+  alternates: { canonical: './' },
   openGraph: {
     type: 'website',
     siteName: SITE_NAME,
