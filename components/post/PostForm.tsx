@@ -104,8 +104,9 @@ export default function PostForm({
 
       const id = res.data?.id ?? postId
       setSubmitted(true) // 이탈 경고 해제 후 이동
+      // refresh()를 함께 부르면 상세를 두 번 요청해 조회수가 2 오른다.
+      // (ViewMarker의 중복 방지 쿠키는 첫 응답이 브라우저에 도착한 뒤에야 심기므로 못 막는다)
       router.push(`/posts/${id}`)
-      router.refresh()
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) {
         router.push('/login')
