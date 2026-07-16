@@ -18,7 +18,9 @@ export default function CommentList({ postId, comments }: Props) {
   const totalCount = countComments(comments)
 
   return (
-    <div className="mt-10">
+    // id="comments": 신고 목록 등에서 "댓글" 대상을 클릭했을 때 원문 글의 댓글 영역으로
+    // 바로 스크롤시키기 위한 앵커. lib/report.ts의 reportTargetHref가 이 값을 사용한다.
+    <div id="comments" className="mt-10">
       {/* 말풍선 아이콘 + 개수로 '여기서부터 댓글 영역'임을 한눈에 인지시킨다. */}
       <h2 className="mb-5 flex items-center gap-2 text-base font-bold">
         <svg className="h-5 w-5 text-gray-500 dark:text-neutral-400" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">

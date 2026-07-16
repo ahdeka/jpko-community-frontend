@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth-context'
 import { noticesApi } from '@/lib/api/notices'
 import { postsApi } from '@/lib/api/posts'
 import { adminApi } from '@/lib/api/admin'
+import { adminReportsApi } from '@/lib/api/reports'
 import { formatDate } from '@/lib/format'
 import type { NoticeSummary } from '@/types'
 
@@ -36,6 +37,8 @@ export default function AdminDashboard() {
   const [noticeCount, setNoticeCount] = useState<number | null>(null)
   const [postCount, setPostCount] = useState<number | null>(null)
   const [userCount, setUserCount] = useState<number | null>(null)
+  // 처리 대기 중인 신고 "대상" 수. 건수가 아니다 — 아래 조회 주석 참고.
+  const [pendingReportCount, setPendingReportCount] = useState<number | null>(null)
   const [recentNotices, setRecentNotices] = useState<NoticeSummary[]>([])
 
   useEffect(() => {
@@ -58,6 +61,14 @@ export default function AdminDashboard() {
       .then(res => { if (!cancelled) setUserCount(res.data?.totalElements ?? 0) })
       .catch(() => { if (!cancelled) setUserCount(0) })
 
+    // 처리 대기 신고: PENDING 필터의 totalElements를 쓴다.
+    // ⚠️ 이 값은 신고 "건수"가 아니라 "대상 수"다 — 백엔드 집계 쿼리가 (target_type, target_id)로
+    //    GROUP BY하므로 totalElements는 그룹(=신고당한 글·댓글)의 개수다.
+    //    한 글에 신고 5건이 쌓여 있어도 여기서는 1로 센다. 카드 라벨도 그에 맞춰 표기한다.
+    adminReportsApi.getSummaries({ status: 'PENDING' }, 0, 1)
+      .then(res => { if (!cancelled) setPendingReportCount(res.data?.totalElements ?? 0) })
+      .catch(() => { if (!cancelled) setPendingReportCount(0) })
+
     return () => { cancelled = true }
   }, [])
 
@@ -70,15 +81,20 @@ export default function AdminDashboard() {
         </p>
       </div>
 
-      {/* 통계 카드: 공지/게시글은 실제 수치, 회원/신고는 백엔드 미구현이라 준비 중 */}
+      {/* 통계 카드 */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard label="전체 공지" value={noticeCount} accent="text-orange-500" />
         <StatCard label="전체 게시글" value={postCount} />
         <StatCard label="전체 회원" value={userCount} />
-        <StatCard label="신고 접수" value={null} />
+        {/* 처리할 신고가 있으면 빨강으로 시선을 끌고, 0이면 평범한 색으로 둔다. */}
+        <StatCard
+          label="미처리 신고"
+          value={pendingReportCount}
+          accent={pendingReportCount ? 'text-red-500' : undefined}
+        />
       </div>
       <p className="-mt-3 text-[11px] text-neutral-400 dark:text-neutral-500">
-        ※ 신고 통계는 백엔드 준비 후 연동 예정입니다.
+        ※ 미처리 신고는 신고가 접수된 게시글·댓글의 수이며, 신고 건수와는 다릅니다.
       </p>
 
       {/* 빠른 작업 */}
@@ -127,6 +143,29 @@ export default function AdminDashboard() {
             <div>
               <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">회원 관리</p>
               <p className="text-xs text-neutral-400">등급·상태 변경</p>
+            </div>
+          </Link>
+
+          <Link
+            href="/admin/reports"
+            className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-4 hover:border-orange-300 hover:bg-orange-50/40 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-orange-500/40 dark:hover:bg-orange-500/5"
+          >
+            <span className="flex h-9 w-9 items-center justify-center rounded-md bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-300">
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7" />
+              </svg>
+            </span>
+            <div>
+              <p className="flex items-center gap-1.5 text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+                신고 관리
+                {/* 처리할 게 있을 때만 배지를 띄워, 평소엔 조용하고 필요할 때만 눈에 띄게 한다. */}
+                {pendingReportCount ? (
+                  <span className="rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                    {pendingReportCount > 99 ? '99+' : pendingReportCount}
+                  </span>
+                ) : null}
+              </p>
+              <p className="text-xs text-neutral-400">신고 확인·조치</p>
             </div>
           </Link>
         </div>

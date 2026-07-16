@@ -6,12 +6,13 @@ import { useAuth } from '@/lib/auth-context'
 import { usersApi } from '@/lib/api/users'
 import MyPostsTab from '@/components/mypage/MyPostsTab'
 import MyCommentsTab from '@/components/mypage/MyCommentsTab'
+import MyReportsTab from '@/components/mypage/MyReportsTab'
 import ProfileSettings from '@/components/mypage/ProfileSettings'
 import EmailVerificationBanner from '@/components/mypage/EmailVerificationBanner'
 import GradeInfoPopover from '@/components/common/GradeInfoPopover'
 import { gradeMeta } from '@/lib/grade'
 
-type Tab = 'posts' | 'comments' | 'profile'
+type Tab = 'posts' | 'comments' | 'reports' | 'profile'
 
 // 통계 카드 한 칸
 function StatCard({ label, value, accent }: { label: string; value: number | null; accent: string }) {
@@ -150,6 +151,9 @@ export default function MyPage() {
           <button type="button" className={tabButton('comments')} onClick={() => setTab('comments')}>
             내가 쓴 댓글
           </button>
+          <button type="button" className={tabButton('reports')} onClick={() => setTab('reports')}>
+            내 신고
+          </button>
           <button type="button" className={tabButton('profile')} onClick={() => setTab('profile')}>
             프로필 설정
           </button>
@@ -160,6 +164,7 @@ export default function MyPage() {
       <div>
         {tab === 'posts' && <MyPostsTab />}
         {tab === 'comments' && <MyCommentsTab />}
+        {tab === 'reports' && <MyReportsTab />}
         {tab === 'profile' && <ProfileSettings />}
       </div>
     </div>

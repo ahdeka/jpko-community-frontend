@@ -169,9 +169,91 @@ export interface LikeStatus {
   myType: 'LIKE' | 'DISLIKE' | null;
 }
 
+// ========== 신고 ==========
+
+// 신고 대상 종류 — 백엔드 ReportTargetType enum과 1:1.
+// 백엔드는 (targetType + targetId) 폴리모픽 구조라 대상이 늘어나면 여기에 추가된다.
+export type ReportTargetType = 'POST' | 'COMMENT';
+
+// 신고 사유 — 백엔드 ReportReason enum과 1:1.
+// ETC는 detail(상세 사유) 입력이 필수이며, 백엔드가 REPORT_DETAIL_REQUIRED로 재검증한다.
+export type ReportReason = 'SPAM' | 'ABUSE' | 'ILLEGAL' | 'ETC';
+
+// 신고 처리 상태 — 백엔드 ReportStatus enum과 1:1.
+//  PENDING: 접수(처리 대기) / RESOLVED: 조치 완료(대상 삭제 등) / REJECTED: 반려
+// 관리자가 대상을 삭제하면 백엔드가 ContentDeletedEvent로 PENDING → RESOLVED 자동 전환한다.
+export type ReportStatus = 'PENDING' | 'RESOLVED' | 'REJECTED';
+
+// 신고 접수 요청 (백엔드 ReportCreateRequest와 1:1)
+export interface ReportCreateBody {
+  targetType: ReportTargetType;
+  targetId: number;
+  reason: ReportReason;
+  detail?: string;   // ETC일 때만 필수, 최대 500자
+}
+
+// 신고 접수 응답 (백엔드 ReportResponse)
+export interface ReportResponse {
+  id: number;
+}
+
+// 마이페이지 - 내 신고 내역 (백엔드 MyReportResponse와 1:1)
+export interface MyReport {
+  id: number;
+  targetType: ReportTargetType;
+  targetId: number;
+  // 원문 게시글 id. 게시글 신고면 targetId와 같고, 댓글 신고면 그 댓글이 달린 게시글 id.
+  // ⚠️ targetDeleted가 true면 백엔드가 항상 null로 내려준다 → 링크를 그리려면 null 가드 필수.
+  postId: number | null;
+  targetPreview: string;   // 제목/본문 앞 40자. 삭제됐으면 "삭제된 게시글입니다." 등으로 대체된다.
+  // 신고 대상이 더 이상 볼 수 없는 상태인지. 다음을 모두 포함한다.
+  //  - 대상 자체가 삭제됨(소프트 삭제 포함)
+  //  - 댓글 신고인데 그 댓글이 달린 게시글이 삭제됨
+  // true면 postId가 null이고 targetPreview도 안내 문구로 바뀌므로, 원문 링크를 걸면 안 된다.
+  targetDeleted: boolean;
+  reason: ReportReason;
+  detail: string | null;
+  status: ReportStatus;
+  createdAt: string;
+}
+
+// 관리자 - 신고 집계 목록 항목 (백엔드 AdminReportSummaryResponse와 1:1)
+// 신고 "건별"이 아니라 신고 "대상별"로 묶은 집계다.
+export interface AdminReportSummary {
+  targetType: ReportTargetType;
+  targetId: number;
+  postId: number | null;   // MyReport.postId와 동일한 규칙 (targetDeleted면 null)
+  targetPreview: string;
+  // 대상 작성자 닉네임. 삭제된 대상이라도 작성자는 그대로 내려준다(관리자가 누구 글인지 알아야 하므로).
+  // 대상 자체를 못 찾은 경우에만 "-"가 온다.
+  targetAuthor: string;
+  targetDeleted: boolean;  // MyReport.targetDeleted와 동일한 규칙
+  // 이 대상의 대표 처리 상태. 한 대상에 상태가 섞여 있으면
+  // PENDING > RESOLVED > REJECTED 우선순위로 백엔드가 하나를 골라 내려준다.
+  // ⚠️ status 필터를 건 조회에서는 항상 필터값과 같아지므로 의미가 없다.
+  status: ReportStatus;
+  // 신고 건수. ⚠️ status 필터를 걸면 "전체 건수"가 아니라 "그 상태의 건수"가 된다
+  // (백엔드가 WHERE로 거른 뒤 COUNT하기 때문).
+  reportCount: number;
+  lastReportedAt: string;
+}
+
+// 관리자 - 특정 대상의 신고 상세 (백엔드 AdminReportDetailResponse와 1:1)
+export interface AdminReportDetail {
+  id: number;
+  reporterNickname: string;
+  reason: ReportReason;
+  detail: string | null;
+  status: ReportStatus;
+  createdAt: string;
+}
+
 // 알림 종류 — 백엔드 NotificationType enum과 1:1.
 //  COMMENT: 내 게시글에 댓글 / REPLY: 내 댓글에 답글 / LIKE: 내 게시글에 좋아요
-export type NotificationType = 'COMMENT' | 'REPLY' | 'LIKE';
+//  CONTENT_REMOVED: 관리자가 내 게시글/댓글을 강제 삭제함
+//    ⚠️ 다른 타입과 성격이 다르다 — 발신자가 관리자이고, 대상 글이 이미 삭제된 상태라
+//       클릭해도 이동할 곳이 없다(404). NotificationBell에서 이동을 막는 분기가 필요하다.
+export type NotificationType = 'COMMENT' | 'REPLY' | 'LIKE' | 'CONTENT_REMOVED';
 
 // 알림 (백엔드 NotificationResponse record와 1:1)
 // ⚠️ 키 이름 주의: 백엔드 record의 boolean 컴포넌트는 "선언명 그대로" 직렬화된다.

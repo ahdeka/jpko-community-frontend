@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Comment } from '@/types'
 import CommentForm from './CommentForm'
+import ReportModal from '@/components/common/ReportModal'
 import { commentsApi } from '@/lib/api/comments'
 import { ApiError } from '@/lib/api/client'
 import { useAuth } from '@/lib/auth-context'
@@ -59,6 +60,7 @@ export default function CommentItem({ comment, postId, isReply = false, rootId }
   const { user } = useAuth()
   const [showReplyForm, setShowReplyForm] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [reportOpen, setReportOpen] = useState(false)
 
   async function handleDelete() {
     if (!confirm('댓글을 삭제하시겠습니까?')) return
@@ -118,6 +120,20 @@ export default function CommentItem({ comment, postId, isReply = false, rootId }
                     {deleting ? '삭제 중...' : '삭제'}
                   </button>
                 )}
+                {/*
+                  신고는 남의 댓글에만 노출한다(본인 댓글은 백엔드가 SELF_REPORT_NOT_ALLOWED로 거부).
+                  삭제된 댓글은 이 액션 영역 자체가 렌더되지 않는 분기에 있어 따로 막지 않아도 된다.
+                  익명 댓글도 신고 대상이다 — 백엔드는 targetId(댓글 id)로만 판단하므로 익명 여부와 무관하다.
+                  액션 영역이 로그인 사용자 전용이라(위 user 가드) 비로그인 처리는 필요 없다.
+                */}
+                {!comment.isOwner && (
+                  <button
+                    onClick={() => setReportOpen(true)}
+                    className="text-xs text-gray-400 hover:text-red-500 dark:text-neutral-500 dark:hover:text-red-400"
+                  >
+                    신고
+                  </button>
+                )}
               </div>
             )}
             {showReplyForm && (
@@ -139,6 +155,19 @@ export default function CommentItem({ comment, postId, isReply = false, rootId }
           ))}
         </ul>
       )}
+
+      {/*
+        신고 모달. CommentItem은 답글을 재귀 렌더하므로 각 댓글이 자기 상태(reportOpen)로
+        자기 모달만 연다 — 답글의 신고 버튼이 부모 댓글을 신고하는 일은 생기지 않는다.
+        모달 자체는 fixed 오버레이라 li 안에 있어도 위치에 영향받지 않고,
+        닫혀 있으면 null을 반환하므로 댓글 수만큼 DOM이 늘어나지도 않는다.
+      */}
+      <ReportModal
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        targetType="COMMENT"
+        targetId={comment.id}
+      />
     </li>
   )
 }

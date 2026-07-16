@@ -54,8 +54,9 @@ export default function PostDetail({ post }: Props) {
         initialDislikeCount={post.dislikeCount}
       />
 
-      {/* 좋아요와 댓글 영역을 구분선으로 나누는 하단 액션 바(목록/공유/신고). */}
-      <PostActions shareTitle={post.title} />
+      {/* 좋아요와 댓글 영역을 구분선으로 나누는 하단 액션 바(목록/공유/신고).
+          reportPostId를 넘기면 신고 메뉴가 켜진다(공지 상세는 넘기지 않아 꺼진 상태). */}
+      <PostActions shareTitle={post.title} reportPostId={post.id} isOwner={post.isOwner} />
     </div>
   )
 }

@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import type { Notification } from '@/types'
 import { notificationsApi } from '@/lib/api/notifications'
 import {
+  isRemovedComment,
+  notificationHref,
   notificationMeta,
   notificationSenderLabel,
   notificationText,
@@ -41,6 +43,15 @@ function TypeIcon({ icon }: { icon: NotificationMeta['icon'] }) {
       </svg>
     )
   }
+  // 강제 삭제: 휴지통
+  if (icon === 'removed') {
+    return (
+      <svg {...common}>
+        <polyline points="3 6 5 6 21 6" />
+        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      </svg>
+    )
+  }
   return (
     <svg {...common}>
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -53,6 +64,31 @@ function TypeIcon({ icon }: { icon: NotificationMeta['icon'] }) {
 //  - 게시글 제목: 따옴표 + 중간 강조 (없으면 "회원님의 게시글"로 폴백)
 //  - 액션 키워드('댓글'/'답글'/'추천'): 타입 색으로 강조해 "무엇을"을 부각
 function NotificationBody({ n, meta }: { n: Notification; meta: NotificationMeta }) {
+  // 강제 삭제 알림은 문구 구조가 다르므로 먼저 처리한다.
+  //
+  // 발신자(관리자)를 일부러 밝히지 않는다 — 백엔드는 senderName에 관리자 닉네임을 실어 보내지만,
+  // 조치의 주체는 개인이 아니라 운영이고, 개인이 특정되면 항의·보복 대상이 될 수 있다.
+  // 그래서 senderName을 무시하고 "운영 정책에 따라"로 고정한다.
+  if (n.type === 'CONTENT_REMOVED') {
+    const removed = <span className={`font-semibold ${meta.accentText}`}>삭제</span>
+
+    if (isRemovedComment(n)) {
+      return <>운영 정책에 따라 회원님의 댓글이 {removed}되었습니다.</>
+    }
+    const what = n.postTitle ? (
+      <>
+        게시글{' '}
+        <span className="font-semibold text-neutral-800 dark:text-neutral-100">
+          “{truncatePostTitle(n.postTitle)}”
+        </span>
+        이(가){' '}
+      </>
+    ) : (
+      <>게시글이 </>
+    )
+    return <>운영 정책에 따라 회원님의 {what}{removed}되었습니다.</>
+  }
+
   const who = <span className="font-semibold text-neutral-900 dark:text-white">{notificationSenderLabel(n)}</span>
   // 액션 키워드는 좌측 색상 아이콘이 이미 종류를 알려주므로 별도 색을 넣지 않고 본문과 같은 톤으로 둔다.
   const keyword = meta.label
@@ -149,11 +185,16 @@ export default function NotificationBell() {
 
   // 알림 클릭: 낙관적으로 목록에서 제거(=읽음) 후 원본 게시글로 이동.
   // PATCH가 실패해도 사용자 이동은 막지 않는다 — 다음 재조회 때 서버 상태로 정정된다.
+  //
+  // 이동 경로는 notificationHref가 정한다. null이면(=내 게시글이 삭제됐다는 알림처럼
+  // 원문이 사라진 경우) 이동하지 않고 읽음 처리만 한다 — 없는 글로 보내면 404가 되기 때문이다.
   function handleItemClick(n: Notification) {
     setOpen(false)
     setNotifications(prev => prev.filter(item => item.id !== n.id))
     notificationsApi.markAsRead(n.id).catch(() => {})
-    router.push(`/posts/${n.postId}`)
+
+    const href = notificationHref(n)
+    if (href) router.push(href)
   }
 
   // 모두 읽기: 백엔드에 일괄 처리 엔드포인트가 없어 건별 PATCH를 병렬 호출한다.
