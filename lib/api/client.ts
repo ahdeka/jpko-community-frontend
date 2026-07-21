@@ -110,7 +110,13 @@ async function request<T>(
       // 어느 경우든 아래로 떨어져 원래의 401 에러를 그대로 던지므로, 호출부의 개별 처리도 그대로 동작한다.
     }
 
-    let message = '요청에 실패했습니다.'
+    // 기본 메시지. 413은 nginx(client_max_body_size)가 백엔드에 닿기 전에 끊은 것이라
+    // 응답 본문이 우리 API의 JSON이 아니라 nginx의 HTML이다. 아래 json() 파싱이 실패해
+    // "요청에 실패했습니다."로 뭉뚱그려지면 용량 문제라는 걸 알 수 없으므로 여기서 구분해준다.
+    let message =
+      response.status === 413
+        ? '파일 용량이 너무 큽니다. 더 작은 파일로 다시 시도해주세요.'
+        : '요청에 실패했습니다.'
     let code: string | undefined
 
     try {
