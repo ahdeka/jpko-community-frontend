@@ -75,7 +75,10 @@
       "Bash(curl -s -m 10 -o /dev/null -w \"/admin/reports → HTTP %{http_code}\\\\n\" \"http://localhost:3000/admin/reports\")",
       "Bash(curl -s -m 10 \"http://localhost:3000/admin/reports\")",
       "WebFetch(domain:jpkocommunity.site)",
-      "Bash(grep -n -A 40 \"^### \\\\`alternates\\\\`\" generate-metadata.md)"
+      "Bash(grep -n -A 40 \"^### \\\\`alternates\\\\`\" generate-metadata.md)",
+      "PowerShell(npx next lint --file components/post/TiptapEditor.tsx --file components/post/PostForm.tsx --file components/admin/NoticeForm.tsx)",
+      "PowerShell(npx eslint components/post/TiptapEditor.tsx components/post/PostForm.tsx components/admin/NoticeForm.tsx)",
+      "PowerShell(npx next build 2>&1)"
     ],
     "additionalDirectories": [
       "\\tmp"

@@ -41,6 +41,9 @@ export default function PostForm({
   const [anonymous, setAnonymous] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
+  // 에디터에서 이미지 업로드가 진행 중인지. 업로드가 끝나야 본문에 <img>가 삽입되므로
+  // 그 전에 제출하면 방금 넣은 이미지가 빠진 채로 저장된다.
+  const [imageUploading, setImageUploading] = useState(false)
   // 저장이 끝나면(submitted) 이탈 경고를 해제해, 저장 직후 이동에는 경고가 뜨지 않게 한다.
   const [submitted, setSubmitted] = useState(false)
 
@@ -82,6 +85,13 @@ export default function PostForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+
+    // 버튼 disabled와 별개로 한 번 더 막는다.
+    // (Enter 키 제출 등 버튼을 거치지 않는 경로가 있고, disabled는 렌더 이후에만 적용된다)
+    if (imageUploading) {
+      setErrors({ form: '이미지 업로드가 끝난 뒤 저장해주세요.' })
+      return
+    }
 
     const errs = validate()
     if (Object.keys(errs).length > 0) {
@@ -149,7 +159,11 @@ export default function PostForm({
       </div>
 
       <div>
-        <TiptapEditor content={initialContent} onChange={setContent} />
+        <TiptapEditor
+          content={initialContent}
+          onChange={setContent}
+          onUploadingChange={setImageUploading}
+        />
         <div className="flex items-center justify-between mt-1">
           {errors.content
             ? <p className="text-xs text-red-500">{errors.content}</p>
@@ -178,10 +192,14 @@ export default function PostForm({
         )}
         <button
           type="submit"
-          disabled={loading || overLimit}
+          disabled={loading || overLimit || imageUploading}
           className="px-6 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50"
         >
-          {loading ? '저장 중...' : mode === 'edit' ? '수정' : '등록'}
+          {imageUploading
+            ? '이미지 업로드 중…'
+            : loading
+              ? '저장 중...'
+              : mode === 'edit' ? '수정' : '등록'}
         </button>
       </div>
     </form>

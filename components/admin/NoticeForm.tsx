@@ -39,6 +39,9 @@ export default function NoticeForm({
   const [featured, setFeatured] = useState(initialFeatured)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
+  // 에디터의 이미지 업로드 진행 여부. 업로드가 끝나야 본문에 <img>가 삽입되므로
+  // 그 전에 제출하면 방금 넣은 이미지가 빠진 채로 저장된다.
+  const [imageUploading, setImageUploading] = useState(false)
   // 저장이 끝나면 이탈 경고 해제 (저장 직후 목록 이동에는 경고가 뜨지 않게)
   const [submitted, setSubmitted] = useState(false)
 
@@ -66,6 +69,12 @@ export default function NoticeForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+
+    // 버튼 disabled와 별개로 한 번 더 막는다(Enter 제출 등 버튼을 거치지 않는 경로 대비)
+    if (imageUploading) {
+      setErrors({ form: '이미지 업로드가 끝난 뒤 저장해주세요.' })
+      return
+    }
 
     const errs = validate()
     if (Object.keys(errs).length > 0) {
@@ -116,7 +125,11 @@ export default function NoticeForm({
 
       <div>
         {/* 수정 모드의 기존 본문은 initialContent로 1회 주입된다(TiptapEditor가 비제어) */}
-        <TiptapEditor content={initialContent} onChange={setContent} />
+        <TiptapEditor
+          content={initialContent}
+          onChange={setContent}
+          onUploadingChange={setImageUploading}
+        />
         <div className="mt-1 flex items-center justify-between">
           {errors.content ? <p className="text-xs text-red-500">{errors.content}</p> : <span />}
           <span className={`text-xs ${overLimit ? 'text-red-500' : 'text-neutral-400 dark:text-neutral-500'}`}>
@@ -149,10 +162,14 @@ export default function NoticeForm({
         </button>
         <button
           type="submit"
-          disabled={loading || overLimit}
+          disabled={loading || overLimit || imageUploading}
           className="rounded bg-orange-500 px-6 py-2 text-sm font-medium text-white hover:bg-orange-600 disabled:opacity-50"
         >
-          {loading ? '저장 중…' : mode === 'edit' ? '수정' : '등록'}
+          {imageUploading
+            ? '이미지 업로드 중…'
+            : loading
+              ? '저장 중…'
+              : mode === 'edit' ? '수정' : '등록'}
         </button>
       </div>
     </form>
