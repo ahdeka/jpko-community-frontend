@@ -130,8 +130,9 @@ export interface PostListResponse {
   posts: PageResponse<PostSummary>;
 }
 
-// 게시글 검색 범위
-export type SearchType = 'TITLE' | 'TITLE_CONTENT';
+// 게시글 검색 범위. 백엔드 SearchType enum과 1:1.
+// NICKNAME은 닉네임 "정확 일치"이며, 익명글(anonymous)은 결과에서 제외된다.
+export type SearchType = 'TITLE' | 'TITLE_CONTENT' | 'NICKNAME';
 
 // 게시글 작성/수정 응답용
 export interface PostResponse {

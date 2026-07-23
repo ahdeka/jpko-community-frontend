@@ -78,7 +78,10 @@
       "Bash(grep -n -A 40 \"^### \\\\`alternates\\\\`\" generate-metadata.md)",
       "PowerShell(npx next lint --file components/post/TiptapEditor.tsx --file components/post/PostForm.tsx --file components/admin/NoticeForm.tsx)",
       "PowerShell(npx eslint components/post/TiptapEditor.tsx components/post/PostForm.tsx components/admin/NoticeForm.tsx)",
-      "PowerShell(npx next build 2>&1)"
+      "PowerShell(npx next build 2>&1)",
+      "PowerShell(npx eslint \"app/posts/search/page.tsx\" \"app/posts/[id]/page.tsx\" lib/list-context.ts lib/search.ts components/post/SearchTypeTabs.tsx)",
+      "PowerShell(try { $r = Invoke-WebRequest -Uri \"http://localhost:8080/api/posts/search?keyword=tests123&type=NICKNAME&page=0&size=20\" -UseBasicParsing -TimeoutSec 10; \"STATUS: $\\($r.StatusCode\\)\"; $r.Content.Substring\\(0, [Math]::Min\\(600, $r.Content.Length\\)\\) } catch { \"ERROR: $\\($_.Exception.Message\\)\"; if \\($_.Exception.Response\\) { $sr = New-Object System.IO.StreamReader\\($_.Exception.Response.GetResponseStream\\(\\)\\); \"BODY: \" + $sr.ReadToEnd\\(\\) } })",
+      "PowerShell(try { $r = Invoke-WebRequest \"http://localhost:3000\" -UseBasicParsing -TimeoutSec 5; \"dev server ALREADY RUNNING: $\\($r.StatusCode\\)\" } catch { \"not running: $\\($_.Exception.Message\\)\" })"
     ],
     "additionalDirectories": [
       "\\tmp"

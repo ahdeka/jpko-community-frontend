@@ -7,6 +7,7 @@ import { categoriesApi } from '@/lib/api/categories'
 import { authHeaders } from '@/lib/api/server'
 import { ApiError } from '@/lib/api/client'
 import { encodeListContext, parseListContext, type ListContext } from '@/lib/list-context'
+import { searchQueryParams } from '@/lib/search'
 import { excerpt } from '@/lib/site'
 import PostDetail from '@/components/post/PostDetail'
 import ViewMarker from '@/components/post/ViewMarker'
@@ -98,7 +99,7 @@ async function loadSiblingList(
   // B) 검색 결과 목록
   if (ctx?.from === 'search') {
     const res = await postsApi
-      .search({ keyword: ctx.keyword, page: ctx.page, size: LIST_SIZE })
+      .search({ keyword: ctx.keyword, type: ctx.type, page: ctx.page, size: LIST_SIZE })
       .catch(() => null)
     return {
       title: '검색 결과',
@@ -106,7 +107,7 @@ async function loadSiblingList(
       page: ctx.page,
       totalPages: res?.data?.posts?.totalPages ?? 0,
       basePath: '/posts/search',
-      searchParams: { keyword: ctx.keyword },
+      searchParams: searchQueryParams(ctx.keyword, ctx.type),
       listContext: encodeListContext(ctx),
     }
   }
@@ -131,7 +132,7 @@ export default async function PostPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ from?: string; p?: string; slug?: string; keyword?: string }>
+  searchParams: Promise<{ from?: string; p?: string; slug?: string; keyword?: string; st?: string }>
 }) {
   const { id } = await params
   const sp = await searchParams
