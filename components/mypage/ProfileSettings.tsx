@@ -6,6 +6,9 @@ import { usersApi } from '@/lib/api/users'
 import { ApiError } from '@/lib/api/client'
 import WithdrawModal from '@/components/mypage/WithdrawModal'
 
+// 자기소개 최대 길이 — 백엔드 UpdateBioRequest @Size(max=200)와 일치시킨다.
+const BIO_MAX = 200
+
 // 입력 공통 스타일 (게시글 폼과 동일 톤)
 const inputClass =
   'w-full rounded border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-blue-400 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-blue-500'
@@ -42,6 +45,42 @@ function Notice({ type, children }: { type: 'success' | 'error'; children: React
 
 export default function ProfileSettings() {
   const { user, fetchUser } = useAuth()
+
+  // ===== 자기소개(bio) 변경 =====
+  // 현재 값은 /api/auth/me가 내려주는 user.bio에서 바로 가져온다(Context). 이 컴포넌트는
+  // 마이페이지의 user 확인(로그인 가드) 이후에만 렌더되므로 마운트 시점에 user가 이미 있다.
+  const [bio, setBio] = useState(user?.bio ?? '')
+  const [bioMsg, setBioMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [bioLoading, setBioLoading] = useState(false)
+
+  async function handleBio(e: React.FormEvent) {
+    e.preventDefault()
+    setBioMsg(null)
+
+    // 백엔드와 동일 기준(trim 후 길이)으로 1차 검증. 빈 값은 허용(= 자기소개 삭제).
+    const trimmed = bio.trim()
+    if (trimmed.length > BIO_MAX) {
+      setBioMsg({ type: 'error', text: `자기소개는 ${BIO_MAX}자 이하여야 합니다.` })
+      return
+    }
+
+    setBioLoading(true)
+    try {
+      await usersApi.updateBio(trimmed)
+      // 저장된 정규화 결과(빈 값이면 삭제)를 화면에도 반영하고,
+      // 다른 화면·다음 렌더가 최신 bio를 쓰도록 Context의 user도 갱신한다.
+      setBio(trimmed)
+      await fetchUser()
+      setBioMsg({ type: 'success', text: '자기소개가 저장되었습니다.' })
+    } catch (err) {
+      setBioMsg({
+        type: 'error',
+        text: err instanceof ApiError ? err.message : '자기소개 저장에 실패했습니다.',
+      })
+    } finally {
+      setBioLoading(false)
+    }
+  }
 
   // ===== 닉네임 변경 =====
   const [nickname, setNickname] = useState(user?.nickname ?? '')
@@ -132,6 +171,37 @@ export default function ProfileSettings() {
 
   return (
     <div className="flex flex-col gap-8">
+      {/* 자기소개 변경 */}
+      <section>
+        <h3 className="mb-3 text-sm font-bold text-neutral-900 dark:text-neutral-100">자기소개</h3>
+        <form onSubmit={handleBio} className="flex max-w-md flex-col gap-2">
+          <textarea
+            value={bio}
+            onChange={e => setBio(e.target.value)}
+            maxLength={BIO_MAX}
+            rows={3}
+            placeholder="자기소개를 입력하세요 (선택)"
+            className={`${inputClass} resize-y`}
+          />
+          <div className="flex items-center justify-between">
+            {/* 남은/입력 글자 수 표시 (백엔드 상한과 동일한 200자 기준) */}
+            <span className="text-xs text-neutral-400 dark:text-neutral-500">
+              {bio.length}/{BIO_MAX}
+            </span>
+            {bioMsg && <Notice type={bioMsg.type}>{bioMsg.text}</Notice>}
+          </div>
+          <button
+            type="submit"
+            disabled={bioLoading}
+            className="self-start rounded bg-neutral-800 px-4 py-2 text-sm text-white hover:bg-neutral-700 disabled:opacity-50 dark:bg-neutral-700 dark:hover:bg-neutral-600"
+          >
+            {bioLoading ? '저장 중…' : '자기소개 저장'}
+          </button>
+        </form>
+      </section>
+
+      <div className="border-t border-neutral-100 dark:border-neutral-800" />
+
       {/* 닉네임 변경 */}
       <section>
         <h3 className="mb-3 text-sm font-bold text-neutral-900 dark:text-neutral-100">닉네임 변경</h3>

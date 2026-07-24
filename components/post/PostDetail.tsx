@@ -20,7 +20,13 @@ export default function PostDetail({ post }: Props) {
         <h1 className="text-xl font-bold mb-3">{post.title}</h1>
         <div className="flex items-center justify-between text-sm text-gray-500 dark:text-neutral-400">
           <div className="flex items-center gap-3">
-            <AuthorName author={post.author} isAdmin={post.adminAuthor} />
+            {/* 익명 글이면 author가 실제 닉네임이 아니므로 프로필 링크를 걸지 않는다.
+                (탈퇴 회원 링크 차단은 AuthorName 내부에서 처리) */}
+            <AuthorName
+              author={post.author}
+              isAdmin={post.adminAuthor}
+              nickname={post.anonymous ? undefined : post.author}
+            />
             <span>{formatDateTime(post.createdAt)}</span>
             <span>조회 {post.viewCount}</span>
           </div>

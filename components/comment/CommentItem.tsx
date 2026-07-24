@@ -86,9 +86,11 @@ export default function CommentItem({ comment, postId, isReply = false, rootId }
         <div className="overflow-hidden rounded-lg border border-gray-100 dark:border-neutral-800">
           {/* 작성자 헤더 바: 회색 배경으로 '누가 썼는지'를 한눈에 구분시킨다. */}
           <div className="flex items-center justify-between bg-gray-100 px-3 py-2 dark:bg-neutral-800/60">
+            {/* 익명 댓글이면 author가 실제 닉네임이 아니므로 프로필 링크를 걸지 않는다. */}
             <AuthorName
               author={comment.author}
               isAdmin={comment.adminAuthor}
+              nickname={comment.anonymous ? undefined : comment.author}
               className="text-sm font-semibold text-gray-800 dark:text-neutral-100"
             />
             <span className="text-xs text-gray-400 dark:text-neutral-500">{formatRelativeTime(comment.createdAt)}</span>

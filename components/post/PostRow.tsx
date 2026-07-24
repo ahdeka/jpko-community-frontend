@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { PostSummary } from '@/types'
 import { formatRelativeTime } from '@/lib/format'
 import { categoryShortLabel } from '@/lib/category'
+import { isWithdrawnAuthor } from '@/lib/author'
 import ImageBadge from '@/components/common/ImageBadge'
 import AuthorName from '@/components/common/AuthorName'
 
@@ -73,6 +74,19 @@ export default function PostRow({
   const href = listContext ? `/posts/${post.id}?${listContext}` : `/posts/${post.id}`
   const liClass = 'hover:bg-neutral-100 dark:hover:bg-neutral-800/60'
 
+  // 작성자 프로필 링크 대상 닉네임. 익명 글("ㅇㅇ(IP)")·탈퇴 회원은 실제 닉네임이 아니거나
+  // 프로필이 없으므로 링크를 걸지 않는다(undefined → AuthorName이 일반 텍스트로 렌더).
+  const linkNickname =
+    !post.anonymous && !isWithdrawnAuthor(post.author) ? post.author : undefined
+
+  // card/compact 행 전체는 "stretched link"로 게시글 상세에 연결한다:
+  //   li(relative) 안의 게시글 Link에 after:absolute inset-0 오버레이를 깔아 행 어디를 눌러도 상세로 간다.
+  // 작성자가 링크일 때만 relative z-10을 줘, 그 오버레이 위로 떠서 프로필로 따로 이동하게 한다.
+  //   (익명/탈퇴처럼 링크가 아니면 z를 주지 않아, 이름 영역을 눌러도 오버레이가 받아 상세로 간다.)
+  // 이렇게 하면 <a> 안에 <a>가 중첩되는 잘못된 마크업 없이 두 목적지를 공존시킬 수 있다.
+  const authorClass = (base: string) =>
+    `${linkNickname ? 'relative z-10 ' : ''}${base}`
+
   // 제목 줄 (공통): 카테고리 · 이미지 · 제목 · 댓글수
   const titleRow = (
     <div className="flex items-center gap-2 min-w-0">
@@ -92,16 +106,28 @@ export default function PostRow({
   // compact: 홈/사이드바 미리보기 — 제목 + 우측 작성자만 한 줄
   if (compact) {
     return (
-      <li className={liClass}>
-        <Link href={href} className="flex items-center justify-between gap-3 py-2.5">
+      <li className={`relative flex items-center justify-between gap-3 ${liClass}`}>
+        <Link
+          href={href}
+          className="min-w-0 flex-1 py-2.5 after:absolute after:inset-0 after:content-['']"
+        >
           {titleRow}
-          <AuthorName author={post.author} isAdmin={post.adminAuthor} className="shrink-0 text-xs text-neutral-500" />
         </Link>
+        <AuthorName
+          author={post.author}
+          isAdmin={post.adminAuthor}
+          nickname={linkNickname}
+          className={authorClass('shrink-0 text-xs text-neutral-500')}
+        />
       </li>
     )
   }
 
   // table: 데스크탑은 표형 컬럼 정렬, 모바일은 2줄 카드 (글이 많을 때를 위한 옵션)
+  // ⚠️ 현재 어느 페이지에서도 쓰지 않는 휴면 variant다. 그리드 전체가 하나의 Link이고
+  //    작성자가 데스크탑/모바일 두 곳에 나오는 구조라, card/compact처럼 작성자만 떼어
+  //    프로필 링크로 만들려면 그리드 재구성이 필요하다. 실사용 전까지는 링크를 걸지 않는다
+  //    (nickname 미전달 → 일반 텍스트). 이 variant를 되살릴 때 함께 링크화할 것.
   if (variant === 'table') {
     return (
       <li className={liClass}>
@@ -127,16 +153,22 @@ export default function PostRow({
 
   // card (기본): 2줄 카드 — 제목 줄 + (좋아요>0·시간) 메타, 우측 작성자
   return (
-    <li className={liClass}>
-      <Link href={href} className="flex items-center justify-between gap-3 py-2.5">
-        <div className="flex flex-col gap-1 min-w-0">
-          {titleRow}
-          <div className="flex items-center gap-2 text-xs text-neutral-500">
-            <LikeTimeMeta likeCount={post.likeCount} createdAt={post.createdAt} />
-          </div>
+    <li className={`relative flex items-center justify-between gap-3 ${liClass}`}>
+      <Link
+        href={href}
+        className="flex min-w-0 flex-1 flex-col gap-1 py-2.5 after:absolute after:inset-0 after:content-['']"
+      >
+        {titleRow}
+        <div className="flex items-center gap-2 text-xs text-neutral-500">
+          <LikeTimeMeta likeCount={post.likeCount} createdAt={post.createdAt} />
         </div>
-        <AuthorName author={post.author} isAdmin={post.adminAuthor} className="shrink-0 text-xs text-neutral-500" />
       </Link>
+      <AuthorName
+        author={post.author}
+        isAdmin={post.adminAuthor}
+        nickname={linkNickname}
+        className={authorClass('shrink-0 text-xs text-neutral-500')}
+      />
     </li>
   )
 }

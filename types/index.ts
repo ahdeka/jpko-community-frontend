@@ -42,6 +42,36 @@ export interface User {
   // 유저 등급. 백엔드는 enum 상수("ASHIGARU" 등)로만 내려주며,
   // 한글 이름·설명·색상은 프론트(lib/grade.ts)가 매핑한다.
   grade: UserGrade;
+  // 자기소개(최대 200자). 백엔드 /api/auth/me(UserInfoResponse)가 내려주며, 없으면 null.
+  // 마이페이지 자기소개 편집의 현재 값으로 쓴다.
+  bio: string | null;
+}
+
+// 공개 프로필 (백엔드 PublicProfileResponse와 1:1)
+// GET /api/users/by-nickname/{nickname} 응답. 인증 없이 조회 가능하며,
+// 탈퇴(DELETED) 회원은 백엔드가 USER_NOT_FOUND(404)로 막는다(정지 회원은 조회 가능).
+export interface PublicProfile {
+  id: number;
+  nickname: string;
+  grade: UserGrade;
+  displayGradeName: string;   // 등급 한글 표기 (프론트 lib/grade.ts와 별개로 백엔드가 내려주는 표시명)
+  adminAuthor: boolean;       // 운영진(ADMIN) 여부 — 닉네임 옆 "운영진" 뱃지 표시용
+  suspended: boolean;         // 관리자에 의해 정지(SUSPENDED)된 계정인지
+  bio: string | null;         // 자기소개(최대 200자). 없으면 null.
+  createdAt: string;          // 가입일
+}
+
+// 공개 프로필 - 해당 유저가 쓴 글 (백엔드 UserPostResponse와 1:1)
+// 익명 글은 백엔드 쿼리에서 제외되므로 여기엔 공개 글만 내려온다.
+// PostSummary와 달리 author/anonymous/hasImage가 없다(본인 프로필이라 작성자 자명).
+export interface UserPost {
+  id: number;
+  categoryName: string;
+  title: string;
+  viewCount: number;
+  commentCount: number;
+  likeCount: number;
+  createdAt: string;
 }
 
 // 관리자 회원 관리 목록 항목 (백엔드 AdminUserResponse와 1:1)
