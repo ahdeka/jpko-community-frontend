@@ -8,6 +8,7 @@ import { ApiError } from '@/lib/api/client'
 import { useAuth } from '@/lib/auth-context'
 import { useRedirectIfAuthenticated } from '@/lib/use-auth-guard'
 import RedirectingOverlay from './RedirectingOverlay'
+import SuspendedAccountModal from './SuspendedAccountModal'
 
 interface FieldErrors {
   email?: string
@@ -27,6 +28,8 @@ export default function LoginForm() {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [apiError, setApiError] = useState('')
   const [loading, setLoading] = useState(false)
+  // 정지 계정은 빨간 한 줄이 아니라 전용 모달로 안내한다(다시 시도해도 소용없는 상태라 성격이 다르다).
+  const [suspendedOpen, setSuspendedOpen] = useState(false)
 
   function validate(): FieldErrors {
     const errs: FieldErrors = {}
@@ -58,6 +61,9 @@ export default function LoginForm() {
       if (e instanceof ApiError) {
         if (e.code === 'WRONG_PASSWORD' || e.code === 'USER_NOT_FOUND') {
           setApiError('이메일 또는 비밀번호가 올바르지 않습니다.')
+        } else if (e.code === 'SUSPENDED_ACCOUNT') {
+          // 비밀번호까지 맞아야 도달하는 분기. 인라인 에러 대신 모달로 상세 안내한다.
+          setSuspendedOpen(true)
         } else {
           setApiError(e.message)
         }
@@ -132,6 +138,12 @@ export default function LoginForm() {
         </Link>
       </div>
       </form>
+
+      <SuspendedAccountModal
+        open={suspendedOpen}
+        onClose={() => setSuspendedOpen(false)}
+        email={email.trim().toLowerCase()}
+      />
     </>
   )
 }

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { adminReportsApi } from '@/lib/api/reports'
+import { adminApi } from '@/lib/api/admin'
 import { postsApi } from '@/lib/api/posts'
 import { commentsApi } from '@/lib/api/comments'
 import { ApiError } from '@/lib/api/client'
@@ -36,6 +37,11 @@ const targetKey = (targetType: ReportTargetType, targetId: number) => `${targetT
 //    그래서 이 화면에 "조치 완료" 버튼은 없다 — 삭제가 곧 조치다.
 //  - 반려(REJECTED)는 대상을 그대로 두고 신고만 기각하는 것이며, 되돌릴 수 없다
 //    (백엔드가 PENDING인 신고만 상태를 바꾸므로 REJECTED → 다른 상태 전환이 불가능).
+//
+// 회원(USER) 신고는 조치의 의미가 다르다. 회원은 "삭제"하지 않고 "정지(SUSPENDED)"한다
+// (강제 탈퇴는 하지 않는 정책). 백엔드에는 삭제처럼 신고를 자동 정리해주는 이벤트가 없으므로,
+// 프론트가 ① 회원 정지(adminApi.updateStatus) → ② 신고 RESOLVED 전환
+// (adminReportsApi.updateTargetStatus)을 이어서 호출해 "정지 = 조치 완료"를 만든다.
 export default function AdminReportsPage() {
   const [reports, setReports] = useState<AdminReportSummary[]>([])
   const [page, setPage] = useState(0)
@@ -109,8 +115,24 @@ export default function AdminReportsPage() {
     }
   }
 
-  // 대상 삭제 = 조치 완료. 작성자에게 알림이 나가고 신고가 자동 RESOLVED된다.
+  // 처리 성공 후 공통 뒷정리: 그 행의 상세 캐시를 비우고, 펼침을 접고, 목록을 다시 읽는다.
+  // (상태·미리보기가 바뀌었을 수 있어 낡은 캐시를 그대로 두면 안 된다.)
+  function afterResolved(key: string) {
+    setDetails(prev => {
+      const next = { ...prev }
+      delete next[key]
+      return next
+    })
+    setExpanded(null)
+    load()
+  }
+
+  // 게시글·댓글 삭제 = 조치 완료. 작성자에게 알림이 나가고 신고가 자동 RESOLVED된다.
+  // ⚠️ 회원(USER) 신고는 여기서 처리하지 않는다 — 아래 handleSuspendUser가 담당한다.
+  //    (과거엔 POST가 아니면 무조건 댓글 삭제로 넘겨, 회원 신고가 유저 id를 댓글 id로
+  //     오인해 엉뚱하게 동작했다. 그래서 타입을 명시적으로 분기한다.)
   async function handleDelete(report: AdminReportSummary) {
+    if (report.targetType !== 'POST' && report.targetType !== 'COMMENT') return
     const label = targetTypeLabel(report.targetType)
     const message =
       `이 ${label}을(를) 삭제할까요?\n\n` +
@@ -129,15 +151,38 @@ export default function AdminReportsPage() {
       // 삭제 성공 → 상태·미리보기가 모두 바뀌므로 서버 기준으로 다시 읽는다.
       // (백엔드의 신고 자동 처리는 삭제 트랜잭션 커밋 직후 동기로 실행되므로,
       //  이 시점에 재조회하면 이미 RESOLVED가 반영돼 있다.)
-      setDetails(prev => {
-        const next = { ...prev }
-        delete next[key]
-        return next
-      })
-      setExpanded(null)
-      load()
+      afterResolved(key)
     } catch (e) {
       alert(e instanceof ApiError ? e.message : '삭제에 실패했습니다.')
+    } finally {
+      setPendingKey(null)
+    }
+  }
+
+  // 회원 신고 조치 = 계정 정지 + 신고 RESOLVED 전환.
+  // 백엔드에 "정지하면 신고를 자동 정리"하는 이벤트가 없으므로 두 호출을 이어서 한다.
+  //  1) adminApi.updateStatus(SUSPENDED): 대상 회원을 정지(전 기기 로그아웃). 멱등하므로
+  //     이미 정지된 회원이어도 안전하다. ADMIN 대상이면 CANNOT_SUSPEND_ADMIN,
+  //     이미 탈퇴한 회원이면 ALREADY_WITHDRAWN이 온다.
+  //  2) updateTargetStatus(USER, RESOLVED): 이 회원에 쌓인 PENDING 신고를 조치 완료로 바꾼다.
+  // ①이 성공하고 ②가 실패하면 정지는 유지된 채 신고만 PENDING으로 남는데, 다시 눌러도
+  // ①이 멱등이라 그대로 재시도하면 복구된다.
+  async function handleSuspendUser(report: AdminReportSummary) {
+    const target = report.targetPreview // USER 신고의 미리보기는 대상 회원의 닉네임이다.
+    const message =
+      `'${target}' 회원을 정지할까요?\n\n` +
+      `· 해당 회원은 즉시 로그아웃되며 로그인할 수 없습니다.\n` +
+      `· 이 회원에 접수된 신고 ${report.reportCount}건이 '조치 완료'로 처리됩니다.`
+    if (!confirm(message)) return
+
+    const key = targetKey(report.targetType, report.targetId)
+    setPendingKey(key)
+    try {
+      await adminApi.updateStatus(report.targetId, 'SUSPENDED')
+      await adminReportsApi.updateTargetStatus('USER', report.targetId, 'RESOLVED')
+      afterResolved(key)
+    } catch (e) {
+      alert(e instanceof ApiError ? e.message : '회원 정지에 실패했습니다.')
     } finally {
       setPendingKey(null)
     }
@@ -155,13 +200,7 @@ export default function AdminReportsPage() {
     setPendingKey(key)
     try {
       await adminReportsApi.updateTargetStatus(report.targetType, report.targetId, 'REJECTED')
-      setDetails(prev => {
-        const next = { ...prev }
-        delete next[key]
-        return next
-      })
-      setExpanded(null)
-      load()
+      afterResolved(key)
     } catch (e) {
       alert(e instanceof ApiError ? e.message : '반려 처리에 실패했습니다.')
     } finally {
@@ -211,6 +250,7 @@ export default function AdminReportsPage() {
             <option value="">모든 종류</option>
             <option value="POST">게시글</option>
             <option value="COMMENT">댓글</option>
+            <option value="USER">회원</option>
           </select>
         </div>
       </div>
@@ -230,7 +270,14 @@ export default function AdminReportsPage() {
             const isExpanded = expanded === key
             const busy = pendingKey === key
             const sMeta = statusMeta(report.status)
-            const href = reportTargetHref(report.targetType, report.postId, report.targetDeleted)
+            const isUser = report.targetType === 'USER'
+            // 회원 신고는 원문 게시글이 없어 reportTargetHref가 항상 null을 준다.
+            // 대신 미리보기(=대상 회원 닉네임)로 공개 프로필 링크를 만든다(탈퇴 회원은 링크 없음).
+            const href = isUser
+              ? report.targetDeleted
+                ? null
+                : `/users/${encodeURIComponent(report.targetPreview)}`
+              : reportTargetHref(report.targetType, report.postId, report.targetDeleted)
             // 이미 처리된 신고(조치 완료/반려)는 다시 조치할 수 없다.
             // RESOLVED는 대상이 이미 삭제된 상태이고, REJECTED는 백엔드가 PENDING만 갱신하므로
             // 버튼을 눌러도 아무 일이 일어나지 않는다 → 아예 감춘다.
@@ -278,7 +325,9 @@ export default function AdminReportsPage() {
                       </p>
                     )}
                     <p className="mt-0.5 text-[11px] text-neutral-400">
-                      작성자 {report.targetAuthor} · 최근 신고 {formatDateTime(report.lastReportedAt)}
+                      {/* 회원 신고는 대상 자체가 사람이라 "작성자" 표기가 어색하므로 생략한다. */}
+                      {!isUser && `작성자 ${report.targetAuthor} · `}
+                      최근 신고 {formatDateTime(report.lastReportedAt)}
                     </p>
                   </div>
 
@@ -317,17 +366,28 @@ export default function AdminReportsPage() {
                       >
                         반려
                       </button>
-                      {/* 이미 삭제된 대상에는 삭제 버튼을 두지 않는다(위 alreadyGone 주석 참고). */}
-                      {!alreadyGone && (
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(report)}
-                          disabled={busy}
-                          className="rounded border border-red-200 px-2 py-1 text-xs text-red-500 hover:bg-red-50 disabled:opacity-50 dark:border-red-500/30 dark:hover:bg-red-500/10"
-                        >
-                          {busy ? '처리 중…' : '삭제'}
-                        </button>
-                      )}
+                      {/* 이미 사라진 대상(삭제된 글/댓글, 탈퇴 회원)에는 조치 버튼을 두지 않는다.
+                          회원 신고는 '삭제'가 아니라 '정지'로 조치한다(handleSuspendUser). */}
+                      {!alreadyGone &&
+                        (isUser ? (
+                          <button
+                            type="button"
+                            onClick={() => handleSuspendUser(report)}
+                            disabled={busy}
+                            className="rounded border border-red-200 px-2 py-1 text-xs text-red-500 hover:bg-red-50 disabled:opacity-50 dark:border-red-500/30 dark:hover:bg-red-500/10"
+                          >
+                            {busy ? '처리 중…' : '정지'}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(report)}
+                            disabled={busy}
+                            className="rounded border border-red-200 px-2 py-1 text-xs text-red-500 hover:bg-red-50 disabled:opacity-50 dark:border-red-500/30 dark:hover:bg-red-500/10"
+                          >
+                            {busy ? '처리 중…' : '삭제'}
+                          </button>
+                        ))}
                     </div>
                   )}
                 </div>

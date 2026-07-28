@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { reportsApi } from '@/lib/api/reports'
 import { ApiError } from '@/lib/api/client'
-import { REPORT_DETAIL_MAX, REPORT_REASONS, targetTypeLabel } from '@/lib/report'
+import { REPORT_DETAIL_MAX, reasonsFor, reportCopy, targetTypeLabel } from '@/lib/report'
 import type { ReportReason, ReportTargetType } from '@/types'
 
 interface Props {
@@ -13,7 +13,7 @@ interface Props {
   targetId: number
 }
 
-// 게시글·댓글 공용 신고 모달.
+// 게시글·댓글·회원 공용 신고 모달.
 //
 // 백엔드 계약(ReportService.validateReportCreatable)과 맞춘 지점:
 //  - ETC 사유는 detail 필수 → 프론트에서 먼저 막고, 백엔드도 REPORT_DETAIL_REQUIRED로 재검증한다.
@@ -35,6 +35,9 @@ export default function ReportModal({ open, onClose, targetType, targetId }: Pro
   const detailRef = useRef<HTMLTextAreaElement>(null)
 
   const label = targetTypeLabel(targetType)
+  // 대상별로 달라지는 사유 목록·안내 문구는 lib/report에서 한 번에 받아 온다.
+  const reasons = reasonsFor(targetType)
+  const copy = reportCopy(targetType)
 
   // 열려 있는 동안: ESC로 닫기 + 배경 스크롤 잠금 + 첫 요소에 포커스.
   // 처리 중(loading)에는 ESC를 막아, 요청이 날아가는 도중 모달이 사라지는 것을 방지한다.
@@ -114,11 +117,12 @@ export default function ReportModal({ open, onClose, targetType, targetId }: Pro
           return
         }
         if (err.code === 'SELF_REPORT_NOT_ALLOWED') {
-          setError(`본인이 작성한 ${label}은 신고할 수 없습니다.`)
+          setError(copy.selfError)
           return
         }
-        if (err.code === 'POST_NOT_FOUND' || err.code === 'COMMENT_NOT_FOUND') {
-          setError(`이미 삭제된 ${label}입니다.`)
+        // 대상이 사라진 경우(게시글/댓글 삭제, 회원 탈퇴). code가 대상마다 다르므로 copy에서 받는다.
+        if (err.code === copy.goneCode) {
+          setError(copy.goneError)
           return
         }
         // 그 외(REPORT_DETAIL_REQUIRED 등)는 백엔드 메시지가 이미 한국어라 그대로 노출한다.
@@ -171,7 +175,7 @@ export default function ReportModal({ open, onClose, targetType, targetId }: Pro
               <div>
                 <h2 className="text-base font-bold text-neutral-900 dark:text-neutral-100">{label} 신고</h2>
                 <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                  신고 사유를 선택해주세요. 접수 후에는 취소할 수 없습니다.
+                  {copy.subtitle}
                 </p>
               </div>
               <button
@@ -192,7 +196,7 @@ export default function ReportModal({ open, onClose, targetType, targetId }: Pro
               {/* 신고 사유 라디오 그룹 */}
               <fieldset disabled={loading} className="flex flex-col gap-1.5">
                 <legend className="sr-only">신고 사유</legend>
-                {REPORT_REASONS.map(r => {
+                {reasons.map(r => {
                   const selected = reason === r.value
                   return (
                     <label
@@ -251,7 +255,7 @@ export default function ReportModal({ open, onClose, targetType, targetId }: Pro
                   placeholder={
                     reason === 'ETC'
                       ? '어떤 점이 문제인지 구체적으로 알려주세요.'
-                      : '운영진이 판단하는 데 도움이 될 내용을 적어주세요.'
+                      : copy.detailPlaceholder
                   }
                   className="w-full resize-none rounded border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-red-400 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-red-500"
                 />

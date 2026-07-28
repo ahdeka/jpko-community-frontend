@@ -204,7 +204,8 @@ export interface LikeStatus {
 
 // 신고 대상 종류 — 백엔드 ReportTargetType enum과 1:1.
 // 백엔드는 (targetType + targetId) 폴리모픽 구조라 대상이 늘어나면 여기에 추가된다.
-export type ReportTargetType = 'POST' | 'COMMENT';
+//  USER: 회원 신고. targetId는 신고 대상 유저의 id이며, 원문 게시글이 없어 postId는 항상 null로 온다.
+export type ReportTargetType = 'POST' | 'COMMENT' | 'USER';
 
 // 신고 사유 — 백엔드 ReportReason enum과 1:1.
 // ETC는 detail(상세 사유) 입력이 필수이며, 백엔드가 REPORT_DETAIL_REQUIRED로 재검증한다.

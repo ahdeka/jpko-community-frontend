@@ -5,6 +5,7 @@ import { categoryShortLabel } from '@/lib/category'
 import { gradeMeta } from '@/lib/grade'
 import AdminBadge from '@/components/common/AdminBadge'
 import Pagination from '@/components/common/Pagination'
+import ProfileReportButton from '@/components/user/ProfileReportButton'
 
 const CATEGORY_BADGE_STYLE =
   'bg-neutral-200 text-neutral-600 dark:bg-neutral-700/40 dark:text-neutral-300'
@@ -97,6 +98,10 @@ export default function PublicProfile({ profile, postsPage, currentPage, nicknam
             </p>
           )}
         </div>
+
+        {/* 더보기(신고하기). 본인 프로필/인증 판단 전에는 컴포넌트가 스스로 렌더를 생략한다.
+            flex-1인 가운데 영역이 이 버튼을 헤더 우측 상단으로 밀어낸다. */}
+        <ProfileReportButton targetUserId={profile.id} />
       </section>
 
       {/* 작성한 글 */}
