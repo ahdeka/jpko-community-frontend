@@ -84,7 +84,20 @@
       "PowerShell(try { $r = Invoke-WebRequest \"http://localhost:3000\" -UseBasicParsing -TimeoutSec 5; \"dev server ALREADY RUNNING: $\\($r.StatusCode\\)\" } catch { \"not running: $\\($_.Exception.Message\\)\" })",
       "Bash(curl -s -w \"\\\\nHTTP %{http_code}\\\\n\" \"http://localhost:8080/api/users/by-nickname/nobody\")",
       "Bash(curl -s -w \"\\\\nHTTP %{http_code}\\\\n\" \"http://localhost:8080/api/users/by-nickname/%EA%B4%80%EB%A6%AC%EC%9E%90\")",
-      "Bash(git log *)"
+      "Bash(git log *)",
+      "Bash(git -c core.pager=cat log --oneline -8)",
+      "Bash(git -c core.pager=cat diff)",
+      "Bash(xargs grep -ln 'accessToken\\\\|refreshToken\\\\|401\\\\|SUSPENDED')",
+      "Bash(curl -s -c __TRACKED_VAR__/u3.jar -X POST http://localhost:8080/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"user3@test.com\",\"password\":\"test1234\"}' -w '\\\\nHTTP %{http_code}\\\\n')",
+      "Bash(curl -s -b __TRACKED_VAR__/u3.jar http://localhost:8080/api/auth/me -w '\\\\nHTTP %{http_code}\\\\n')",
+      "Bash(curl -s -c __TRACKED_VAR__/a.jar -X POST http://localhost:8080/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"admin@test.com\",\"password\":\"test1234\"}' -o /dev/null -w 'HTTP %{http_code}\\\\n')",
+      "Bash(curl -s -i -c ./u3.jar -X POST http://localhost:8080/api/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"user3@test.com\",\"password\":\"test1234\"}')",
+      "Bash(curl -s -b ./u3.jar http://localhost:8080/api/auth/me -w \"\\\\nHTTP %{http_code}\\\\n\")",
+      "Bash(curl -s -c ./a.jar -X POST http://localhost:8080/api/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"admin@test.com\",\"password\":\"test1234\"}' -o /dev/null)",
+      "Bash(curl -s -b ./a.jar -X PATCH http://localhost:8080/api/admin/users/4/status -H \"Content-Type: application/json\" -d '{\"status\":\"SUSPENDED\"}' -w \"\\\\nHTTP %{http_code}\\\\n\")",
+      "Bash(curl -s -b ./u3.jar \"http://localhost:8080/api/notifications?page=0&size=10\" -w \"\\\\nHTTP %{http_code}\\\\n\")",
+      "Bash(curl -s -b ./a.jar -X PATCH http://localhost:8080/api/admin/users/4/status -H \"Content-Type: application/json\" -d '{\"status\":\"ACTIVE\"}' -w \"\\\\nHTTP %{http_code}\\\\n\")",
+      "Bash(curl -s -X POST http://localhost:8080/api/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"user3@test.com\",\"password\":\"test1234\"}' -o /dev/null -w \"HTTP %{http_code}\\\\n\")"
     ],
     "additionalDirectories": [
       "\\tmp"

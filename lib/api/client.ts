@@ -21,6 +21,12 @@ const REFRESH_ENDPOINT = '/api/auth/refresh'
 // client.ts는 React 밖이라 Context를 직접 못 건드리므로, AuthProvider가 이 이벤트를 구독해 로그인 상태를 정리한다.
 export const SESSION_EXPIRED_EVENT = 'auth:session-expired'
 
+// 세션 도중 계정이 정지(SUSPENDED)됐음을 브라우저 전역에 알리는 이벤트 이름.
+// 관리자가 계정을 정지시키면 백엔드 JWT 필터가 매 요청마다 403 + code SUSPENDED_ACCOUNT를 준다.
+// accessToken은 httpOnly 쿠키라 JS로 못 지우므로, AuthProvider가 이 이벤트를 받아 서버 로그아웃(Set-Cookie)으로
+// 쿠키를 정리하고 로그인 상태를 비운다. 세션 만료(401)와 성격이 달라 별도 이벤트로 분리한다.
+export const ACCOUNT_SUSPENDED_EVENT = 'auth:account-suspended'
+
 // 이 엔드포인트들의 401은 "액세스 토큰 만료"가 아니라 그 자체가 정상적인 인증 응답이므로
 // 재발급 재시도 대상에서 제외한다.
 //  - refresh: 여기서 재발급을 다시 부르면 무한 재귀가 된다(엣지케이스 ①).
@@ -124,6 +130,19 @@ async function request<T>(
       message = errData.message ?? message
       code = errData.code
     } catch {}
+
+    // 정지 계정 전역 감지. refresh로 풀 수 있는 문제가 아니므로(재발급해도 다시 403) 위 401 재시도 흐름과 분리한다.
+    // login/signup 등 auth 플로우는 화면(LoginForm)이 자체 모달로 처리하므로 제외해 이중 처리를 막는다.
+    // (/api/auth/me는 isAuthFlow에서 빠져 있어, 정지 상태로 새로고침해도 여기서 잡힌다.)
+    // 아래에서 그대로 ApiError를 던지므로 호출부의 개별 처리(예: LoginForm)도 영향받지 않는다.
+    if (
+      response.status === 403 &&
+      code === 'SUSPENDED_ACCOUNT' &&
+      typeof window !== 'undefined' &&
+      !isAuthFlow(endpoint)
+    ) {
+      window.dispatchEvent(new Event(ACCOUNT_SUSPENDED_EVENT))
+    }
 
     throw new ApiError(message, response.status, code)
   }
