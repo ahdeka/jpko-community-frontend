@@ -4,6 +4,7 @@ import Pagination from '@/components/common/Pagination'
 import SearchTypeSelect from '@/components/post/SearchTypeSelect'
 import { encodeListContext } from '@/lib/list-context'
 import { parseSearchType, searchQueryParams } from '@/lib/search'
+import { MESSAGES } from '@/lib/messages'
 
 const PAGE_SIZE = 20
 
@@ -22,7 +23,7 @@ export default async function SearchPage({
     return (
       <div>
         <h1 className="text-xl font-bold mb-4">검색 결과</h1>
-        <p className="text-neutral-500 text-center py-10">검색어는 2자 이상 입력해주세요.</p>
+        <p className="text-neutral-500 text-center py-10">{MESSAGES.post.search.keywordTooShort}</p>
       </div>
     )
   }
@@ -58,7 +59,7 @@ export default async function SearchPage({
           구분되지 않으므로, PostList의 기본 안내("게시글이 없습니다") 아래에 이유를 덧붙인다. */}
       {posts.length === 0 && searchType === 'NICKNAME' && (
         <p className="-mt-6 pb-4 text-center text-xs text-neutral-400">
-          작성자 검색은 닉네임이 정확히 일치해야 하며, 익명으로 쓴 글은 검색되지 않습니다.
+          {MESSAGES.post.search.nicknameSearchHint}
         </p>
       )}
       {/* 페이지를 넘겨도 검색 범위가 유지되도록 type까지 같이 실어 보낸다. */}

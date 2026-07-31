@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import ShareModal from './ShareModal'
 import ReportModal from '@/components/common/ReportModal'
 import { useAuth } from '@/lib/auth-context'
+import { MESSAGES } from '@/lib/messages'
 
 // 본문과 댓글 사이에 놓이는 하단 액션 바.
 // 좌측: 목록으로 이동 / 우측: 공유, 더보기(신고하기) 메뉴.
@@ -60,7 +61,7 @@ export default function PostActions({
   function handleReportClick() {
     setMenuOpen(false)
     if (!user) {
-      alert('신고하려면 로그인이 필요합니다.')
+      alert(MESSAGES.common.loginRequiredToReport)
       router.push('/login')
       return
     }

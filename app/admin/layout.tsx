@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
+import { MESSAGES } from '@/lib/messages'
 
 // 관리자 영역 공통 레이아웃.
 // 1) 접근 제어: 로그인 + role === 'ADMIN' 인 경우에만 콘텐츠를 렌더한다.
@@ -20,7 +21,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     return (
       <div className="py-16 text-center text-sm text-neutral-500 dark:text-neutral-400">
         <Link href="/login" className="text-blue-600 hover:underline dark:text-blue-400">로그인</Link>
-        {' '}이 필요합니다.
+        {' '}{MESSAGES.admin.loginGateSuffix}
       </div>
     )
   }
@@ -28,8 +29,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   if (user.role !== 'ADMIN') {
     return (
       <div className="py-16 text-center">
-        <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200">접근 권한이 없습니다.</p>
-        <p className="mt-1 text-xs text-neutral-400">관리자 전용 페이지입니다.</p>
+        <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200">{MESSAGES.admin.noAccessTitle}</p>
+        <p className="mt-1 text-xs text-neutral-400">{MESSAGES.admin.noAccessDescription}</p>
         <Link href="/" className="mt-4 inline-block text-sm text-blue-600 hover:underline dark:text-blue-400">
           홈으로
         </Link>

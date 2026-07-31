@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import Link from 'next/link'
+import { MESSAGES } from '@/lib/messages'
 
 // 라우트 세그먼트에서 발생한 런타임 에러 바운더리.
 // (예: SSR 중 API가 404 외 오류를 throw한 경우 등)
@@ -24,10 +25,10 @@ export default function Error({
         !
       </p>
       <h1 className="mt-4 text-lg font-bold text-neutral-900 dark:text-neutral-100">
-        문제가 발생했습니다
+        {MESSAGES.common.errorBoundary.title}
       </h1>
       <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-        일시적인 오류일 수 있습니다. 잠시 후 다시 시도해주세요.
+        {MESSAGES.common.errorBoundary.description}
       </p>
       <div className="mt-6 flex gap-2">
         <button

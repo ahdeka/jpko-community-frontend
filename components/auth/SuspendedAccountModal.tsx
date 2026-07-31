@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { CONTACT_EMAIL, SITE_NAME } from '@/lib/site'
+import { MESSAGES } from '@/lib/messages'
 
 interface Props {
   open: boolean
@@ -47,9 +48,9 @@ export default function SuspendedAccountModal({ open, onClose, email }: Props) {
 
   // mailto 프리필: 유저는 로그인을 못 하므로 시스템이 이메일을 모른다 → 본문에 직접 적도록 안내한다.
   // 시도한 이메일이 있으면 미리 채워, 유저가 다시 타이핑하지 않아도 되게 한다.
-  const subject = `[${SITE_NAME}] 계정 정지 문의`
+  const subject = MESSAGES.auth.suspendedAccount.mailSubject(SITE_NAME)
   const body = [
-    '아래 정보를 확인해 계정 정지 관련 문의를 남깁니다.',
+    MESSAGES.auth.suspendedAccount.mailBody,
     '',
     `- 가입 이메일: ${email ?? ''}`,
     '- 닉네임: ',
@@ -83,21 +84,22 @@ export default function SuspendedAccountModal({ open, onClose, email }: Props) {
           </span>
 
           <h2 id="suspended-title" className="text-base font-bold text-neutral-900 dark:text-neutral-100">
-            이용이 제한된 계정입니다
+            {MESSAGES.auth.suspendedAccount.title}
           </h2>
 
           <p className="text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">
-            커뮤니티 이용약관 위반이 확인되어 계정 이용이 정지되었습니다.
+            {MESSAGES.auth.suspendedAccount.description}
           </p>
 
           {/* 이의/해제 안내 박스 — 유저가 다음에 뭘 하면 되는지 명확히 제시한다. */}
           <div className="mt-1 w-full rounded-lg bg-neutral-50 p-4 text-left dark:bg-neutral-800/60">
             <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">
-              정지 사유 확인·해제 문의
+              {MESSAGES.auth.suspendedAccount.inquiryTitle}
             </p>
             <p className="mt-1 text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">
-              정지 사유가 궁금하거나 해제를 원하시면 아래 이메일로 문의해주세요.
-              확인이 빠르도록 <b className="font-semibold text-neutral-600 dark:text-neutral-300">가입하신 이메일 주소와 닉네임</b>을 함께 적어주세요.
+              {MESSAGES.auth.suspendedAccount.inquiryDescriptionPrefix}
+              <b className="font-semibold text-neutral-600 dark:text-neutral-300">{MESSAGES.auth.suspendedAccount.inquiryDescriptionEmphasis}</b>
+              {MESSAGES.auth.suspendedAccount.inquiryDescriptionSuffix}
             </p>
             <a
               href={mailtoHref}

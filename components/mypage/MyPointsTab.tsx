@@ -6,6 +6,7 @@ import { ApiError } from '@/lib/api/client'
 import { formatDateTime } from '@/lib/format'
 import { describeTransaction, transactionTypeMeta } from '@/lib/point'
 import { useAuth } from '@/lib/auth-context'
+import { MESSAGES } from '@/lib/messages'
 import type { PointTransaction } from '@/types'
 
 const PAGE_SIZE = 20
@@ -34,7 +35,7 @@ export default function MyPointsTab() {
       })
       .catch((e: unknown) => {
         if (cancelled) return
-        setError(e instanceof ApiError ? e.message : '포인트 내역을 불러오지 못했습니다.')
+        setError(e instanceof ApiError ? e.message : MESSAGES.mypage.myPoints.loadFailed)
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -56,7 +57,7 @@ export default function MyPointsTab() {
   if (!user || transactions.length === 0) {
     return (
       <div className="py-12 text-center text-sm text-neutral-400 dark:text-neutral-500">
-        포인트 거래 내역이 없습니다.
+        {MESSAGES.mypage.myPoints.empty}
       </div>
     )
   }

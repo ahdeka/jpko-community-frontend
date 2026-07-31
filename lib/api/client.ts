@@ -1,6 +1,7 @@
 // lib/api/client.ts
 
 import { ApiResponse } from '@/types'
+import { MESSAGES } from '@/lib/messages'
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL
 
@@ -75,7 +76,7 @@ async function request<T>(
 ): Promise<ApiResponse<T>> {
 
   if (!BASE_URL) {
-    throw new Error('NEXT_PUBLIC_API_URL 환경 변수가 설정되지 않았습니다.')
+    throw new Error(MESSAGES.common.apiUrlMissing)
   }
 
   const { headers: extraHeaders, signal, ...restOptions } = options ?? {}
@@ -119,10 +120,10 @@ async function request<T>(
     // 기본 메시지. 413은 nginx(client_max_body_size)가 백엔드에 닿기 전에 끊은 것이라
     // 응답 본문이 우리 API의 JSON이 아니라 nginx의 HTML이다. 아래 json() 파싱이 실패해
     // "요청에 실패했습니다."로 뭉뚱그려지면 용량 문제라는 걸 알 수 없으므로 여기서 구분해준다.
-    let message =
+    let message: string =
       response.status === 413
-        ? '파일 용량이 너무 큽니다. 더 작은 파일로 다시 시도해주세요.'
-        : '요청에 실패했습니다.'
+        ? MESSAGES.common.fileTooLarge
+        : MESSAGES.common.requestFailed
     let code: string | undefined
 
     try {

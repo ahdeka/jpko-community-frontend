@@ -1,4 +1,5 @@
 import type { ReportReason, ReportStatus, ReportTargetType } from '@/types'
+import { MESSAGES } from '@/lib/messages'
 
 // 신고 관련 표시 메타데이터의 단일 출처.
 // 백엔드는 enum 상수("SPAM", "PENDING" 등)로만 내려주므로 한글 표기·색상은 프론트가 관리한다.
@@ -149,29 +150,30 @@ export interface ReportCopy {
 
 export function reportCopy(targetType: ReportTargetType): ReportCopy {
   const label = targetTypeLabel(targetType)
+  const copy = MESSAGES.report.copy
   switch (targetType) {
     case 'USER':
       return {
-        subtitle: '이 회원을 신고하는 사유를 선택해주세요. 접수 후에는 취소할 수 없습니다.',
-        detailPlaceholder: '이 회원의 어떤 점이 문제였는지 구체적으로 알려주세요.',
-        selfError: '본인은 신고할 수 없습니다.',
-        goneError: '이미 탈퇴한 회원입니다.',
+        subtitle: copy.userSubtitle,
+        detailPlaceholder: copy.userDetailPlaceholder,
+        selfError: copy.selfErrorUser,
+        goneError: copy.goneErrorUser,
         goneCode: 'USER_NOT_FOUND',
       }
     case 'COMMENT':
       return {
-        subtitle: '신고 사유를 선택해주세요. 접수 후에는 취소할 수 없습니다.',
-        detailPlaceholder: '운영진이 판단하는 데 도움이 될 내용을 적어주세요.',
-        selfError: `본인이 작성한 ${label}은 신고할 수 없습니다.`,
-        goneError: `이미 삭제된 ${label}입니다.`,
+        subtitle: copy.defaultSubtitle,
+        detailPlaceholder: copy.defaultDetailPlaceholder,
+        selfError: copy.selfErrorWithLabel(label),
+        goneError: copy.goneErrorWithLabel(label),
         goneCode: 'COMMENT_NOT_FOUND',
       }
     case 'POST':
       return {
-        subtitle: '신고 사유를 선택해주세요. 접수 후에는 취소할 수 없습니다.',
-        detailPlaceholder: '운영진이 판단하는 데 도움이 될 내용을 적어주세요.',
-        selfError: `본인이 작성한 ${label}은 신고할 수 없습니다.`,
-        goneError: `이미 삭제된 ${label}입니다.`,
+        subtitle: copy.defaultSubtitle,
+        detailPlaceholder: copy.defaultDetailPlaceholder,
+        selfError: copy.selfErrorWithLabel(label),
+        goneError: copy.goneErrorWithLabel(label),
         goneCode: 'POST_NOT_FOUND',
       }
   }

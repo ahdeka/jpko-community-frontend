@@ -1,6 +1,7 @@
 import { PostSummary, NoticeSummary } from '@/types'
 import PostRow, { POST_GRID, type PostRowVariant } from './PostRow'
 import NoticeRow from '@/components/notice/NoticeRow'
+import { MESSAGES } from '@/lib/messages'
 
 interface Props {
   posts: PostSummary[]
@@ -25,7 +26,7 @@ export default function PostList({
 }: Props) {
   // 공지·게시글이 모두 없을 때만 빈 상태 문구를 보여준다.
   if (posts.length === 0 && pinnedNotices.length === 0) {
-    return <p className="text-neutral-500 text-center py-10">게시글이 없습니다.</p>
+    return <p className="text-neutral-500 text-center py-10">{MESSAGES.post.list.empty}</p>
   }
 
   const rows = (

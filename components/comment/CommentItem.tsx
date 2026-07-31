@@ -8,6 +8,7 @@ import ReportModal from '@/components/common/ReportModal'
 import { commentsApi } from '@/lib/api/comments'
 import { ApiError } from '@/lib/api/client'
 import { useAuth } from '@/lib/auth-context'
+import { MESSAGES } from '@/lib/messages'
 import AuthorName from '@/components/common/AuthorName'
 
 interface Props {
@@ -63,7 +64,7 @@ export default function CommentItem({ comment, postId, isReply = false, rootId }
   const [reportOpen, setReportOpen] = useState(false)
 
   async function handleDelete() {
-    if (!confirm('댓글을 삭제하시겠습니까?')) return
+    if (!confirm(MESSAGES.comment.deleteConfirm)) return
 
     setDeleting(true)
     try {
@@ -80,7 +81,7 @@ export default function CommentItem({ comment, postId, isReply = false, rootId }
     <li className={isReply ? 'ml-6 sm:ml-10' : ''}>
       {comment.deleted ? (
         <div className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3 dark:border-neutral-800 dark:bg-neutral-900/50">
-          <p className="text-sm italic text-gray-400 dark:text-neutral-500">삭제된 댓글입니다.</p>
+          <p className="text-sm italic text-gray-400 dark:text-neutral-500">{MESSAGES.comment.deletedPlaceholder}</p>
         </div>
       ) : (
         <div className="overflow-hidden rounded-lg border border-gray-100 dark:border-neutral-800">

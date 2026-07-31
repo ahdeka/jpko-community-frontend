@@ -14,6 +14,7 @@ import EmailVerificationBanner from '@/components/mypage/EmailVerificationBanner
 import GradeInfoPopover from '@/components/common/GradeInfoPopover'
 import PointInfoPopover from '@/components/common/PointInfoPopover'
 import { gradeMeta } from '@/lib/grade'
+import { MESSAGES } from '@/lib/messages'
 
 type Tab = 'posts' | 'comments' | 'points' | 'reports' | 'profile'
 
@@ -66,7 +67,7 @@ export default function MyPage() {
     return (
       <div className="py-16 text-center text-sm text-neutral-500 dark:text-neutral-400">
         <Link href="/login" className="text-blue-600 hover:underline dark:text-blue-400">로그인</Link>
-        {' '}후 마이페이지를 이용할 수 있습니다.
+        {' '}{MESSAGES.mypage.loginGateSuffix}
       </div>
     )
   }

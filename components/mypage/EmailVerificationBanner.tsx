@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { authApi } from '@/lib/api/auth'
 import { ApiError } from '@/lib/api/client'
+import { MESSAGES } from '@/lib/messages'
 
 // 마이페이지 상단의 이메일 미인증 경고 배너.
 // 인증은 "권장"일 뿐 필수가 아니므로(모든 기능 이용 가능), 차단이 아닌 노란 경고 톤으로 안내한다.
@@ -32,12 +33,12 @@ export default function EmailVerificationBanner() {
           return
         }
         if (e.code === 'INVALID_EMAIL_DOMAIN') {
-          setError('메일을 받을 수 없는 이메일 주소입니다. 이메일을 다시 확인해주세요.')
+          setError(MESSAGES.mypage.emailVerification.invalidDomain)
         } else {
           setError(e.message)
         }
       } else {
-        setError('인증 메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.')
+        setError(MESSAGES.mypage.emailVerification.sendFailed)
       }
     } finally {
       setLoading(false)
@@ -62,15 +63,14 @@ export default function EmailVerificationBanner() {
           <line x1="12" y1="17" x2="12.01" y2="17" />
         </svg>
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">이메일 인증이 필요합니다</p>
+          <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">{MESSAGES.mypage.emailVerification.bannerTitle}</p>
           {sent ? (
             <p className="mt-0.5 text-xs text-amber-700 dark:text-amber-400">
-              <strong>{user.email}</strong> 으로 인증 메일을 보냈습니다. 메일함(스팸함 포함)의 링크를
-              눌러 인증을 완료해주세요.
+              <strong>{user.email}</strong> {MESSAGES.mypage.emailVerification.sentAfterEmail}
             </p>
           ) : (
             <p className="mt-0.5 text-xs text-amber-700 dark:text-amber-400">
-              모든 기능은 이용할 수 있지만, 비밀번호 찾기 등 계정 보호를 위해 이메일 인증을 권장합니다.
+              {MESSAGES.mypage.emailVerification.notVerifiedInfo}
             </p>
           )}
           {error && <p className="mt-1 text-xs text-red-500">{error}</p>}

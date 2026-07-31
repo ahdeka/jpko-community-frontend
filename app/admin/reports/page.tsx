@@ -15,6 +15,7 @@ import {
   statusMeta,
   targetTypeLabel,
 } from '@/lib/report'
+import { MESSAGES } from '@/lib/messages'
 import type {
   AdminReportDetail,
   AdminReportSummary,
@@ -74,7 +75,7 @@ export default function AdminReportsPage() {
         setTotalElements(res.data?.totalElements ?? 0)
       })
       .catch((e: unknown) =>
-        setError(e instanceof ApiError ? e.message : '신고 목록을 불러오지 못했습니다.'),
+        setError(e instanceof ApiError ? e.message : MESSAGES.admin.reports.loadFailed),
       )
       .finally(() => setLoading(false))
   }, [targetType, status, page])
@@ -108,7 +109,7 @@ export default function AdminReportsPage() {
       setDetails(prev => ({ ...prev, [key]: res.data ?? [] }))
     } catch (e) {
       // 상세 조회 실패는 목록 전체를 망가뜨리지 않고 해당 행에만 알린다.
-      alert(e instanceof ApiError ? e.message : '신고 상세를 불러오지 못했습니다.')
+      alert(e instanceof ApiError ? e.message : MESSAGES.admin.reports.detailLoadFailed)
       setExpanded(null)
     } finally {
       setDetailLoading(false)
@@ -134,10 +135,7 @@ export default function AdminReportsPage() {
   async function handleDelete(report: AdminReportSummary) {
     if (report.targetType !== 'POST' && report.targetType !== 'COMMENT') return
     const label = targetTypeLabel(report.targetType)
-    const message =
-      `이 ${label}을(를) 삭제할까요?\n\n` +
-      `· 작성자(${report.targetAuthor})에게 삭제 알림이 전송됩니다.\n` +
-      `· 이 대상에 접수된 신고 ${report.reportCount}건이 '조치 완료'로 처리됩니다.`
+    const message = MESSAGES.admin.reports.deleteConfirm(label, report.targetAuthor, report.reportCount)
     if (!confirm(message)) return
 
     const key = targetKey(report.targetType, report.targetId)
@@ -153,7 +151,7 @@ export default function AdminReportsPage() {
       //  이 시점에 재조회하면 이미 RESOLVED가 반영돼 있다.)
       afterResolved(key)
     } catch (e) {
-      alert(e instanceof ApiError ? e.message : '삭제에 실패했습니다.')
+      alert(e instanceof ApiError ? e.message : MESSAGES.admin.reports.deleteFailed)
     } finally {
       setPendingKey(null)
     }
@@ -169,10 +167,7 @@ export default function AdminReportsPage() {
   // ①이 멱등이라 그대로 재시도하면 복구된다.
   async function handleSuspendUser(report: AdminReportSummary) {
     const target = report.targetPreview // USER 신고의 미리보기는 대상 회원의 닉네임이다.
-    const message =
-      `'${target}' 회원을 정지할까요?\n\n` +
-      `· 해당 회원은 즉시 로그아웃되며 로그인할 수 없습니다.\n` +
-      `· 이 회원에 접수된 신고 ${report.reportCount}건이 '조치 완료'로 처리됩니다.`
+    const message = MESSAGES.admin.reports.suspendUserConfirm(target, report.reportCount)
     if (!confirm(message)) return
 
     const key = targetKey(report.targetType, report.targetId)
@@ -182,7 +177,7 @@ export default function AdminReportsPage() {
       await adminReportsApi.updateTargetStatus('USER', report.targetId, 'RESOLVED')
       afterResolved(key)
     } catch (e) {
-      alert(e instanceof ApiError ? e.message : '회원 정지에 실패했습니다.')
+      alert(e instanceof ApiError ? e.message : MESSAGES.admin.reports.suspendUserFailed)
     } finally {
       setPendingKey(null)
     }
@@ -190,10 +185,7 @@ export default function AdminReportsPage() {
 
   // 반려 = 대상은 두고 신고만 기각. 되돌릴 수 없으므로 확인을 받는다.
   async function handleReject(report: AdminReportSummary) {
-    const message =
-      `이 신고를 반려할까요?\n\n` +
-      `· 대상은 삭제되지 않고 그대로 유지됩니다.\n` +
-      `· 반려한 신고는 다시 되돌릴 수 없습니다.`
+    const message = MESSAGES.admin.reports.rejectConfirm
     if (!confirm(message)) return
 
     const key = targetKey(report.targetType, report.targetId)
@@ -202,7 +194,7 @@ export default function AdminReportsPage() {
       await adminReportsApi.updateTargetStatus(report.targetType, report.targetId, 'REJECTED')
       afterResolved(key)
     } catch (e) {
-      alert(e instanceof ApiError ? e.message : '반려 처리에 실패했습니다.')
+      alert(e instanceof ApiError ? e.message : MESSAGES.admin.reports.rejectFailed)
     } finally {
       setPendingKey(null)
     }
@@ -261,7 +253,7 @@ export default function AdminReportsPage() {
         <p className="py-12 text-center text-sm text-red-500">{error}</p>
       ) : reports.length === 0 ? (
         <p className="py-12 text-center text-sm text-neutral-400">
-          {status === 'PENDING' ? '처리할 신고가 없습니다.' : '해당하는 신고가 없습니다.'}
+          {status === 'PENDING' ? MESSAGES.admin.reports.emptyPending : MESSAGES.admin.reports.emptyOther}
         </p>
       ) : (
         <ul className="flex flex-col gap-2">

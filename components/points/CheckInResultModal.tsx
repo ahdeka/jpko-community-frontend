@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import type { CheckInInfo } from '@/types'
+import { MESSAGES } from '@/lib/messages'
 
 interface Props {
   // null이면 닫힘. checkedIn=false(오늘 이미 했음)는 AuthProvider가 애초에
@@ -94,24 +95,25 @@ export default function CheckInResultModal({ info, onClose }: Props) {
 
           {gained && (
             <p className="text-sm leading-relaxed text-neutral-600 dark:text-neutral-300">
+              {MESSAGES.points.checkin.gainedPrefix}
               <span className="font-semibold text-orange-600 dark:text-orange-400">
                 {amount.toLocaleString()}P
               </span>
-              를 획득했습니다!
+              {MESSAGES.points.checkin.gainedSuffix}
             </p>
           )}
           {lost && (
             <p className="text-sm leading-relaxed text-neutral-600 dark:text-neutral-300">
-              아쉽게도{' '}
+              {MESSAGES.points.checkin.lostPrefix}
               <span className="font-semibold text-red-600 dark:text-red-400">
                 {Math.abs(amount).toLocaleString()}P
               </span>
-              가 차감되었습니다.
+              {MESSAGES.points.checkin.lostSuffix}
             </p>
           )}
           {!gained && !lost && (
             <p className="text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">
-              오늘의 출첵을 완료했지만 포인트 변동은 없었습니다.
+              {MESSAGES.points.checkin.neutral}
             </p>
           )}
 

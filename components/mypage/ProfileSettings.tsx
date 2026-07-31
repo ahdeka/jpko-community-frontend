@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { usersApi } from '@/lib/api/users'
 import { ApiError } from '@/lib/api/client'
+import { MESSAGES } from '@/lib/messages'
 import WithdrawModal from '@/components/mypage/WithdrawModal'
 
 // 자기소개 최대 길이 — 백엔드 UpdateBioRequest @Size(max=200)와 일치시킨다.
@@ -21,14 +22,14 @@ const NICKNAME_RE = /^[가-힣a-zA-Z0-9]+$/
 // 로그인과 메시지를 공유하는 WRONG_PASSWORD라도 code로 구분해 맥락별 안내가 가능하다.
 // (백엔드에 별도 ERROR_CODE를 추가할 필요 없음)
 function passwordErrorMessage(err: unknown): string {
-  if (!(err instanceof ApiError)) return '비밀번호 변경에 실패했습니다.'
+  if (!(err instanceof ApiError)) return MESSAGES.mypage.profileSettings.passwordChangeFailedGeneric
   switch (err.code) {
     case 'WRONG_PASSWORD':
-      return '현재 비밀번호가 일치하지 않습니다.'
+      return MESSAGES.mypage.profileSettings.wrongCurrentPassword
     case 'SAME_AS_CURRENT_PASSWORD':
-      return '새 비밀번호가 현재 비밀번호와 동일합니다.'
+      return MESSAGES.mypage.profileSettings.sameAsCurrentPassword
     case 'PASSWORD_MISMATCH':
-      return '새 비밀번호가 일치하지 않습니다.'
+      return MESSAGES.mypage.profileSettings.passwordMismatch
     default:
       return err.message // 그 외에는 서버 메시지를 그대로 노출
   }
@@ -60,7 +61,7 @@ export default function ProfileSettings() {
     // 백엔드와 동일 기준(trim 후 길이)으로 1차 검증. 빈 값은 허용(= 자기소개 삭제).
     const trimmed = bio.trim()
     if (trimmed.length > BIO_MAX) {
-      setBioMsg({ type: 'error', text: `자기소개는 ${BIO_MAX}자 이하여야 합니다.` })
+      setBioMsg({ type: 'error', text: MESSAGES.mypage.profileSettings.bioTooLong(BIO_MAX) })
       return
     }
 
@@ -71,11 +72,11 @@ export default function ProfileSettings() {
       // 다른 화면·다음 렌더가 최신 bio를 쓰도록 Context의 user도 갱신한다.
       setBio(trimmed)
       await fetchUser()
-      setBioMsg({ type: 'success', text: '자기소개가 저장되었습니다.' })
+      setBioMsg({ type: 'success', text: MESSAGES.mypage.profileSettings.bioSaved })
     } catch (err) {
       setBioMsg({
         type: 'error',
-        text: err instanceof ApiError ? err.message : '자기소개 저장에 실패했습니다.',
+        text: err instanceof ApiError ? err.message : MESSAGES.mypage.profileSettings.bioSaveFailed,
       })
     } finally {
       setBioLoading(false)
@@ -94,15 +95,15 @@ export default function ProfileSettings() {
     const trimmed = nickname.trim()
     // 백엔드와 동일 기준(trim → 2~20자 → 한글·영문·숫자 패턴)으로 1차 검증
     if (trimmed.length < 2 || trimmed.length > 20) {
-      setNickMsg({ type: 'error', text: '닉네임은 2~20자 사이여야 합니다.' })
+      setNickMsg({ type: 'error', text: MESSAGES.mypage.profileSettings.nicknameLength })
       return
     }
     if (!NICKNAME_RE.test(trimmed)) {
-      setNickMsg({ type: 'error', text: '닉네임은 한글, 영문, 숫자만 사용할 수 있습니다.' })
+      setNickMsg({ type: 'error', text: MESSAGES.mypage.profileSettings.nicknamePattern })
       return
     }
     if (trimmed === user?.nickname) {
-      setNickMsg({ type: 'error', text: '현재 닉네임과 동일합니다.' })
+      setNickMsg({ type: 'error', text: MESSAGES.mypage.profileSettings.nicknameSameAsCurrent })
       return
     }
 
@@ -111,11 +112,11 @@ export default function ProfileSettings() {
       await usersApi.updateNickname(trimmed)
       // 헤더 등 다른 곳의 닉네임도 즉시 갱신되도록 사용자 정보 재조회
       await fetchUser()
-      setNickMsg({ type: 'success', text: '닉네임이 변경되었습니다.' })
+      setNickMsg({ type: 'success', text: MESSAGES.mypage.profileSettings.nicknameChanged })
     } catch (err) {
       setNickMsg({
         type: 'error',
-        text: err instanceof ApiError ? err.message : '닉네임 변경에 실패했습니다.',
+        text: err instanceof ApiError ? err.message : MESSAGES.mypage.profileSettings.nicknameChangeFailed,
       })
     } finally {
       setNickLoading(false)
@@ -138,15 +139,15 @@ export default function ProfileSettings() {
 
     // 백엔드 검증 전에 클라이언트에서 즉시 걸러 불필요한 요청 방지
     if (!currentPassword) {
-      setPwMsg({ type: 'error', text: '현재 비밀번호를 입력해주세요.' })
+      setPwMsg({ type: 'error', text: MESSAGES.mypage.profileSettings.currentPasswordRequired })
       return
     }
     if (newPassword.length < 8 || newPassword.length > 50) {
-      setPwMsg({ type: 'error', text: '새 비밀번호는 8~50자 사이여야 합니다.' })
+      setPwMsg({ type: 'error', text: MESSAGES.mypage.profileSettings.newPasswordLength })
       return
     }
     if (newPassword !== newPasswordConfirm) {
-      setPwMsg({ type: 'error', text: '새 비밀번호가 일치하지 않습니다.' })
+      setPwMsg({ type: 'error', text: MESSAGES.mypage.profileSettings.passwordMismatch })
       return
     }
     // "새 비번 == 현재 비번" 여부는 클라에서 raw 입력으로 판단하지 않는다.
@@ -157,7 +158,7 @@ export default function ProfileSettings() {
     setPwLoading(true)
     try {
       await usersApi.updatePassword({ currentPassword, newPassword, newPasswordConfirm })
-      setPwMsg({ type: 'success', text: '비밀번호가 변경되었습니다.' })
+      setPwMsg({ type: 'success', text: MESSAGES.mypage.profileSettings.passwordChanged })
       // 성공 시 입력값 비우기 (민감정보를 화면에 남기지 않음)
       setCurrentPassword('')
       setNewPassword('')
@@ -275,7 +276,7 @@ export default function ProfileSettings() {
       <section>
         <h3 className="mb-1 text-sm font-bold text-red-600 dark:text-red-500">회원 탈퇴</h3>
         <p className="mb-3 text-xs text-neutral-500 dark:text-neutral-400">
-          탈퇴 시 계정이 비활성화되며 되돌릴 수 없습니다.
+          {MESSAGES.mypage.profileSettings.withdrawNotice}
         </p>
         <button
           type="button"

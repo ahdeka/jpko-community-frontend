@@ -7,6 +7,7 @@ import { authApi } from '@/lib/api/auth'
 import { ApiError } from '@/lib/api/client'
 import { useAuth } from '@/lib/auth-context'
 import { useRedirectIfAuthenticated } from '@/lib/use-auth-guard'
+import { MESSAGES } from '@/lib/messages'
 import RedirectingOverlay from './RedirectingOverlay'
 import SuspendedAccountModal from './SuspendedAccountModal'
 
@@ -33,8 +34,8 @@ export default function LoginForm() {
 
   function validate(): FieldErrors {
     const errs: FieldErrors = {}
-    if (!email.trim()) errs.email = '이메일을 입력해주세요.'
-    if (!password) errs.password = '비밀번호를 입력해주세요.'
+    if (!email.trim()) errs.email = MESSAGES.auth.login.emailRequired
+    if (!password) errs.password = MESSAGES.auth.login.passwordRequired
     return errs
   }
 
@@ -61,7 +62,7 @@ export default function LoginForm() {
     } catch (e) {
       if (e instanceof ApiError) {
         if (e.code === 'WRONG_PASSWORD' || e.code === 'USER_NOT_FOUND') {
-          setApiError('이메일 또는 비밀번호가 올바르지 않습니다.')
+          setApiError(MESSAGES.auth.login.invalidCredentials)
         } else if (e.code === 'SUSPENDED_ACCOUNT') {
           // 비밀번호까지 맞아야 도달하는 분기. 인라인 에러 대신 모달로 상세 안내한다.
           setSuspendedOpen(true)

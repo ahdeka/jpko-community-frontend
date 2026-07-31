@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { PostSummary } from '@/types'
 import ImageBadge from '@/components/common/ImageBadge'
+import { MESSAGES } from '@/lib/messages'
 
 interface Props {
   posts: PostSummary[]
@@ -8,7 +9,7 @@ interface Props {
 
 export default function RankedPostList({ posts }: Props) {
   if (posts.length === 0) {
-    return <p className="text-neutral-500 text-center py-6 text-sm">게시글이 없습니다.</p>
+    return <p className="text-neutral-500 text-center py-6 text-sm">{MESSAGES.post.list.empty}</p>
   }
 
   return (

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { reportsApi } from '@/lib/api/reports'
 import { ApiError } from '@/lib/api/client'
 import { REPORT_DETAIL_MAX, reasonsFor, reportCopy, targetTypeLabel } from '@/lib/report'
+import { MESSAGES } from '@/lib/messages'
 import type { ReportReason, ReportTargetType } from '@/types'
 
 interface Props {
@@ -87,13 +88,13 @@ export default function ReportModal({ open, onClose, targetType, targetId }: Pro
     setError(null)
 
     if (!reason) {
-      setError('신고 사유를 선택해주세요.')
+      setError(MESSAGES.report.modal.reasonRequired)
       return
     }
 
     const trimmed = detail.trim()
     if (reason === 'ETC' && !trimmed) {
-      setError('기타 사유를 선택하셨다면 상세 내용을 입력해주세요.')
+      setError(MESSAGES.report.modal.etcDetailRequired)
       detailRef.current?.focus()
       return
     }
@@ -113,7 +114,7 @@ export default function ReportModal({ open, onClose, targetType, targetId }: Pro
       if (err instanceof ApiError) {
         // 서버만 알 수 있는 상태들을 사용자가 이해할 수 있는 문장으로 바꾼다.
         if (err.code === 'REPORT_ALREADY_EXISTS') {
-          setError(`이미 신고하신 ${label}입니다. 접수된 신고는 운영진이 확인하고 있습니다.`)
+          setError(MESSAGES.report.modal.alreadyReported(label))
           return
         }
         if (err.code === 'SELF_REPORT_NOT_ALLOWED') {
@@ -129,7 +130,7 @@ export default function ReportModal({ open, onClose, targetType, targetId }: Pro
         setError(err.message)
         return
       }
-      setError('신고 접수에 실패했습니다. 잠시 후 다시 시도해주세요.')
+      setError(MESSAGES.report.modal.genericFailed)
     }
   }
 
@@ -155,10 +156,9 @@ export default function ReportModal({ open, onClose, targetType, targetId }: Pro
                 <path d="M20 6 9 17l-5-5" />
               </svg>
             </span>
-            <h2 className="text-base font-bold text-neutral-900 dark:text-neutral-100">신고가 접수되었습니다</h2>
+            <h2 className="text-base font-bold text-neutral-900 dark:text-neutral-100">{MESSAGES.report.modal.doneTitle}</h2>
             <p className="text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">
-              운영진이 확인 후 조치할 예정입니다.<br />
-              처리 결과는 마이페이지의 <b className="font-semibold text-neutral-600 dark:text-neutral-300">내 신고</b> 탭에서 확인하실 수 있습니다.
+              {MESSAGES.report.modal.doneDescription}
             </p>
             <button
               type="button"
@@ -254,7 +254,7 @@ export default function ReportModal({ open, onClose, targetType, targetId }: Pro
                   disabled={loading}
                   placeholder={
                     reason === 'ETC'
-                      ? '어떤 점이 문제인지 구체적으로 알려주세요.'
+                      ? MESSAGES.report.modal.etcPlaceholder
                       : copy.detailPlaceholder
                   }
                   className="w-full resize-none rounded border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-red-400 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-red-500"
@@ -269,7 +269,7 @@ export default function ReportModal({ open, onClose, targetType, targetId }: Pro
               )}
 
               <p className="text-[11px] leading-relaxed text-neutral-400 dark:text-neutral-500">
-                허위 신고가 반복되면 이용에 제한을 받을 수 있습니다.
+                {MESSAGES.report.modal.falseReportWarning}
               </p>
 
               <div className="mt-1 flex gap-2">

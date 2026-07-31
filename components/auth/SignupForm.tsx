@@ -7,6 +7,7 @@ import { authApi } from '@/lib/api/auth'
 import { ApiError } from '@/lib/api/client'
 import { useAuth } from '@/lib/auth-context'
 import { useRedirectIfAuthenticated } from '@/lib/use-auth-guard'
+import { MESSAGES } from '@/lib/messages'
 import RedirectingOverlay from './RedirectingOverlay'
 
 type FieldName =
@@ -60,41 +61,41 @@ export default function SignupForm() {
     // (앞뒤 공백만 있는 입력이 형식 오류로 오탐되는 것을 방지).
     const trimmedEmail = email.trim()
     if (!trimmedEmail) {
-      errs.email = '이메일을 입력해주세요.'
+      errs.email = MESSAGES.auth.signup.emailRequired
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
-      errs.email = '이메일 형식이 올바르지 않습니다.'
+      errs.email = MESSAGES.auth.signup.emailInvalid
     }
 
     if (!password) {
-      errs.password = '비밀번호를 입력해주세요.'
+      errs.password = MESSAGES.auth.signup.passwordRequired
     } else if (password.length < 8) {
-      errs.password = '비밀번호는 8자 이상이어야 합니다.'
+      errs.password = MESSAGES.auth.signup.passwordTooShort
     }
 
     // 비밀번호 확인: 비어있는지 먼저 보고, 그 다음 일치 여부.
     // 비밀번호 자체가 비어있으면 일치 비교는 의미가 없으므로 password가 있을 때만 비교.
     if (!passwordConfirm) {
-      errs.passwordConfirm = '비밀번호 확인을 입력해주세요.'
+      errs.passwordConfirm = MESSAGES.auth.signup.passwordConfirmRequired
     } else if (password && password !== passwordConfirm) {
-      errs.passwordConfirm = '비밀번호와 비밀번호 확인이 일치하지 않습니다.'
+      errs.passwordConfirm = MESSAGES.auth.signup.passwordMismatch
     }
 
     // 백엔드는 nickname을 trim() 후 @Size(2~20) + @Pattern(한글·영문·숫자)로 검사한다. 동일 순서로 미러링.
     const trimmedNickname = nickname.trim()
     if (!trimmedNickname) {
-      errs.nickname = '닉네임을 입력해주세요.'
+      errs.nickname = MESSAGES.auth.signup.nicknameRequired
     } else if (trimmedNickname.length < 2 || trimmedNickname.length > 20) {
-      errs.nickname = '닉네임은 2자 이상 20자 이하여야 합니다.'
+      errs.nickname = MESSAGES.auth.signup.nicknameLength
     } else if (!NICKNAME_RE.test(trimmedNickname)) {
-      errs.nickname = '닉네임은 한글, 영문, 숫자만 사용할 수 있습니다.'
+      errs.nickname = MESSAGES.auth.signup.nicknamePattern
     }
 
     // 필수 동의 항목. 체크 해제 시 제출을 막는다(백엔드 거절 전에 클라이언트에서 선차단).
     if (!termsAgreed) {
-      errs.termsAgreed = '이용약관에 동의해주세요.'
+      errs.termsAgreed = MESSAGES.auth.signup.termsRequired
     }
     if (!privacyAgreed) {
-      errs.privacyAgreed = '개인정보처리방침에 동의해주세요.'
+      errs.privacyAgreed = MESSAGES.auth.signup.privacyRequired
     }
 
     return errs
@@ -166,9 +167,9 @@ export default function SignupForm() {
         // 서버 에러는 message가 아니라 code로 분기해 해당 필드에 매핑한다.
         // (백엔드는 한 번에 하나의 에러만 내려주므로, code별로 한 곳에 표시)
         if (e.code === 'DUPLICATE_EMAIL') {
-          setServerErrors(prev => ({ ...prev, email: '이미 사용 중인 이메일입니다.' }))
+          setServerErrors(prev => ({ ...prev, email: MESSAGES.auth.signup.duplicateEmail }))
         } else if (e.code === 'DUPLICATE_NICKNAME') {
-          setServerErrors(prev => ({ ...prev, nickname: '이미 사용 중인 닉네임입니다.' }))
+          setServerErrors(prev => ({ ...prev, nickname: MESSAGES.auth.signup.duplicateNickname }))
         } else if (e.code === 'PASSWORD_MISMATCH') {
           // 클라이언트 선검증을 통과했더라도(예: 검증 우회) 최종 게이트로 방어
           setServerErrors(prev => ({ ...prev, passwordConfirm: e.message }))
@@ -177,7 +178,7 @@ export default function SignupForm() {
           setApiError(e.message)
         }
       } else {
-        setApiError('회원가입 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
+        setApiError(MESSAGES.auth.signup.genericError)
       }
     } finally {
       setLoading(false)
@@ -275,7 +276,7 @@ export default function SignupForm() {
         )}
         {passwordMatched && !passwordConfirmError && (
           <p className="text-xs text-green-600 dark:text-green-500 mt-1">
-            비밀번호가 일치합니다.
+            {MESSAGES.auth.signup.passwordMatched}
           </p>
         )}
       </div>

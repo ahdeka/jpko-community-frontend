@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { pointsApi } from '@/lib/api/points'
 import { rouletteApi } from '@/lib/api/roulette'
 import { ApiError } from '@/lib/api/client'
+import { MESSAGES } from '@/lib/messages'
 import type { RouletteConfig, RouletteOpponent, RouletteSpinResult } from '@/types'
 
 // 휠 세그먼트 구성. 12시 방향(0deg)부터 시계방향으로 승/패가 번갈아 나온다.
@@ -105,7 +106,7 @@ export default function RouletteGame() {
       await rouletteApi.unlockOpponent()
       setOpponent(null)
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : '고정 해제에 실패했습니다.')
+      setError(e instanceof ApiError ? e.message : MESSAGES.points.roulette.unlockFailed)
     }
   }
 
@@ -115,7 +116,7 @@ export default function RouletteGame() {
       await rouletteApi.lockOpponent(opponentId)
       refreshOpponent()
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : '상대 고정에 실패했습니다.')
+      setError(e instanceof ApiError ? e.message : MESSAGES.points.roulette.lockFailed)
     } finally {
       setLockPending(false)
     }
@@ -151,15 +152,15 @@ export default function RouletteGame() {
 
     const amount = Number(betAmount)
     if (!Number.isFinite(amount) || amount <= 0) {
-      setError('배팅액을 입력해주세요.')
+      setError(MESSAGES.points.roulette.betRequired)
       return
     }
     if (amount < config.minBet || amount > config.maxBet) {
-      setError(`배팅액은 ${config.minBet.toLocaleString()}P ~ ${config.maxBet.toLocaleString()}P 사이여야 합니다.`)
+      setError(MESSAGES.points.roulette.betRange(config.minBet.toLocaleString(), config.maxBet.toLocaleString()))
       return
     }
     if (amount % config.betUnit !== 0) {
-      setError(`배팅액은 ${config.betUnit.toLocaleString()}P 단위로만 가능합니다.`)
+      setError(MESSAGES.points.roulette.betUnitMismatch(config.betUnit.toLocaleString()))
       return
     }
 
@@ -177,7 +178,7 @@ export default function RouletteGame() {
       revealTimeoutRef.current = setTimeout(revealPendingResult, 2800)
     } catch (e) {
       setSpinning(false)
-      setError(e instanceof ApiError ? e.message : '룰렛 진행에 실패했습니다.')
+      setError(e instanceof ApiError ? e.message : MESSAGES.points.roulette.spinFailed)
     }
   }
 
@@ -226,7 +227,7 @@ export default function RouletteGame() {
           </div>
         ) : (
           <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-            다음 스핀은 랜덤 상대와 겨룹니다.
+            {MESSAGES.points.roulette.randomOpponentHint}
           </p>
         )}
       </div>
@@ -310,8 +311,8 @@ export default function RouletteGame() {
             }`}
           >
             {result.win
-              ? `${result.opponentNickname}님을 이기고 ${result.resultAmount.toLocaleString()}P를 가져왔습니다!`
-              : `${result.opponentNickname}님에게 ${result.resultAmount.toLocaleString()}P를 잃었습니다.`}
+              ? MESSAGES.points.roulette.win(result.opponentNickname, result.resultAmount.toLocaleString())
+              : MESSAGES.points.roulette.lose(result.opponentNickname, result.resultAmount.toLocaleString())}
           </p>
           <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
             수수료 {result.fee.toLocaleString()}P 차감 · 잔액 {result.balanceAfter.toLocaleString()}P

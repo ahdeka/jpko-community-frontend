@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { MESSAGES } from '@/lib/messages'
 
 export const metadata: Metadata = { title: '페이지를 찾을 수 없습니다' }
 
@@ -10,10 +11,10 @@ export default function NotFound() {
     <div className="flex flex-col items-center justify-center py-20 text-center">
       <p className="text-6xl font-extrabold text-orange-500">404</p>
       <h1 className="mt-4 text-lg font-bold text-neutral-900 dark:text-neutral-100">
-        페이지를 찾을 수 없습니다
+        {MESSAGES.common.notFound.title}
       </h1>
       <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-        요청하신 페이지가 없거나 이동·삭제되었을 수 있습니다.
+        {MESSAGES.common.notFound.description}
       </p>
       <div className="mt-6 flex gap-2">
         <Link

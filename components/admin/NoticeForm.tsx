@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { noticesApi } from '@/lib/api/notices'
 import { ApiError } from '@/lib/api/client'
 import { useUnsavedChanges } from '@/lib/use-unsaved-changes'
+import { MESSAGES } from '@/lib/messages'
 import TiptapEditor, { MAX_CONTENT_LENGTH } from '@/components/post/TiptapEditor'
 
 interface Props {
@@ -60,10 +61,10 @@ export default function NoticeForm({
 
   function validate(): Record<string, string> {
     const errs: Record<string, string> = {}
-    if (!title.trim()) errs.title = '제목을 입력해주세요.'
-    else if (title.length > 100) errs.title = '제목은 100자 이하여야 합니다.'
-    if (!plainText && !hasImage) errs.content = '내용을 입력해주세요.'
-    else if (overLimit) errs.content = `본문은 ${MAX_CONTENT_LENGTH.toLocaleString()}자 이하여야 합니다.`
+    if (!title.trim()) errs.title = MESSAGES.admin.noticeForm.titleRequired
+    else if (title.length > 100) errs.title = MESSAGES.admin.noticeForm.titleTooLong
+    if (!plainText && !hasImage) errs.content = MESSAGES.admin.noticeForm.contentRequired
+    else if (overLimit) errs.content = MESSAGES.admin.noticeForm.contentTooLong(MAX_CONTENT_LENGTH.toLocaleString())
     return errs
   }
 
@@ -72,7 +73,7 @@ export default function NoticeForm({
 
     // 버튼 disabled와 별개로 한 번 더 막는다(Enter 제출 등 버튼을 거치지 않는 경로 대비)
     if (imageUploading) {
-      setErrors({ form: '이미지 업로드가 끝난 뒤 저장해주세요.' })
+      setErrors({ form: MESSAGES.admin.noticeForm.imageUploading })
       return
     }
 
@@ -98,11 +99,11 @@ export default function NoticeForm({
       if (err instanceof ApiError && err.status === 401) {
         router.push('/login')
       } else if (err instanceof ApiError && err.status === 403) {
-        setErrors({ form: '관리자 권한이 없습니다.' })
+        setErrors({ form: MESSAGES.admin.noticeForm.forbidden })
       } else if (err instanceof ApiError) {
         setErrors({ form: err.message })
       } else {
-        setErrors({ form: '요청에 실패했습니다.' })
+        setErrors({ form: MESSAGES.common.requestFailed })
       }
     } finally {
       setLoading(false)
