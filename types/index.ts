@@ -47,6 +47,14 @@ export interface User {
   bio: string | null;
 }
 
+// 로그인/회원가입 응답 (백엔드 LoginResponse와 1:1)
+// 회원가입 경로는 룰렛 대상이 아니라 roulette.spun이 항상 false로 온다.
+export interface LoginResponse {
+  nickname: string;
+  role: UserRole;
+  roulette: RouletteInfo;
+}
+
 // 공개 프로필 (백엔드 PublicProfileResponse와 1:1)
 // GET /api/users/by-nickname/{nickname} 응답. 인증 없이 조회 가능하며,
 // 탈퇴(DELETED) 회원은 백엔드가 USER_NOT_FOUND(404)로 막는다(정지 회원은 조회 가능).
@@ -280,12 +288,50 @@ export interface AdminReportDetail {
   createdAt: string;
 }
 
+// ========== 포인트 ==========
+
+// 포인트 거래 유형 — 백엔드 TransactionType enum과 1:1.
+//  GRANT: 시스템 → 유저 지급 (현재는 룰렛 중복당첨 환불 등 내부용, 향후 출석/활동 보상 예정)
+//  COLLECT: 유저 → 시스템 회수 (현재 어떤 API도 발생시키지 않음, 향후 관리자 차감용)
+//  ACCOUNT_OPENED: 포인트 계좌가 최초 생성될 때 남는 감사 로그. amount는 항상 0.
+//  ROULETTE: 유저 → 유저(시스템 경유), 일일 로그인 룰렛. amount는 0~1000.
+export type TransactionType = 'GRANT' | 'COLLECT' | 'ACCOUNT_OPENED' | 'ROULETTE';
+
+// 포인트 잔액 (백엔드 PointResponse와 1:1)
+export interface PointBalance {
+  userId: number | null;
+  balance: number;
+}
+
+// 포인트 거래 내역 (백엔드 TransactionResponse와 1:1)
+// senderId/recipientId가 null이면 시스템 계좌를 뜻한다(GRANT는 sender=null, COLLECT는 recipient=null).
+export interface PointTransaction {
+  transactionId: number;
+  senderId: number | null;
+  senderNickname: string | null;
+  recipientId: number | null;
+  recipientNickname: string | null;
+  amount: number;
+  type: TransactionType;
+  createdAt: string;
+}
+
+// 로그인 시 일일 포인트 룰렛 결과 (백엔드 LoginResponse.RouletteInfo와 1:1)
+// spun=false: 오늘 이미 돌렸거나 대상자가 없어 아예 안 돌아감 → 보여줄 정보 없음.
+// spun=true: 이번 로그인에서 룰렛이 실행됨. amount는 0일 수도 있다(상대방 잔액이 0이었던 경우).
+export interface RouletteInfo {
+  spun: boolean;
+  amount: number | null;
+}
+
 // 알림 종류 — 백엔드 NotificationType enum과 1:1.
 //  COMMENT: 내 게시글에 댓글 / REPLY: 내 댓글에 답글 / LIKE: 내 게시글에 좋아요
 //  CONTENT_REMOVED: 관리자가 내 게시글/댓글을 강제 삭제함
 //    ⚠️ 다른 타입과 성격이 다르다 — 발신자가 관리자이고, 대상 글이 이미 삭제된 상태라
 //       클릭해도 이동할 곳이 없다(404). NotificationBell에서 이동을 막는 분기가 필요하다.
-export type NotificationType = 'COMMENT' | 'REPLY' | 'LIKE' | 'CONTENT_REMOVED';
+//  POINT_STOLEN: 일일 포인트 룰렛으로 내 포인트를 뺏김. postId/commentId가 항상 null이고
+//    amount(도난 금액)가 채워진다. 발신자(가해자)는 익명 처리되지 않는다(isAnonymous 항상 false).
+export type NotificationType = 'COMMENT' | 'REPLY' | 'LIKE' | 'CONTENT_REMOVED' | 'POINT_STOLEN';
 
 // 알림 (백엔드 NotificationResponse record와 1:1)
 // ⚠️ 키 이름 주의: 백엔드 record의 boolean 컴포넌트는 "선언명 그대로" 직렬화된다.
@@ -296,11 +342,13 @@ export interface Notification {
   type: NotificationType;
   isAnonymous: boolean;       // 익명 댓글/답글로 생긴 알림인지
   senderName: string | null;  // 익명이면 백엔드가 null로 내려줌
-  postId: number;             // 클릭 시 이동할 원본 게시글
+  // 클릭 시 이동할 원본 게시글. ⚠️ POINT_STOLEN은 항상 null (DB 제약 ck_notifications_post_id_by_type로 보장).
+  postId: number | null;
   // 알림 대상 게시글 제목. 백엔드 NotificationResponse에 postTitle이 추가되면 채워진다.
   // 아직 배포 전이거나 값이 없으면 undefined/null일 수 있어, 렌더 시 "회원님의 게시글"로 폴백한다.
   postTitle?: string | null;
   commentId: number | null;   // 댓글/답글 알림이면 해당 댓글 id, 좋아요면 null
   isRead: boolean;
   createdAt: string;
+  amount: number | null;      // POINT_STOLEN 전용, 도난당한 포인트 액수. 그 외 타입은 null.
 }

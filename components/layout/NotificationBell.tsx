@@ -52,6 +52,16 @@ function TypeIcon({ icon }: { icon: NotificationMeta['icon'] }) {
       </svg>
     )
   }
+  // 포인트 도난: 동전
+  if (icon === 'point') {
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="12" r="9" />
+        <path d="M9.5 15.5a2.5 2.5 0 0 0 2.5 1.5c1.5 0 2.5-.9 2.5-2s-1-1.7-2.5-2-2.5-1-2.5-2 1-2 2.5-2a2.5 2.5 0 0 1 2.5 1.5" />
+        <path d="M12 7v1M12 16v1" />
+      </svg>
+    )
+  }
   return (
     <svg {...common}>
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -87,6 +97,19 @@ function NotificationBody({ n, meta }: { n: Notification; meta: NotificationMeta
       <>게시글이 </>
     )
     return <>운영 정책에 따라 회원님의 {what}{removed}되었습니다.</>
+  }
+
+  // 포인트 룰렛으로 뺏긴 경우: 게시글/댓글과 무관하므로 별도 문구로 조립한다.
+  // 가해자는 익명 처리되지 않는다(백엔드가 isAnonymous를 항상 false로 보냄).
+  if (n.type === 'POINT_STOLEN') {
+    const who = <span className="font-semibold text-neutral-900 dark:text-white">{notificationSenderLabel(n)}</span>
+    return (
+      <>
+        {who}님이 포인트 룰렛으로 회원님의 포인트{' '}
+        <span className={`font-semibold ${meta.accentText}`}>{(n.amount ?? 0).toLocaleString()}P</span>
+        를 가져갔습니다.
+      </>
+    )
   }
 
   const who = <span className="font-semibold text-neutral-900 dark:text-white">{notificationSenderLabel(n)}</span>

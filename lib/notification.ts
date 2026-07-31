@@ -21,16 +21,16 @@ export function truncatePostTitle(title: string, max = 15): string {
 //  - suffix:    키워드 뒤에 붙는 서술어
 //  - icon:      좌측 아이콘 종류
 //
-// ⚠️ CONTENT_REMOVED는 문구 구조 자체가 달라(발신자를 밝히지 않고, 대상이 이미 삭제됨)
-//    label/target/suffix를 쓰지 않는다. NotificationBody와 notificationText가 별도로 분기하며,
-//    여기서는 아이콘/색만 의미를 갖는다.
+// ⚠️ CONTENT_REMOVED/POINT_STOLEN은 문구 구조 자체가 달라(전자는 발신자를 밝히지 않고 대상이
+//    이미 삭제됨, 후자는 애초에 게시글/댓글과 무관함) label/target/suffix를 쓰지 않는다.
+//    NotificationBody와 notificationText가 별도로 분기하며, 여기서는 아이콘/색만 의미를 갖는다.
 export interface NotificationMeta {
   label: string
   accentText: string
   iconBg: string
   target: 'post' | 'comment'
   suffix: string
-  icon: 'comment' | 'reply' | 'like' | 'removed'
+  icon: 'comment' | 'reply' | 'like' | 'removed' | 'point'
 }
 
 const META: Record<NotificationType, NotificationMeta> = {
@@ -68,6 +68,15 @@ const META: Record<NotificationType, NotificationMeta> = {
     suffix: '되었습니다.',
     icon: 'removed',
   },
+  // 일일 포인트 룰렛으로 내 포인트를 뺏김. target/suffix는 미사용(NotificationBody가 별도 분기).
+  POINT_STOLEN: {
+    label: '포인트',
+    accentText: 'text-red-600 dark:text-red-400',
+    iconBg: 'bg-red-100 text-red-600 dark:bg-red-500/15 dark:text-red-400',
+    target: 'post',
+    suffix: '',
+    icon: 'point',
+  },
 }
 
 export function notificationMeta(type: NotificationType): NotificationMeta {
@@ -88,11 +97,13 @@ export function isRemovedComment(n: Notification): boolean {
 //  - 게시글이 삭제된 알림: 원문 자체가 사라졌으므로 이동할 곳이 없다 → null.
 //  - 댓글이 삭제된 알림: 원문 게시글은 살아 있으므로 그 글의 댓글 영역으로 보낸다.
 //    (내 댓글은 "삭제된 댓글입니다"로 보이지만, 어떤 글에서 벌어진 일인지 맥락은 확인할 수 있다.)
+// POINT_STOLEN은 애초에 게시글/댓글과 무관해 postId가 항상 null로 오므로 이동할 곳이 없다.
 export function notificationHref(n: Notification): string | null {
   if (n.type === 'CONTENT_REMOVED') {
     return isRemovedComment(n) ? `/posts/${n.postId}#comments` : null
   }
-  return `/posts/${n.postId}`
+  if (n.type === 'POINT_STOLEN') return null
+  return n.postId !== null ? `/posts/${n.postId}` : null
 }
 
 // 스크린리더(aria-label)용 순수 텍스트 문구. 화면 렌더는 강조를 위해 컴포넌트가 JSX로 직접 조립한다.
@@ -104,6 +115,13 @@ export function notificationText(n: Notification): string {
     if (isRemovedComment(n)) return '운영 정책에 따라 회원님의 댓글이 삭제되었습니다.'
     const what = n.postTitle ? `게시글 "${n.postTitle}"이(가)` : '게시글이'
     return `운영 정책에 따라 회원님의 ${what} 삭제되었습니다.`
+  }
+
+  // 포인트 룰렛으로 뺏긴 경우: 게시글/댓글과 무관하므로 별도 문구로 조립한다.
+  // 가해자는 익명 처리되지 않는다(백엔드가 isAnonymous를 항상 false로 보냄).
+  if (n.type === 'POINT_STOLEN') {
+    const who = notificationSenderLabel(n)
+    return `${who}님이 포인트 룰렛으로 회원님의 포인트 ${(n.amount ?? 0).toLocaleString()}P를 가져갔습니다.`
   }
 
   const who = notificationSenderLabel(n)

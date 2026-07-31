@@ -4,15 +4,18 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth-context'
 import { usersApi } from '@/lib/api/users'
+import { pointsApi } from '@/lib/api/points'
 import MyPostsTab from '@/components/mypage/MyPostsTab'
 import MyCommentsTab from '@/components/mypage/MyCommentsTab'
+import MyPointsTab from '@/components/mypage/MyPointsTab'
 import MyReportsTab from '@/components/mypage/MyReportsTab'
 import ProfileSettings from '@/components/mypage/ProfileSettings'
 import EmailVerificationBanner from '@/components/mypage/EmailVerificationBanner'
 import GradeInfoPopover from '@/components/common/GradeInfoPopover'
+import PointInfoPopover from '@/components/common/PointInfoPopover'
 import { gradeMeta } from '@/lib/grade'
 
-type Tab = 'posts' | 'comments' | 'reports' | 'profile'
+type Tab = 'posts' | 'comments' | 'points' | 'reports' | 'profile'
 
 // 통계 카드 한 칸
 function StatCard({ label, value, accent }: { label: string; value: number | null; accent: string }) {
@@ -34,6 +37,7 @@ export default function MyPage() {
   // 통계용 집계(전체 개수)는 목록과 별개로 size=1만 받아 totalElements만 사용한다.
   const [postCount, setPostCount] = useState<number | null>(null)
   const [commentCount, setCommentCount] = useState<number | null>(null)
+  const [pointBalance, setPointBalance] = useState<number | null>(null)
 
   useEffect(() => {
     if (!user) return
@@ -46,6 +50,10 @@ export default function MyPage() {
     usersApi.getMyComments(0, 1)
       .then(res => { if (!cancelled) setCommentCount(res.data?.totalElements ?? 0) })
       .catch(() => { if (!cancelled) setCommentCount(0) })
+
+    pointsApi.getBalance()
+      .then(res => { if (!cancelled) setPointBalance(res.data?.balance ?? 0) })
+      .catch(() => { if (!cancelled) setPointBalance(0) })
 
     return () => { cancelled = true }
   }, [user])
@@ -122,9 +130,19 @@ export default function MyPage() {
       <EmailVerificationBanner />
 
       {/* 통계 카드 */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatCard label="내가 쓴 글" value={postCount} accent="text-neutral-900 dark:text-white" />
         <StatCard label="내가 쓴 댓글" value={commentCount} accent="text-neutral-900 dark:text-white" />
+        {/* 포인트 카드: 라벨 우측에 룰렛 설명 팝오버 */}
+        <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-800/50">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">포인트</p>
+            <PointInfoPopover />
+          </div>
+          <p className="mt-1 text-2xl font-bold text-orange-600 dark:text-orange-400">
+            {pointBalance === null ? '—' : `${pointBalance.toLocaleString()}P`}
+          </p>
+        </div>
         {/* 등급 카드: "회원 등급" 라벨 우측에 설명(?) 팝오버, 본문엔 등급명 + 간단한 계층 표기 */}
         <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-800/50">
           <div className="flex items-center justify-between">
@@ -151,6 +169,9 @@ export default function MyPage() {
           <button type="button" className={tabButton('comments')} onClick={() => setTab('comments')}>
             내가 쓴 댓글
           </button>
+          <button type="button" className={tabButton('points')} onClick={() => setTab('points')}>
+            포인트
+          </button>
           <button type="button" className={tabButton('reports')} onClick={() => setTab('reports')}>
             내 신고
           </button>
@@ -164,6 +185,7 @@ export default function MyPage() {
       <div>
         {tab === 'posts' && <MyPostsTab />}
         {tab === 'comments' && <MyCommentsTab />}
+        {tab === 'points' && <MyPointsTab />}
         {tab === 'reports' && <MyReportsTab />}
         {tab === 'profile' && <ProfileSettings />}
       </div>

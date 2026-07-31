@@ -1,5 +1,5 @@
 import { apiClient } from './client'
-import { User } from '@/types'
+import { LoginResponse, User } from '@/types'
 
 export const authApi = {
 
@@ -16,10 +16,12 @@ export const authApi = {
     privacyAgreed: boolean
   }) => apiClient.post<{ nickname: string; role: User['role'] }>('/api/auth/signup', body),
 
+  // 로그인 응답 body에는 일일 포인트 룰렛 결과(roulette)가 함께 담겨 온다.
+  // 실제 인증 상태는 이 body가 아니라 /api/auth/me(fetchUser)로 확정한다.
   login: (body: {
     email: string
     password: string
-  }) => apiClient.post<void>('/api/auth/login', body),
+  }) => apiClient.post<LoginResponse>('/api/auth/login', body),
 
   me: () =>
     apiClient.get<User>('/api/auth/me'),

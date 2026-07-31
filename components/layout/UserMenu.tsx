@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import type { User } from '@/types'
+import { pointsApi } from '@/lib/api/points'
 
 interface Props {
   user: User
@@ -24,8 +25,18 @@ function UserIcon() {
 export default function UserMenu({ user, onLogout }: Props) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  // 잔액은 /api/auth/me에 포함되지 않으므로 이 컴포넌트가 마운트 시 직접 조회한다.
+  const [balance, setBalance] = useState<number | null>(null)
 
   const isAdmin = user.role === 'ADMIN'
+
+  useEffect(() => {
+    let cancelled = false
+    pointsApi.getBalance()
+      .then(res => { if (!cancelled) setBalance(res.data?.balance ?? null) })
+      .catch(() => { if (!cancelled) setBalance(null) })
+    return () => { cancelled = true }
+  }, [])
 
   // 메뉴가 열려 있을 때만 바깥 클릭 리스너를 달아 닫는다.
   useEffect(() => {
@@ -73,6 +84,11 @@ export default function UserMenu({ user, onLogout }: Props) {
               )}
             </div>
             <p className="mt-0.5 truncate text-xs text-neutral-400 dark:text-neutral-500">{user.email}</p>
+            {balance !== null && (
+              <p className="mt-0.5 text-xs font-semibold text-orange-600 dark:text-orange-400">
+                {balance.toLocaleString()}P
+              </p>
+            )}
           </div>
 
           <Link href="/mypage" role="menuitem" className={menuItem} onClick={() => setOpen(false)}>
