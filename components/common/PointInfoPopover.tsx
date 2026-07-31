@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 
-// 포인트 룰렛 안내 팝오버. GradeInfoPopover와 동일한 열림/닫힘 규칙을 따른다 —
+// 포인트 안내 팝오버. GradeInfoPopover와 동일한 열림/닫힘 규칙을 따른다 —
 // hover/탭/키보드 포커스로 열리고, 바깥 클릭·Esc·포커스 이탈·마우스 이탈로 닫힌다
 // (모바일 탭에서도 focus→click 순서로 바로 닫히지 않게 클릭은 "열기"로만 동작).
 export default function PointInfoPopover() {
@@ -43,7 +43,7 @@ export default function PointInfoPopover() {
         onClick={() => setOpen(true)}
         onFocus={() => setOpen(true)}
         aria-expanded={open}
-        aria-label="포인트 룰렛 설명 보기"
+        aria-label="포인트 안내 보기"
         className="flex h-4 w-4 items-center justify-center rounded-full border border-neutral-300 text-[10px] font-bold leading-none text-neutral-400 outline-none hover:border-neutral-400 hover:text-neutral-500 focus-visible:ring-2 focus-visible:ring-orange-400/60 dark:border-neutral-600 dark:text-neutral-500 dark:hover:border-neutral-500 dark:hover:text-neutral-300"
       >
         ?
@@ -55,11 +55,17 @@ export default function PointInfoPopover() {
           className="absolute right-0 top-full z-50 mt-2 w-64 rounded-lg border border-neutral-200 bg-white p-3 text-left shadow-lg dark:border-neutral-700 dark:bg-neutral-900"
         >
           <p className="text-[11px] font-semibold text-neutral-400 dark:text-neutral-500">
-            포인트 룰렛
+            출첵
           </p>
           <p className="mt-1 text-[11px] leading-snug text-neutral-600 dark:text-neutral-300">
-            매일 로그인할 때 하루 한 번, 무작위로 선택된 다른 회원의 포인트 일부(0~1000P)를
-            얻거나 반대로 내 포인트를 잃을 수 있어요.
+            매일 로그인할 때 하루 한 번, 포인트를 조금 얻거나 반대로 조금 잃어요.
+          </p>
+          <p className="mt-2 text-[11px] font-semibold text-neutral-400 dark:text-neutral-500">
+            룰렛
+          </p>
+          <p className="mt-1 text-[11px] leading-snug text-neutral-600 dark:text-neutral-300">
+            원하는 만큼 직접 배팅해서 다른 회원과 겨루는 게임이에요. 이기면 상대의 포인트를
+            가져오고 지면 내 포인트를 잃으며, 판마다 배팅액의 일부가 수수료로 빠져나가요.
           </p>
         </div>
       )}

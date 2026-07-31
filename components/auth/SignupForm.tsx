@@ -27,7 +27,7 @@ const NICKNAME_RE = /^[가-힣a-zA-Z0-9]+$/
 
 export default function SignupForm() {
   const router = useRouter()
-  const { fetchUser } = useAuth()
+  const { fetchUser, notifyCheckInResult } = useAuth()
   // 이미 로그인한 사용자는 홈으로 돌려보낸다(뒤로가기·주소창 직접 진입 차단)
   const { blocked } = useRedirectIfAuthenticated()
   const [email, setEmail] = useState('')
@@ -148,7 +148,7 @@ export default function SignupForm() {
       // 회원가입 성공 = 자동 로그인. 백엔드가 인증 쿠키를 내려주므로 로그인 폼과 동일하게
       // 인증 상태(useAuth)를 갱신한 뒤 홈으로 이동한다.
       // 백엔드가 어차피 정규화하지만, 전송값도 저장될 값과 일치시켜 혼선을 줄인다.
-      await authApi.signup({
+      const res = await authApi.signup({
         email: email.trim().toLowerCase(),
         password,
         passwordConfirm,
@@ -157,6 +157,8 @@ export default function SignupForm() {
         privacyAgreed,
       })
       await fetchUser()
+      // 회원가입도 자동 로그인이라 출첵이 함께 실행되어 온다(로그인 폼과 동일하게 안내).
+      if (res.data?.checkIn) notifyCheckInResult(res.data.checkIn)
       // replace로 이동해 히스토리에 회원가입 페이지를 남기지 않는다(뒤로가기 시 폼으로 안 돌아감)
       router.replace('/')
     } catch (e) {

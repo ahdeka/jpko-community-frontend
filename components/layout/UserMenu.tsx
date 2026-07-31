@@ -94,6 +94,9 @@ export default function UserMenu({ user, onLogout }: Props) {
           <Link href="/mypage" role="menuitem" className={menuItem} onClick={() => setOpen(false)}>
             마이페이지
           </Link>
+          <Link href="/roulette" role="menuitem" className={menuItem} onClick={() => setOpen(false)}>
+            룰렛
+          </Link>
 
           {isAdmin && (
             <Link href="/admin" role="menuitem" className={menuItem} onClick={() => setOpen(false)}>

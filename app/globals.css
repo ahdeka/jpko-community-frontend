@@ -54,6 +54,20 @@
   }
 }
 
+/* 룰렛 휠 회전. transform(각도)은 RouletteGame이 인라인 style로 매번 다르게 지정하고,
+   transition 자체(길이·감속 커브)만 여기서 관리한다 — 인라인 style에 duration까지 박아두면
+   prefers-reduced-motion 미디어쿼리로 덮어쓸 수 없기 때문(인라인이 클래스보다 우선순위가 높음). */
+.roulette-wheel {
+  transition: transform 2.4s cubic-bezier(0.17, 0.67, 0.12, 1);
+}
+/* 완전히 0으로 두면 transitionend 이벤트 자체가 발생하지 않아 결과 공개 로직이 멈춘다.
+   그래서 짧게라도 남겨 이벤트는 정상 발생시키되 체감 애니메이션은 최소화한다. */
+@media (prefers-reduced-motion: reduce) {
+  .roulette-wheel {
+    transition-duration: 0.4s;
+  }
+}
+
 /* 게시글 본문(에디터 입력 영역 + 상세 렌더링) 공용 스타일.
    Tailwind typography 플러그인 없이 최소한의 가독성만 직접 지정한다. */
 .post-content {

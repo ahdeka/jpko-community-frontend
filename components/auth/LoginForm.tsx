@@ -20,7 +20,7 @@ const inputClass =
 
 export default function LoginForm() {
   const router = useRouter()
-  const { fetchUser, notifyRouletteResult } = useAuth()
+  const { fetchUser, notifyCheckInResult } = useAuth()
   // 이미 로그인한 사용자는 홈으로 돌려보낸다(뒤로가기·주소창 직접 진입 차단)
   const { blocked } = useRedirectIfAuthenticated()
   const [email, setEmail] = useState('')
@@ -55,7 +55,7 @@ export default function LoginForm() {
       // 확실히 매칭되도록 전송값도 동일하게 맞춘다(대소문자·공백 차이로 인한 로그인 실패 방지).
       const res = await authApi.login({ email: email.trim().toLowerCase(), password })
       await fetchUser()
-      if (res.data?.roulette) notifyRouletteResult(res.data.roulette)
+      if (res.data?.checkIn) notifyCheckInResult(res.data.checkIn)
       // replace로 이동해 히스토리에 로그인 페이지를 남기지 않는다
       router.replace('/')
     } catch (e) {

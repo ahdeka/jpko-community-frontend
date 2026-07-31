@@ -68,7 +68,7 @@ const META: Record<NotificationType, NotificationMeta> = {
     suffix: '되었습니다.',
     icon: 'removed',
   },
-  // 일일 포인트 룰렛으로 내 포인트를 뺏김. target/suffix는 미사용(NotificationBody가 별도 분기).
+  // 룰렛(베팅) 대결에서 상대가 이겨 내 포인트를 뺏김. target/suffix는 미사용(NotificationBody가 별도 분기).
   POINT_STOLEN: {
     label: '포인트',
     accentText: 'text-red-600 dark:text-red-400',
@@ -97,7 +97,7 @@ export function isRemovedComment(n: Notification): boolean {
 //  - 게시글이 삭제된 알림: 원문 자체가 사라졌으므로 이동할 곳이 없다 → null.
 //  - 댓글이 삭제된 알림: 원문 게시글은 살아 있으므로 그 글의 댓글 영역으로 보낸다.
 //    (내 댓글은 "삭제된 댓글입니다"로 보이지만, 어떤 글에서 벌어진 일인지 맥락은 확인할 수 있다.)
-// POINT_STOLEN은 애초에 게시글/댓글과 무관해 postId가 항상 null로 오므로 이동할 곳이 없다.
+// POINT_STOLEN(룰렛 패배 알림)은 애초에 게시글/댓글과 무관해 postId가 항상 null로 오므로 이동할 곳이 없다.
 export function notificationHref(n: Notification): string | null {
   if (n.type === 'CONTENT_REMOVED') {
     return isRemovedComment(n) ? `/posts/${n.postId}#comments` : null
@@ -117,7 +117,7 @@ export function notificationText(n: Notification): string {
     return `운영 정책에 따라 회원님의 ${what} 삭제되었습니다.`
   }
 
-  // 포인트 룰렛으로 뺏긴 경우: 게시글/댓글과 무관하므로 별도 문구로 조립한다.
+  // 룰렛 대결에서 뺏긴 경우: 게시글/댓글과 무관하므로 별도 문구로 조립한다.
   // 가해자는 익명 처리되지 않는다(백엔드가 isAnonymous를 항상 false로 보냄).
   if (n.type === 'POINT_STOLEN') {
     const who = notificationSenderLabel(n)

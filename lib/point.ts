@@ -27,9 +27,19 @@ export const TRANSACTION_TYPES: TransactionTypeMeta[] = [
     badge: 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400',
   },
   {
+    value: 'CHECKIN',
+    label: '출첵',
+    badge: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300',
+  },
+  {
     value: 'ROULETTE',
     label: '포인트 룰렛',
     badge: 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300',
+  },
+  {
+    value: 'ROULETTE_FEE',
+    label: '룰렛 수수료',
+    badge: 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400',
   },
 ]
 
@@ -40,13 +50,14 @@ export const transactionTypeMeta = (type: TransactionType): TransactionTypeMeta 
 export interface TransactionDisplay {
   signedAmountLabel: string        // "+500P" | "-300P" | "0P"
   colorClass: string               // 금액 색 (light+dark)
-  description: string              // "포인트 룰렛 승리" | "포인트 룰렛 피해" | "지급받음" | "차감됨" | "계좌 개설"
+  description: string              // "룰렛 승리" | "룰렛 피해" | "출첵 지급" | "출첵 차감" | ...
   counterpartLabel: string | null  // "OO님으로부터" / "OO님에게" — 시스템이 상대면 null
 }
 
 // myUserId 시점에서 거래 1건을 해석한다.
 // ROULETTE는 sender/recipient가 항상 유저 대 유저(시스템 경유)라 방향에 따라 승리/피해가 갈리고,
-// GRANT/COLLECT는 상대가 항상 시스템이라 counterpart가 없으며,
+// CHECKIN은 시스템이 상대라 counterpart가 없지만 방향(recipient/sender)에 따라 지급/차감이 갈리며,
+// GRANT/COLLECT/ROULETTE_FEE는 상대가 항상 시스템이라 counterpart가 없고,
 // ACCOUNT_OPENED는 금액 이동이 없는 감사 로그라 항상 중립(0P) 처리한다.
 export function describeTransaction(tx: PointTransaction, myUserId: number): TransactionDisplay {
   const isRecipient = tx.recipientId === myUserId
@@ -57,14 +68,28 @@ export function describeTransaction(tx: PointTransaction, myUserId: number): Tra
         ? {
             signedAmountLabel: `+${tx.amount.toLocaleString()}P`,
             colorClass: 'text-emerald-600 dark:text-emerald-400',
-            description: '포인트 룰렛 승리',
+            description: '룰렛 승리',
             counterpartLabel: tx.senderNickname ? `${tx.senderNickname}님으로부터` : null,
           }
         : {
             signedAmountLabel: `-${tx.amount.toLocaleString()}P`,
             colorClass: 'text-red-600 dark:text-red-400',
-            description: '포인트 룰렛 피해',
+            description: '룰렛 패배',
             counterpartLabel: tx.recipientNickname ? `${tx.recipientNickname}님에게` : null,
+          }
+    case 'CHECKIN':
+      return isRecipient
+        ? {
+            signedAmountLabel: `+${tx.amount.toLocaleString()}P`,
+            colorClass: 'text-emerald-600 dark:text-emerald-400',
+            description: '출첵 지급',
+            counterpartLabel: null,
+          }
+        : {
+            signedAmountLabel: `-${tx.amount.toLocaleString()}P`,
+            colorClass: 'text-red-600 dark:text-red-400',
+            description: '출첵 차감',
+            counterpartLabel: null,
           }
     case 'GRANT':
       return {
@@ -78,6 +103,13 @@ export function describeTransaction(tx: PointTransaction, myUserId: number): Tra
         signedAmountLabel: `-${tx.amount.toLocaleString()}P`,
         colorClass: 'text-red-600 dark:text-red-400',
         description: '차감됨',
+        counterpartLabel: null,
+      }
+    case 'ROULETTE_FEE':
+      return {
+        signedAmountLabel: `-${tx.amount.toLocaleString()}P`,
+        colorClass: 'text-red-600 dark:text-red-400',
+        description: '룰렛 수수료',
         counterpartLabel: null,
       }
     case 'ACCOUNT_OPENED':

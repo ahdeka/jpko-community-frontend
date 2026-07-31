@@ -2,11 +2,11 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import type { ReactNode } from 'react'
-import type { RouletteInfo, User } from '@/types'
+import type { CheckInInfo, User } from '@/types'
 import { authApi } from '@/lib/api/auth'
 import { ApiError, SESSION_EXPIRED_EVENT, ACCOUNT_SUSPENDED_EVENT } from '@/lib/api/client'
 import SuspendedAccountModal from '@/components/auth/SuspendedAccountModal'
-import RouletteResultModal from '@/components/points/RouletteResultModal'
+import CheckInResultModal from '@/components/points/CheckInResultModal'
 
 interface AuthContextType {
   user: User | null
@@ -17,12 +17,12 @@ interface AuthContextType {
   // logout()과 달리 /api/auth/logout을 호출하지 않는다 — 탈퇴 응답이 이미 쿠키를 지웠으므로
   // 추가 호출은 불필요하고, 인증 없는 상태라 401만 유발할 수 있다.
   clearAuth: () => void
-  // 로그인 직후 일일 룰렛 결과를 전역에 알린다. LoginForm이 로그인 성공 시 호출하며,
-  // AuthProvider가 렌더하는 RouletteResultModal이 이 값을 소비하고 null로 되돌린다.
-  // LoginForm은 로그인 성공 즉시 router.replace로 이동하고 useRedirectIfAuthenticated가
-  // 폼을 언마운트하므로, LoginForm 내부가 아니라 여기(AuthProvider)에서 상태를 들고 있어야
-  // 페이지 전환 중에도 모달이 살아남는다(SuspendedAccountModal과 동일한 이유).
-  notifyRouletteResult: (info: RouletteInfo) => void
+  // 로그인(또는 회원가입 직후 자동 로그인) 직후 출첵 결과를 전역에 알린다. LoginForm/SignupForm이
+  // 성공 시 호출하며, AuthProvider가 렌더하는 CheckInResultModal이 이 값을 소비하고 null로 되돌린다.
+  // 두 폼 모두 성공 즉시 router.replace로 이동하고 useRedirectIfAuthenticated가 폼을 언마운트하므로,
+  // 폼 내부가 아니라 여기(AuthProvider)에서 상태를 들고 있어야 페이지 전환 중에도 모달이 살아남는다
+  // (SuspendedAccountModal과 동일한 이유).
+  notifyCheckInResult: (info: CheckInInfo) => void
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
@@ -32,8 +32,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   // 세션 도중 계정이 정지됐을 때 띄우는 전역 안내 모달의 표시 여부.
   const [suspended, setSuspended] = useState(false)
-  // 로그인 직후 보여줄 일일 포인트 룰렛 결과. null이면 모달을 띄우지 않는다.
-  const [rouletteResult, setRouletteResult] = useState<RouletteInfo | null>(null)
+  // 로그인/회원가입 직후 보여줄 출첵 결과. null이면 모달을 띄우지 않는다.
+  const [checkInResult, setCheckInResult] = useState<CheckInInfo | null>(null)
   // 여러 요청이 동시에 403을 받아도 로그아웃/상태정리를 딱 한 번만 하기 위한 가드.
   // 리다이렉트(하드 네비게이션) 시 앱이 리로드되며 자연 초기화된다.
   const suspendHandledRef = useRef(false)
@@ -97,13 +97,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }, [])
 
-  // spun=false(오늘 이미 돌렸거나 대상자 없음)는 보여줄 정보가 없으므로 무시한다.
-  const notifyRouletteResult = useCallback((info: RouletteInfo) => {
-    if (info.spun) setRouletteResult(info)
+  // checkedIn=false(오늘 이미 했음)는 보여줄 정보가 없으므로 무시한다.
+  const notifyCheckInResult = useCallback((info: CheckInInfo) => {
+    if (info.checkedIn) setCheckInResult(info)
   }, [])
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, fetchUser, logout, clearAuth, notifyRouletteResult }}>
+    <AuthContext.Provider value={{ user, isLoading, fetchUser, logout, clearAuth, notifyCheckInResult }}>
       {children}
       {/* 세션 도중 정지된 경우의 전역 안내. 닫으면 로그인 화면으로 하드 네비게이션해
           RSC 캐시·서버 페치 데이터까지 완전 초기화한다. */}
@@ -111,9 +111,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         open={suspended}
         onClose={() => { window.location.href = '/login' }}
       />
-      <RouletteResultModal
-        info={rouletteResult}
-        onClose={() => setRouletteResult(null)}
+      <CheckInResultModal
+        info={checkInResult}
+        onClose={() => setCheckInResult(null)}
       />
     </AuthContext.Provider>
   )

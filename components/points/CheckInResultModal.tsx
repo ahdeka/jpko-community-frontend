@@ -1,19 +1,19 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import type { RouletteInfo } from '@/types'
+import type { CheckInInfo } from '@/types'
 
 interface Props {
-  // null이면 닫힘. spun=false(오늘 이미 돌렸거나 대상자 없음)는 AuthProvider가 애초에
-  // 이 prop을 세팅하지 않으므로 여기서는 항상 spun=true인 결과만 받는다.
-  info: RouletteInfo | null
+  // null이면 닫힘. checkedIn=false(오늘 이미 했음)는 AuthProvider가 애초에
+  // 이 prop을 세팅하지 않으므로 여기서는 항상 checkedIn=true인 결과만 받는다.
+  info: CheckInInfo | null
   onClose: () => void
 }
 
-// 로그인 직후 일일 포인트 룰렛 결과를 안내하는 모달.
+// 로그인(또는 회원가입 직후 자동 로그인) 직후 출첵 결과를 안내하는 모달.
 // SuspendedAccountModal과 동일한 모달 셸(ESC 닫기, 배경 스크롤 잠금, 포커스 이동)을 쓰되
-// 경고성이 아니라 긍정적인 톤(오렌지/에메랄드)으로 꾸민다.
-export default function RouletteResultModal({ info, onClose }: Props) {
+// 경고성이 아니라 중립적인 톤(오렌지/뉴트럴)으로 꾸민다. amount는 음수(차감)일 수도 있다.
+export default function CheckInResultModal({ info, onClose }: Props) {
   const dialogRef = useRef<HTMLDivElement>(null)
   const open = info !== null
 
@@ -39,7 +39,8 @@ export default function RouletteResultModal({ info, onClose }: Props) {
   if (!info) return null
 
   const amount = info.amount ?? 0
-  const won = amount > 0
+  const gained = amount > 0
+  const lost = amount < 0
 
   return (
     <div
@@ -50,7 +51,7 @@ export default function RouletteResultModal({ info, onClose }: Props) {
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="roulette-title"
+        aria-labelledby="checkin-title"
         tabIndex={-1}
         onClick={e => e.stopPropagation()}
         className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl outline-none dark:bg-neutral-900"
@@ -58,13 +59,21 @@ export default function RouletteResultModal({ info, onClose }: Props) {
         <div className="flex flex-col items-center gap-3 text-center">
           <span
             className={`flex h-12 w-12 items-center justify-center rounded-full ${
-              won
+              gained
                 ? 'bg-orange-100 dark:bg-orange-500/20'
-                : 'bg-neutral-100 dark:bg-neutral-800'
+                : lost
+                  ? 'bg-red-100 dark:bg-red-500/20'
+                  : 'bg-neutral-100 dark:bg-neutral-800'
             }`}
           >
             <svg
-              className={`h-6 w-6 ${won ? 'text-orange-600 dark:text-orange-400' : 'text-neutral-400 dark:text-neutral-500'}`}
+              className={`h-6 w-6 ${
+                gained
+                  ? 'text-orange-600 dark:text-orange-400'
+                  : lost
+                    ? 'text-red-600 dark:text-red-400'
+                    : 'text-neutral-400 dark:text-neutral-500'
+              }`}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -79,21 +88,30 @@ export default function RouletteResultModal({ info, onClose }: Props) {
             </svg>
           </span>
 
-          <h2 id="roulette-title" className="text-base font-bold text-neutral-900 dark:text-neutral-100">
-            오늘의 포인트 룰렛
+          <h2 id="checkin-title" className="text-base font-bold text-neutral-900 dark:text-neutral-100">
+            오늘의 출첵
           </h2>
 
-          {won ? (
+          {gained && (
             <p className="text-sm leading-relaxed text-neutral-600 dark:text-neutral-300">
-              다른 회원의 포인트 중{' '}
               <span className="font-semibold text-orange-600 dark:text-orange-400">
                 {amount.toLocaleString()}P
               </span>
               를 획득했습니다!
             </p>
-          ) : (
+          )}
+          {lost && (
+            <p className="text-sm leading-relaxed text-neutral-600 dark:text-neutral-300">
+              아쉽게도{' '}
+              <span className="font-semibold text-red-600 dark:text-red-400">
+                {Math.abs(amount).toLocaleString()}P
+              </span>
+              가 차감되었습니다.
+            </p>
+          )}
+          {!gained && !lost && (
             <p className="text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">
-              오늘의 포인트 룰렛을 돌렸지만 아쉽게도 포인트를 얻지 못했습니다.
+              오늘의 출첵을 완료했지만 포인트 변동은 없었습니다.
             </p>
           )}
 

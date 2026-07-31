@@ -48,11 +48,11 @@ export interface User {
 }
 
 // 로그인/회원가입 응답 (백엔드 LoginResponse와 1:1)
-// 회원가입 경로는 룰렛 대상이 아니라 roulette.spun이 항상 false로 온다.
+// 회원가입도 자동 로그인이라 checkIn이 실제로 채워져 온다(로그인과 동일하게 하루 1회 대상).
 export interface LoginResponse {
   nickname: string;
   role: UserRole;
-  roulette: RouletteInfo;
+  checkIn: CheckInInfo;
 }
 
 // 공개 프로필 (백엔드 PublicProfileResponse와 1:1)
@@ -291,11 +291,13 @@ export interface AdminReportDetail {
 // ========== 포인트 ==========
 
 // 포인트 거래 유형 — 백엔드 TransactionType enum과 1:1.
-//  GRANT: 시스템 → 유저 지급 (현재는 룰렛 중복당첨 환불 등 내부용, 향후 출석/활동 보상 예정)
+//  GRANT: 시스템 → 유저 지급 (현재는 어떤 API도 직접 발생시키지 않음, 향후 활동 보상 등)
 //  COLLECT: 유저 → 시스템 회수 (현재 어떤 API도 발생시키지 않음, 향후 관리자 차감용)
 //  ACCOUNT_OPENED: 포인트 계좌가 최초 생성될 때 남는 감사 로그. amount는 항상 0.
-//  ROULETTE: 유저 → 유저(시스템 경유), 일일 로그인 룰렛. amount는 0~1000.
-export type TransactionType = 'GRANT' | 'COLLECT' | 'ACCOUNT_OPENED' | 'ROULETTE';
+//  CHECKIN: 시스템 ↔ 유저, 매일 로그인 시 자동 출첵. amount는 플러스(지급)·마이너스(차감) 둘 다 가능.
+//  ROULETTE: 유저 ↔ 유저(시스템 경유), 유저가 직접 베팅해 상대와 겨루는 룰렛 승부.
+//  ROULETTE_FEE: 유저 → 시스템, 룰렛 판당 수수료.
+export type TransactionType = 'GRANT' | 'COLLECT' | 'ACCOUNT_OPENED' | 'CHECKIN' | 'ROULETTE' | 'ROULETTE_FEE';
 
 // 포인트 잔액 (백엔드 PointResponse와 1:1)
 export interface PointBalance {
@@ -316,12 +318,39 @@ export interface PointTransaction {
   createdAt: string;
 }
 
-// 로그인 시 일일 포인트 룰렛 결과 (백엔드 LoginResponse.RouletteInfo와 1:1)
-// spun=false: 오늘 이미 돌렸거나 대상자가 없어 아예 안 돌아감 → 보여줄 정보 없음.
-// spun=true: 이번 로그인에서 룰렛이 실행됨. amount는 0일 수도 있다(상대방 잔액이 0이었던 경우).
-export interface RouletteInfo {
-  spun: boolean;
+// 로그인/회원가입 시 출첵 결과 (백엔드 LoginResponse.CheckInInfo와 1:1)
+// checkedIn=false: 오늘 이미 했음 → 보여줄 정보 없음.
+// checkedIn=true: 이번 로그인(또는 회원가입 직후 자동 로그인)에서 출첵이 실행됨.
+// amount는 음수(차감)일 수도, 0일 수도, 양수(지급)일 수도 있다.
+export interface CheckInInfo {
+  checkedIn: boolean;
   amount: number | null;
+}
+
+// 룰렛(베팅형 대결) 설정. 승률은 의도적으로 노출하지 않는다.
+export interface RouletteConfig {
+  betUnit: number;
+  minBet: number;
+  maxBet: number;
+  feeRate: number;
+}
+
+// 현재 고정된 룰렛 상대. 고정된 상대가 없으면 data 자체가 없다(undefined).
+export interface RouletteOpponent {
+  opponentId: number;
+  opponentNickname: string;
+}
+
+// 룰렛 한 판의 결과 (백엔드 RouletteSpinResponse와 1:1)
+export interface RouletteSpinResult {
+  win: boolean;
+  betAmount: number;
+  fee: number;
+  resultAmount: number;   // 실제로 오간 금액(상대 잔액 부족 시 배팅액보다 작을 수 있음)
+  balanceAfter: number;
+  opponentId: number;
+  opponentNickname: string;
+  opponentLocked: boolean;
 }
 
 // 알림 종류 — 백엔드 NotificationType enum과 1:1.
@@ -329,8 +358,8 @@ export interface RouletteInfo {
 //  CONTENT_REMOVED: 관리자가 내 게시글/댓글을 강제 삭제함
 //    ⚠️ 다른 타입과 성격이 다르다 — 발신자가 관리자이고, 대상 글이 이미 삭제된 상태라
 //       클릭해도 이동할 곳이 없다(404). NotificationBell에서 이동을 막는 분기가 필요하다.
-//  POINT_STOLEN: 일일 포인트 룰렛으로 내 포인트를 뺏김. postId/commentId가 항상 null이고
-//    amount(도난 금액)가 채워진다. 발신자(가해자)는 익명 처리되지 않는다(isAnonymous 항상 false).
+//  POINT_STOLEN: 룰렛(베팅) 대결에서 상대가 이겨 내 포인트를 뺏김. postId/commentId가 항상 null이고
+//    amount(뺏긴 금액)가 채워진다. 발신자(가해자)는 익명 처리되지 않는다(isAnonymous 항상 false).
 export type NotificationType = 'COMMENT' | 'REPLY' | 'LIKE' | 'CONTENT_REMOVED' | 'POINT_STOLEN';
 
 // 알림 (백엔드 NotificationResponse record와 1:1)
