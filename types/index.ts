@@ -18,7 +18,9 @@ export interface PageResponse<T> {
 }
 
 // 유저 권한(role) — 접근 제어 축. 백엔드 UserRole enum과 1:1.
-export type UserRole = 'USER' | 'ADMIN';
+// ROOT: 최고 관리자(운영자). ADMIN보다 상위이며 role 변경 등 ROOT 전용 기능을 가진다.
+// 판별은 문자열 직접 비교 대신 lib/role.ts의 isStaff/isRoot를 사용한다.
+export type UserRole = 'USER' | 'ADMIN' | 'ROOT';
 
 // 계정 상태(status) — 백엔드 UserStatus enum과 1:1.
 //  ACTIVE: 정상 / SUSPENDED: 관리자 정지 / DELETED: 탈퇴(익명화)
