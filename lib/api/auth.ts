@@ -14,6 +14,8 @@ export const authApi = {
     // 백엔드 SignupRequest의 @AssertTrue 필드. 둘 다 true여야 가입이 통과된다.
     termsAgreed: boolean
     privacyAgreed: boolean
+    // Cloudflare Turnstile 위젯이 발급한 1회용 토큰. 백엔드가 @NotBlank로 요구하며 siteverify로 검증한다.
+    turnstileToken: string
   }) => apiClient.post<LoginResponse>('/api/auth/signup', body),
 
   // 로그인 응답 body에는 출첵 결과(checkIn)가 함께 담겨 온다.

@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { authApi } from '@/lib/api/auth'
@@ -8,6 +8,7 @@ import { ApiError } from '@/lib/api/client'
 import { useAuth } from '@/lib/auth-context'
 import { useRedirectIfAuthenticated } from '@/lib/use-auth-guard'
 import RedirectingOverlay from './RedirectingOverlay'
+import Turnstile, { type TurnstileHandle } from './Turnstile'
 
 type FieldName =
   | 'email'
@@ -16,6 +17,7 @@ type FieldName =
   | 'nickname'
   | 'termsAgreed'
   | 'privacyAgreed'
+  | 'turnstile'
 type FieldErrors = Partial<Record<FieldName, string>>
 
 const inputClass =
@@ -37,6 +39,10 @@ export default function SignupForm() {
   // 약관/개인정보 동의 (백엔드 @AssertTrue 미러링: 둘 다 true여야 가입 가능)
   const [termsAgreed, setTermsAgreed] = useState(false)
   const [privacyAgreed, setPrivacyAgreed] = useState(false)
+  // Cloudflare Turnstile 통과 시 발급되는 1회용 토큰. 백엔드 @NotBlank 미러링: 비어 있으면 제출을 막는다.
+  const [turnstileToken, setTurnstileToken] = useState('')
+  // 제출 실패 시(토큰 소비/무효화) 위젯을 리셋해 새 토큰을 받기 위한 명령형 핸들.
+  const turnstileRef = useRef<TurnstileHandle>(null)
 
   // 필드를 한 번이라도 벗어났는지(blur) 기록. 입력 "도중"에 빨간 에러가 뜨는 걸 막기 위함.
   const [touched, setTouched] = useState<Partial<Record<FieldName, boolean>>>({})
@@ -97,8 +103,13 @@ export default function SignupForm() {
       errs.privacyAgreed = '개인정보처리방침에 동의해주세요.'
     }
 
+    // 보안 문자(Turnstile) 미완료 시 제출 차단. 백엔드 @NotBlank 선차단.
+    if (!turnstileToken) {
+      errs.turnstile = '보안 문자 인증을 완료해주세요.'
+    }
+
     return errs
-  }, [email, password, passwordConfirm, nickname, termsAgreed, privacyAgreed])
+  }, [email, password, passwordConfirm, nickname, termsAgreed, privacyAgreed, turnstileToken])
 
   // "전체 동의" 체크박스 상태. 두 항목이 모두 켜져 있을 때만 켜진 것으로 본다.
   const allAgreed = termsAgreed && privacyAgreed
@@ -155,6 +166,7 @@ export default function SignupForm() {
         nickname: nickname.trim(),
         termsAgreed,
         privacyAgreed,
+        turnstileToken,
       })
       await fetchUser()
       // 회원가입도 자동 로그인이라 출첵이 함께 실행되어 온다(로그인 폼과 동일하게 안내).
@@ -162,6 +174,11 @@ export default function SignupForm() {
       // replace로 이동해 히스토리에 회원가입 페이지를 남기지 않는다(뒤로가기 시 폼으로 안 돌아감)
       router.replace('/')
     } catch (e) {
+      // 제출이 실패하면 방금 쓴 Turnstile 토큰은 소비/무효화된 것으로 본다(1회용).
+      // 위젯을 리셋해 새 챌린지를 돌리고, 보관 중이던 토큰은 비워 재제출을 막는다
+      // (새 토큰이 콜백으로 도착하면 다시 제출 가능해진다).
+      setTurnstileToken('')
+      turnstileRef.current?.reset()
       if (e instanceof ApiError) {
         // 서버 에러는 message가 아니라 code로 분기해 해당 필드에 매핑한다.
         // (백엔드는 한 번에 하나의 에러만 내려주므로, code별로 한 곳에 표시)
@@ -190,6 +207,7 @@ export default function SignupForm() {
   const nicknameError = visibleError('nickname')
   const termsError = visibleError('termsAgreed')
   const privacyError = visibleError('privacyAgreed')
+  const turnstileError = visibleError('turnstile')
 
   // 로그인 상태로 진입(다른 탭 로그인 등) 시 리다이렉트 진행 중에는 폼 대신
   // 전체 화면 로딩 오버레이만 잠깐 보여준다(좁은 카드 안 문구 대신 뷰포트 전체 전환).
@@ -326,6 +344,17 @@ export default function SignupForm() {
             label="개인정보처리방침"
           />
         </div>
+      </div>
+
+      {/* 봇 방지(Cloudflare Turnstile). 통과 시 발급된 토큰을 상태에 저장하고, 만료/오류 시 비운다. */}
+      <div>
+        <Turnstile
+          ref={turnstileRef}
+          onVerify={setTurnstileToken}
+          onExpire={() => setTurnstileToken('')}
+          onError={() => setTurnstileToken('')}
+        />
+        {turnstileError && <p className="text-xs text-red-500 mt-1">{turnstileError}</p>}
       </div>
 
       {apiError && <p className="text-xs text-red-500">{apiError}</p>}
