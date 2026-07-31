@@ -161,15 +161,15 @@ export const MESSAGES = {
 
   points: {
     roulette: {
-      unlockFailed: '고정 해제에 실패했습니다.',
-      lockFailed: '상대 고정에 실패했습니다.',
-      betRequired: '배팅액을 입력해주세요.',
-      betRange: (min: string, max: string) => `배팅액은 ${min}P ~ ${max}P 사이여야 합니다.`,
-      betUnitMismatch: (unit: string) => `배팅액은 ${unit}P 단위로만 가능합니다.`,
-      spinFailed: '룰렛 진행에 실패했습니다.',
-      win: (nickname: string, amount: string) => `${nickname}님 개발라버리고 ${amount}P 뜯어왔습니다!`,
-      lose: (nickname: string, amount: string) => `${nickname}님한테 존나 털렸습니다... ${amount}P 헌납.`,
-      randomOpponentHint: '다음 스핀은 랜덤 상대와 겨룹니다.',
+      unlockFailed: '들어올 땐 마음대로겠지만 나갈땐 아니란다',
+      lockFailed: 'ㅋ 너 돈 털림 고정 못함 ㅅㄱ',
+      betRequired: '돈걸어',
+      betRange: (min: string, max: string) => `${min}P ~ ${max}P 사이로 베팅하셈`,
+      betUnitMismatch: (unit: string) => `${unit}P 단위로만 베팅하셈`,
+      spinFailed: 'ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ룰렛! 실패!',
+      win: (nickname: string, amount: string) => `${nickname}한테서 ${amount}P 털음 ㅊㅋㅊㅋ`,
+      lose: (nickname: string, amount: string) => `ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ${nickname}한테 ${amount}P 털렸누...  ㅠ`,
+      randomOpponentHint: '다음 스핀은 랜덤 상대하고 ㄱㄱ',
     },
     pointInfo: {
       checkinDescription: '매일 로그인할 때 하루 한 번, 포인트를 조금 얻거나 반대로 조금 잃어요.',
@@ -178,22 +178,22 @@ export const MESSAGES = {
     },
     roulettePage: {
       loginGateSuffix: '후 룰렛을 이용할 수 있습니다.',
-      description: '원하는 만큼 배팅해서 다른 회원과 겨뤄보세요.',
+      description: '원하는 만큼 배팅ㄱㄱ 쫄?',
     },
     checkin: {
-      gainedPrefix: '개꿀, 공짜로 ',
-      gainedSuffix: ' 득템했습니다!',
-      lostPrefix: '오늘 재수 존나 없네요. ',
-      lostSuffix: '가 그냥 날아갔습니다.',
-      neutral: '출첵은 했는데 오늘은 그냥 본전입니다. 다음엔 존나 터지겠죠.',
+      gainedPrefix: '오 ',
+      gainedSuffix: ' ㅊㅋㅊㅋ',
+      lostPrefix: 'ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ ',
+      lostSuffix: '날라감ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ',
+      neutral: '쟌-넨',
     },
     // 룰렛 승/패 알림(POINT_STOLEN/POINT_WON). lib/notification.ts(순수 텍스트)와
     // NotificationBell.tsx(강조 포함 JSX)가 동일한 prefix/suffix를 조합해 쓴다.
     notification: {
-      stolenAfterName: '님한테 포인트 룰렛에서 존나 털렸습니다. ',
-      stolenSuffix: ' 헌납. 이대로 끝내실 겁니까?',
+      stolenAfterName: '가 니꺼 포인트 털엇데요ㅠ ',
+      stolenSuffix: ' 헌납. 이대로 끝?',
       wonAfterName: '님을 포인트 룰렛에서 개발라버리고 ',
-      wonSuffix: '를 뜯어왔습니다!',
+      wonSuffix: '털음 ㅊㅋㅊㅋ!',
     },
   },
 
