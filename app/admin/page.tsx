@@ -8,6 +8,7 @@ import { postsApi } from '@/lib/api/posts'
 import { adminApi } from '@/lib/api/admin'
 import { adminReportsApi } from '@/lib/api/reports'
 import { formatDate } from '@/lib/format'
+import { MESSAGES } from '@/lib/messages'
 import type { NoticeSummary } from '@/types'
 
 // 통계 카드. real=false 면 백엔드 미구현 항목으로 '준비 중'을 표시한다.
@@ -77,7 +78,7 @@ export default function AdminDashboard() {
       <div>
         <h1 className="text-xl font-bold">대시보드</h1>
         <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-          {user?.nickname}님, 관리자 페이지입니다.
+          {MESSAGES.admin.dashboard.greeting(user?.nickname ?? '')}
         </p>
       </div>
 
@@ -94,7 +95,7 @@ export default function AdminDashboard() {
         />
       </div>
       <p className="-mt-3 text-[11px] text-neutral-400 dark:text-neutral-500">
-        ※ 미처리 신고는 신고가 접수된 게시글·댓글의 수이며, 신고 건수와는 다릅니다.
+        {MESSAGES.admin.dashboard.pendingReportNote}
       </p>
 
       {/* 빠른 작업 */}
@@ -181,7 +182,7 @@ export default function AdminDashboard() {
         </div>
         {recentNotices.length === 0 ? (
           <p className="rounded-lg border border-dashed border-neutral-200 py-8 text-center text-sm text-neutral-400 dark:border-neutral-800">
-            등록된 공지가 없습니다.
+            {MESSAGES.admin.dashboard.noRecentNotices}
           </p>
         ) : (
           <ul className="divide-y divide-neutral-100 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">

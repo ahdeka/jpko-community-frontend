@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import ReportModal from '@/components/common/ReportModal'
 import { useAuth } from '@/lib/auth-context'
+import { MESSAGES } from '@/lib/messages'
 
 // 공개 프로필 헤더에 붙는 "더보기 → 신고하기" 메뉴.
 // 게시글 하단(PostActions)의 더보기 메뉴와 같은 UI·동작을 회원 신고용으로 맞춘 것이다.
@@ -41,7 +42,7 @@ export default function ProfileReportButton({ targetUserId }: { targetUserId: nu
   function handleReportClick() {
     setMenuOpen(false)
     if (!user) {
-      alert('신고하려면 로그인이 필요합니다.')
+      alert(MESSAGES.common.loginRequiredToReport)
       router.push('/login')
       return
     }

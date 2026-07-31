@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
+import { MESSAGES } from '@/lib/messages'
 
 // 유튜브식 커스텀 공유 모달.
 // OS 네이티브 공유창(navigator.share)과 달리 우리가 완전히 제어하므로,
@@ -72,7 +73,7 @@ export default function ShareModal({
       setTimeout(() => setCopied(false), 2000)
     } catch {
       // 비보안 컨텍스트·구형 브라우저 등 clipboard 미지원 시 직접 복사 유도
-      window.prompt('아래 링크를 복사하세요', url)
+      window.prompt(MESSAGES.share.copyFallbackPrompt, url)
     }
   }
 
@@ -126,7 +127,7 @@ export default function ShareModal({
             </span>
           </ShareTarget>
 
-          <ShareTarget label={copied ? '복사됨' : '링크 복사'} onClick={copyLink}>
+          <ShareTarget label={copied ? MESSAGES.share.copied : '링크 복사'} onClick={copyLink}>
             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-neutral-200 text-neutral-700 dark:bg-neutral-700 dark:text-neutral-200">
               {copied ? (
                 <svg className="h-5 w-5 text-green-600 dark:text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -156,7 +157,7 @@ export default function ShareModal({
             onClick={copyLink}
             className="shrink-0 rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
           >
-            {copied ? '복사됨' : '복사'}
+            {copied ? MESSAGES.share.copied : '복사'}
           </button>
         </div>
       </div>

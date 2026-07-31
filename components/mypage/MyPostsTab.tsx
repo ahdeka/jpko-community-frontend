@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usersApi } from '@/lib/api/users'
 import { ApiError } from '@/lib/api/client'
 import { formatDate } from '@/lib/format'
+import { MESSAGES } from '@/lib/messages'
 import type { MyPost } from '@/types'
 
 const PAGE_SIZE = 10
@@ -32,7 +33,7 @@ export default function MyPostsTab() {
       })
       .catch((e: unknown) => {
         if (cancelled) return
-        setError(e instanceof ApiError ? e.message : '글을 불러오지 못했습니다.')
+        setError(e instanceof ApiError ? e.message : MESSAGES.mypage.myPosts.loadFailed)
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -55,7 +56,7 @@ export default function MyPostsTab() {
   if (posts.length === 0) {
     return (
       <div className="py-12 text-center text-sm text-neutral-400 dark:text-neutral-500">
-        아직 작성한 글이 없습니다.
+        {MESSAGES.mypage.myPosts.empty}
         <div className="mt-3">
           <Link href="/posts/new" className="text-blue-600 hover:underline dark:text-blue-400">
             첫 글 작성하기

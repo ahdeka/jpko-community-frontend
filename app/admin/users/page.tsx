@@ -8,6 +8,7 @@ import { formatDate } from '@/lib/format'
 // SHOGUN(쇼군)은 운영진 전용이라 백엔드가 role !== ADMIN 이면 거부하므로,
 // UI에서도 일반 회원에겐 해당 옵션을 비활성화해 "무조건 실패할 요청"을 원천 차단한다.
 import { GRADES, gradeMeta } from '@/lib/grade'
+import { MESSAGES } from '@/lib/messages'
 import type { AdminUser, UserGrade } from '@/types'
 
 const PAGE_SIZE = 20
@@ -38,7 +39,7 @@ export default function AdminUsersPage() {
         setTotalPages(res.data?.totalPages ?? 0)
         setTotalElements(res.data?.totalElements ?? 0)
       })
-      .catch((e: unknown) => setError(e instanceof ApiError ? e.message : '회원 목록을 불러오지 못했습니다.'))
+      .catch((e: unknown) => setError(e instanceof ApiError ? e.message : MESSAGES.admin.users.loadFailed))
       .finally(() => setLoading(false))
   }, [keyword, page])
 
@@ -56,7 +57,7 @@ export default function AdminUsersPage() {
   async function handleGradeChange(user: AdminUser, next: UserGrade) {
     if (next === user.grade) return
     const label = gradeMeta(next).label
-    if (!confirm(`${user.nickname}님의 등급을 '${label}'(으)로 변경할까요?`)) return
+    if (!confirm(MESSAGES.admin.users.gradeChangeConfirm(user.nickname, label))) return
 
     setPendingId(user.id)
     try {
@@ -67,7 +68,7 @@ export default function AdminUsersPage() {
         ),
       )
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : '등급 변경에 실패했습니다.')
+      alert(err instanceof ApiError ? err.message : MESSAGES.admin.users.gradeChangeFailed)
     } finally {
       setPendingId(null)
     }
@@ -78,8 +79,8 @@ export default function AdminUsersPage() {
   async function handleToggleStatus(user: AdminUser) {
     const suspend = user.status === 'ACTIVE'
     const message = suspend
-      ? `${user.nickname}님의 계정을 정지할까요?\n정지되면 해당 회원은 즉시 로그아웃되며 로그인할 수 없습니다.`
-      : `${user.nickname}님의 계정 정지를 해제할까요?`
+      ? MESSAGES.admin.users.suspendConfirm(user.nickname)
+      : MESSAGES.admin.users.unsuspendConfirm(user.nickname)
     if (!confirm(message)) return
 
     setPendingId(user.id)
@@ -91,7 +92,7 @@ export default function AdminUsersPage() {
         ),
       )
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : '상태 변경에 실패했습니다.')
+      alert(err instanceof ApiError ? err.message : MESSAGES.admin.users.statusChangeFailed)
     } finally {
       setPendingId(null)
     }
@@ -130,7 +131,7 @@ export default function AdminUsersPage() {
         <p className="py-12 text-center text-sm text-red-500">{error}</p>
       ) : users.length === 0 ? (
         <p className="py-12 text-center text-sm text-neutral-400">
-          {keyword ? `'${keyword}' 검색 결과가 없습니다.` : '회원이 없습니다.'}
+          {keyword ? MESSAGES.admin.users.searchEmpty(keyword) : MESSAGES.admin.users.empty}
         </p>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800">

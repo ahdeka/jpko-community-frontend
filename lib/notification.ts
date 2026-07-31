@@ -1,4 +1,5 @@
 import type { Notification, NotificationType } from '@/types'
+import { MESSAGES } from '@/lib/messages'
 
 // 알림 발신자 표시명. 익명 알림은 senderName이 null로 오므로 "익명"으로 대체한다.
 // (isAnonymous가 true인데 senderName이 실수로 채워져 오는 경우까지 방어해 항상 "익명" 우선)
@@ -130,11 +131,11 @@ export function notificationText(n: Notification): string {
   // 상대는 익명 처리되지 않는다(백엔드가 isAnonymous를 항상 false로 보냄).
   if (n.type === 'POINT_STOLEN') {
     const who = notificationSenderLabel(n)
-    return `${who}님이 포인트 룰렛으로 회원님의 포인트 ${(n.amount ?? 0).toLocaleString()}P를 가져갔습니다.`
+    return `${who}${MESSAGES.points.notification.stolenAfterName}${(n.amount ?? 0).toLocaleString()}P${MESSAGES.points.notification.stolenSuffix}`
   }
   if (n.type === 'POINT_WON') {
     const who = notificationSenderLabel(n)
-    return `${who}님과의 포인트 룰렛에서 승리해 포인트 ${(n.amount ?? 0).toLocaleString()}P를 얻었습니다.`
+    return `${who}${MESSAGES.points.notification.wonAfterName}${(n.amount ?? 0).toLocaleString()}P${MESSAGES.points.notification.wonSuffix}`
   }
 
   const who = notificationSenderLabel(n)

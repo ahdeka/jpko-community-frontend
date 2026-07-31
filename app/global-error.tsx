@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { MESSAGES } from '@/lib/messages'
 import './globals.css'
 
 // 루트 레이아웃 자체에서 에러가 났을 때의 최후 방어선.
@@ -21,9 +22,9 @@ export default function GlobalError({
       <body className="bg-neutral-100 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
         <div className="flex min-h-screen flex-col items-center justify-center px-4 text-center">
           <p className="text-2xl font-extrabold text-orange-500">JPKO</p>
-          <h1 className="mt-4 text-lg font-bold">일시적인 오류가 발생했습니다</h1>
+          <h1 className="mt-4 text-lg font-bold">{MESSAGES.common.globalError.title}</h1>
           <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-            잠시 후 다시 시도해주세요. 문제가 계속되면 잠시 뒤 다시 방문해주세요.
+            {MESSAGES.common.globalError.description}
           </p>
           <button
             type="button"

@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { NoticeSummary } from '@/types'
 import { formatDate } from '@/lib/format'
 import NoticeBadges from './NoticeBadges'
+import { MESSAGES } from '@/lib/messages'
 
 interface Props {
   notices: NoticeSummary[]
@@ -13,7 +14,7 @@ export default function NoticeList({ notices }: Props) {
   if (notices.length === 0) {
     return (
       <div className="py-16 text-center text-sm text-neutral-400 dark:text-neutral-500">
-        등록된 공지사항이 없습니다.
+        {MESSAGES.notice.list.empty}
       </div>
     )
   }

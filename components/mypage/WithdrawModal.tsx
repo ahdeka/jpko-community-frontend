@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { usersApi } from '@/lib/api/users'
 import { ApiError } from '@/lib/api/client'
+import { MESSAGES } from '@/lib/messages'
 
 // 회원 탈퇴 확인 모달.
 // 되돌릴 수 없는 파괴적 작업이므로 (1) 본인 확인용 비밀번호 (2) 안내 확인 체크를
@@ -81,11 +82,11 @@ export default function WithdrawModal({ open, onClose }: { open: boolean; onClos
     setError(null)
 
     if (!password) {
-      setError('비밀번호를 입력해주세요.')
+      setError(MESSAGES.mypage.withdraw.passwordRequired)
       return
     }
     if (!agreed) {
-      setError('안내 사항 확인에 동의해주세요.')
+      setError(MESSAGES.mypage.withdraw.agreementRequired)
       return
     }
 
@@ -99,7 +100,7 @@ export default function WithdrawModal({ open, onClose }: { open: boolean; onClos
       setLoading(false)
       if (err instanceof ApiError) {
         if (err.code === 'WRONG_PASSWORD') {
-          setError('비밀번호가 일치하지 않습니다.')
+          setError(MESSAGES.mypage.withdraw.wrongPassword)
           return
         }
         if (err.code === 'ALREADY_WITHDRAWN') {
@@ -110,7 +111,7 @@ export default function WithdrawModal({ open, onClose }: { open: boolean; onClos
         setError(err.message)
         return
       }
-      setError('회원 탈퇴에 실패했습니다. 잠시 후 다시 시도해주세요.')
+      setError(MESSAGES.mypage.withdraw.genericFailed)
     }
   }
 
@@ -135,10 +136,10 @@ export default function WithdrawModal({ open, onClose }: { open: boolean; onClos
                 <path d="M20 6 9 17l-5-5" />
               </svg>
             </span>
-            <h2 className="text-base font-bold text-neutral-900 dark:text-neutral-100">탈퇴가 완료되었습니다</h2>
+            <h2 className="text-base font-bold text-neutral-900 dark:text-neutral-100">{MESSAGES.mypage.withdraw.doneTitle}</h2>
             <p className="text-sm text-neutral-500 dark:text-neutral-400">
-              그동안 이용해 주셔서 감사합니다.<br />
-              잠시 후 홈으로 이동합니다.
+              {MESSAGES.mypage.withdraw.doneDescriptionLine1}<br />
+              {MESSAGES.mypage.withdraw.doneDescriptionLine2}
             </p>
           </div>
         ) : (
@@ -162,13 +163,11 @@ export default function WithdrawModal({ open, onClose }: { open: boolean; onClos
 
             {/* 탈퇴 시 실제로 일어나는 일 안내 (백엔드 동작과 일치) */}
             <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-xs leading-relaxed text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
-              <p className="mb-1.5 font-semibold">탈퇴 시 아래 내용에 유의해주세요.</p>
+              <p className="mb-1.5 font-semibold">{MESSAGES.mypage.withdraw.noticeIntro}</p>
               <ul className="list-disc space-y-1 pl-4">
-                <li>계정이 즉시 비활성화되며 <b>다시 로그인할 수 없습니다.</b></li>
-                <li>닉네임·이메일 등 개인정보는 익명 처리되며 <b>복구할 수 없습니다.</b></li>
-                <li>작성하신 글과 댓글은 삭제되지 않고 <b>&lsquo;탈퇴회원&rsquo;</b>으로 표시됩니다.</li>
-                <li>모든 기기에서 로그아웃됩니다.</li>
-                <li>접속 IP는 관련 법령에 따라 6개월간 보관 후 파기됩니다.</li>
+                {MESSAGES.mypage.withdraw.bullets.map(bullet => (
+                  <li key={bullet}>{bullet}</li>
+                ))}
               </ul>
             </div>
 
@@ -198,7 +197,7 @@ export default function WithdrawModal({ open, onClose }: { open: boolean; onClos
                   disabled={loading}
                   className="mt-0.5 h-4 w-4 shrink-0 accent-red-600"
                 />
-                <span>안내 사항을 모두 확인했으며, 탈퇴에 동의합니다.</span>
+                <span>{MESSAGES.mypage.withdraw.agreeLabel}</span>
               </label>
 
               {error && <p className="text-xs text-red-500">{error}</p>}

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { noticesApi } from '@/lib/api/notices'
 import { ApiError } from '@/lib/api/client'
 import { formatDate } from '@/lib/format'
+import { MESSAGES } from '@/lib/messages'
 import type { NoticeSummary } from '@/types'
 
 const PAGE_SIZE = 20
@@ -26,7 +27,7 @@ export default function AdminNoticesPage() {
         setNotices(res.data?.content ?? [])
         setTotalPages(res.data?.totalPages ?? 0)
       })
-      .catch((e: unknown) => setError(e instanceof ApiError ? e.message : '목록을 불러오지 못했습니다.'))
+      .catch((e: unknown) => setError(e instanceof ApiError ? e.message : MESSAGES.admin.notices.loadFailed))
       .finally(() => setLoading(false))
   }
 
@@ -34,7 +35,7 @@ export default function AdminNoticesPage() {
 
   async function handleDelete(id: number, title: string) {
     // 삭제는 되돌릴 수 없으므로 제목을 보여주며 명시적으로 확인받는다.
-    if (!confirm(`"${title}" 공지를 삭제할까요?\n삭제 후에는 복구할 수 없습니다.`)) return
+    if (!confirm(MESSAGES.admin.notices.deleteConfirm(title))) return
 
     setDeletingId(id)
     try {
@@ -46,7 +47,7 @@ export default function AdminNoticesPage() {
         load()
       }
     } catch (e) {
-      alert(e instanceof ApiError ? e.message : '삭제에 실패했습니다.')
+      alert(e instanceof ApiError ? e.message : MESSAGES.admin.notices.deleteFailed)
     } finally {
       setDeletingId(null)
     }
@@ -72,7 +73,7 @@ export default function AdminNoticesPage() {
       ) : error ? (
         <p className="py-12 text-center text-sm text-red-500">{error}</p>
       ) : notices.length === 0 ? (
-        <p className="py-12 text-center text-sm text-neutral-400">등록된 공지가 없습니다.</p>
+        <p className="py-12 text-center text-sm text-neutral-400">{MESSAGES.admin.notices.empty}</p>
       ) : (
         <ul className="divide-y divide-neutral-100 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
           {notices.map(notice => (

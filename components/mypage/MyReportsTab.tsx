@@ -6,6 +6,7 @@ import { reportsApi } from '@/lib/api/reports'
 import { ApiError } from '@/lib/api/client'
 import { formatRelativeTime } from '@/lib/format'
 import { reasonMeta, reportTargetHref, statusMeta, targetTypeLabel } from '@/lib/report'
+import { MESSAGES } from '@/lib/messages'
 import type { MyReport } from '@/types'
 
 const PAGE_SIZE = 10
@@ -33,7 +34,7 @@ export default function MyReportsTab() {
       })
       .catch((e: unknown) => {
         if (cancelled) return
-        setError(e instanceof ApiError ? e.message : '신고 내역을 불러오지 못했습니다.')
+        setError(e instanceof ApiError ? e.message : MESSAGES.mypage.myReports.loadFailed)
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -55,7 +56,7 @@ export default function MyReportsTab() {
   if (reports.length === 0) {
     return (
       <div className="py-12 text-center text-sm text-neutral-400 dark:text-neutral-500">
-        접수한 신고가 없습니다.
+        {MESSAGES.mypage.myReports.empty}
       </div>
     )
   }
@@ -109,12 +110,12 @@ export default function MyReportsTab() {
               {/* 처리 결과 안내: 상태만 보여주면 무슨 뜻인지 모르므로 한 줄로 풀어 준다. */}
               {report.status === 'RESOLVED' && (
                 <p className="mt-1 text-[11px] text-emerald-600 dark:text-emerald-400">
-                  운영진이 확인 후 조치를 완료했습니다.
+                  {MESSAGES.mypage.myReports.resolvedNote}
                 </p>
               )}
               {report.status === 'REJECTED' && (
                 <p className="mt-1 text-[11px] text-neutral-400 dark:text-neutral-500">
-                  운영진 검토 결과, 조치가 필요하지 않다고 판단되었습니다.
+                  {MESSAGES.mypage.myReports.rejectedNote}
                 </p>
               )}
             </li>

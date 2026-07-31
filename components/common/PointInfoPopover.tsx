@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { MESSAGES } from '@/lib/messages'
 
 // 포인트 안내 팝오버. GradeInfoPopover와 동일한 열림/닫힘 규칙을 따른다 —
 // hover/탭/키보드 포커스로 열리고, 바깥 클릭·Esc·포커스 이탈·마우스 이탈로 닫힌다
@@ -58,14 +59,13 @@ export default function PointInfoPopover() {
             출첵
           </p>
           <p className="mt-1 text-[11px] leading-snug text-neutral-600 dark:text-neutral-300">
-            매일 로그인할 때 하루 한 번, 포인트를 조금 얻거나 반대로 조금 잃어요.
+            {MESSAGES.points.pointInfo.checkinDescription}
           </p>
           <p className="mt-2 text-[11px] font-semibold text-neutral-400 dark:text-neutral-500">
             룰렛
           </p>
           <p className="mt-1 text-[11px] leading-snug text-neutral-600 dark:text-neutral-300">
-            원하는 만큼 직접 배팅해서 다른 회원과 겨루는 게임이에요. 이기면 상대의 포인트를
-            가져오고 지면 내 포인트를 잃으며, 판마다 배팅액의 일부가 수수료로 빠져나가요.
+            {MESSAGES.points.pointInfo.rouletteDescription}
           </p>
         </div>
       )}

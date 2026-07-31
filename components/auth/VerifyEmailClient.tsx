@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { authApi } from '@/lib/api/auth'
 import { ApiError } from '@/lib/api/client'
 import { useAuth } from '@/lib/auth-context'
+import { MESSAGES } from '@/lib/messages'
 
 type Status = 'verifying' | 'success' | 'error'
 
@@ -16,7 +17,7 @@ export default function VerifyEmailClient({ token }: { token: string }) {
 
   const [status, setStatus] = useState<Status>(token ? 'verifying' : 'error')
   const [errorMsg, setErrorMsg] = useState(
-    token ? '' : '유효하지 않은 인증 링크입니다. 메일의 링크를 다시 확인해주세요.'
+    token ? '' : MESSAGES.auth.verifyEmail.missingToken
   )
 
   // React 19 dev(Strict Mode)에서 effect가 두 번 실행돼 confirm이 중복 호출되는 것을 막는다.
@@ -38,9 +39,9 @@ export default function VerifyEmailClient({ token }: { token: string }) {
       .catch((e) => {
         setStatus('error')
         if (e instanceof ApiError && e.code === 'EXPIRED_VERIFICATION_TOKEN') {
-          setErrorMsg('인증 링크가 만료되었습니다. 아래에서 인증 메일을 다시 받아주세요.')
+          setErrorMsg(MESSAGES.auth.verifyEmail.expiredToken)
         } else {
-          setErrorMsg('유효하지 않거나 이미 사용된 인증 링크입니다. 아래에서 인증 메일을 다시 받아주세요.')
+          setErrorMsg(MESSAGES.auth.verifyEmail.invalidToken)
         }
       })
   }, [token, fetchUser])
@@ -49,7 +50,7 @@ export default function VerifyEmailClient({ token }: { token: string }) {
     return (
       <div className="flex flex-col items-center gap-3 py-4 text-center">
         <Spinner />
-        <p className="text-sm text-neutral-600 dark:text-neutral-300">이메일 인증을 확인하고 있습니다…</p>
+        <p className="text-sm text-neutral-600 dark:text-neutral-300">{MESSAGES.auth.verifyEmail.verifying}</p>
       </div>
     )
   }
@@ -59,9 +60,9 @@ export default function VerifyEmailClient({ token }: { token: string }) {
       <div className="flex flex-col items-center gap-4 py-2 text-center">
         <CheckIcon />
         <div>
-          <h1 className="text-lg font-bold">이메일 인증 완료</h1>
+          <h1 className="text-lg font-bold">{MESSAGES.auth.verifyEmail.successTitle}</h1>
           <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">
-            이메일 인증이 정상적으로 완료되었습니다.
+            {MESSAGES.auth.verifyEmail.successDescription}
           </p>
         </div>
         <Link
@@ -79,7 +80,7 @@ export default function VerifyEmailClient({ token }: { token: string }) {
     <div className="flex flex-col items-center gap-4 py-2 text-center">
       <WarnIcon />
       <div>
-        <h1 className="text-lg font-bold">인증에 실패했습니다</h1>
+        <h1 className="text-lg font-bold">{MESSAGES.auth.verifyEmail.failTitle}</h1>
         <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">{errorMsg}</p>
       </div>
       <ResendForm inputClass={inputClass} />
@@ -117,7 +118,7 @@ function ResendForm({ inputClass }: { inputClass: string }) {
   if (sent) {
     return (
       <p className="w-full rounded-md bg-green-50 px-3 py-2 text-xs text-green-700 dark:bg-green-500/10 dark:text-green-400">
-        입력하신 이메일이 가입되어 있고 미인증 상태라면, 인증 메일을 보내드렸습니다. 메일함을 확인해주세요.
+        {MESSAGES.auth.verifyEmail.resendSent}
       </p>
     )
   }

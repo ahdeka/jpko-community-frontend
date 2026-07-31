@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect } from 'react'
+import { MESSAGES } from '@/lib/messages'
 
-const CONFIRM_MESSAGE =
-  '작성 중인 내용이 있습니다.\n페이지를 벗어나면 저장되지 않은 변경 사항이 사라집니다. 이동하시겠습니까?'
+const CONFIRM_MESSAGE = MESSAGES.common.unsavedChangesConfirm
 
 // 작성/수정 중(when=true) 페이지 이탈을 막아 작업 유실을 방지하는 훅.
 //

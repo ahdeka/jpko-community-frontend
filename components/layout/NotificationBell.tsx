@@ -14,6 +14,7 @@ import {
   type NotificationMeta,
 } from '@/lib/notification'
 import { formatRelativeTime } from '@/lib/format'
+import { MESSAGES } from '@/lib/messages'
 
 function BellIcon() {
   return (
@@ -105,9 +106,9 @@ function NotificationBody({ n, meta }: { n: Notification; meta: NotificationMeta
     const who = <span className="font-semibold text-neutral-900 dark:text-white">{notificationSenderLabel(n)}</span>
     return (
       <>
-        {who}님이 포인트 룰렛으로 회원님의 포인트{' '}
+        {who}{MESSAGES.points.notification.stolenAfterName}
         <span className={`font-semibold ${meta.accentText}`}>{(n.amount ?? 0).toLocaleString()}P</span>
-        를 가져갔습니다.
+        {MESSAGES.points.notification.stolenSuffix}
       </>
     )
   }
@@ -117,9 +118,9 @@ function NotificationBody({ n, meta }: { n: Notification; meta: NotificationMeta
     const who = <span className="font-semibold text-neutral-900 dark:text-white">{notificationSenderLabel(n)}</span>
     return (
       <>
-        {who}님과의 포인트 룰렛에서 승리해{' '}
+        {who}{MESSAGES.points.notification.wonAfterName}
         <span className={`font-semibold ${meta.accentText}`}>{(n.amount ?? 0).toLocaleString()}P</span>
-        를 얻었습니다.
+        {MESSAGES.points.notification.wonSuffix}
       </>
     )
   }

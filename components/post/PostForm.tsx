@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth-context'
 import { postsApi } from '@/lib/api/posts'
 import { ApiError } from '@/lib/api/client'
 import { useUnsavedChanges } from '@/lib/use-unsaved-changes'
+import { MESSAGES } from '@/lib/messages'
 import TiptapEditor, { MAX_CONTENT_LENGTH } from './TiptapEditor'
 import type { Category } from '@/types'
 
@@ -62,7 +63,7 @@ export default function PostForm({
     return (
       <div className="py-10 text-center text-sm text-gray-500 dark:text-neutral-400">
         <Link href="/login" className="text-blue-600 dark:text-blue-400 hover:underline">로그인</Link>
-        {' '}후 글을 작성할 수 있습니다.
+        {' '}{MESSAGES.post.form.loginGateSuffix}
       </div>
     )
   }
@@ -75,11 +76,11 @@ export default function PostForm({
 
   function validate(): Record<string, string> {
     const errs: Record<string, string> = {}
-    if (!categoryId) errs.category = '카테고리를 선택해주세요.'
-    if (!title.trim()) errs.title = '제목을 입력해주세요.'
-    else if (title.length > 100) errs.title = '제목은 100자 이하여야 합니다.'
-    if (!plainText && !hasImage) errs.content = '내용을 입력해주세요.'
-    else if (overLimit) errs.content = `본문은 ${MAX_CONTENT_LENGTH.toLocaleString()}자 이하여야 합니다.`
+    if (!categoryId) errs.category = MESSAGES.post.form.categoryRequired
+    if (!title.trim()) errs.title = MESSAGES.post.form.titleRequired
+    else if (title.length > 100) errs.title = MESSAGES.post.form.titleTooLong
+    if (!plainText && !hasImage) errs.content = MESSAGES.post.form.contentRequired
+    else if (overLimit) errs.content = MESSAGES.post.form.contentTooLong(MAX_CONTENT_LENGTH.toLocaleString())
     return errs
   }
 
@@ -89,7 +90,7 @@ export default function PostForm({
     // 버튼 disabled와 별개로 한 번 더 막는다.
     // (Enter 키 제출 등 버튼을 거치지 않는 경로가 있고, disabled는 렌더 이후에만 적용된다)
     if (imageUploading) {
-      setErrors({ form: '이미지 업로드가 끝난 뒤 저장해주세요.' })
+      setErrors({ form: MESSAGES.post.form.imageUploading })
       return
     }
 
@@ -123,7 +124,7 @@ export default function PostForm({
       } else if (e instanceof ApiError) {
         setErrors({ form: e.message })
       } else {
-        setErrors({ form: '요청에 실패했습니다.' })
+        setErrors({ form: MESSAGES.common.requestFailed })
       }
     } finally {
       setLoading(false)

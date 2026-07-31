@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { postsApi } from '@/lib/api/posts'
 import { ApiError } from '@/lib/api/client'
+import { MESSAGES } from '@/lib/messages'
 
 interface Props {
   postId: number
@@ -14,7 +15,7 @@ export default function DeletePostButton({ postId }: Props) {
   const [loading, setLoading] = useState(false)
 
   async function handleDelete() {
-    if (!confirm('게시글을 삭제하시겠습니까?')) return
+    if (!confirm(MESSAGES.post.deleteConfirm)) return
 
     setLoading(true)
     try {

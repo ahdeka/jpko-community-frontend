@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { authApi } from '@/lib/api/auth'
+import { MESSAGES } from '@/lib/messages'
 
 const inputClass =
   'w-full rounded border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none transition-colors focus:border-blue-400 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-blue-500'
@@ -31,11 +32,11 @@ export default function ForgotPasswordForm() {
 
     const trimmed = email.trim()
     if (!trimmed) {
-      setError('이메일을 입력해주세요.')
+      setError(MESSAGES.auth.forgotPassword.emailRequired)
       return
     }
     if (!EMAIL_RE.test(trimmed)) {
-      setError('이메일 형식이 올바르지 않습니다.')
+      setError(MESSAGES.auth.forgotPassword.emailInvalid)
       return
     }
 
@@ -90,19 +91,21 @@ export default function ForgotPasswordForm() {
         </div>
 
         <div className="flex flex-col items-center gap-1 text-center">
-          <h1 className="text-xl font-bold">메일을 보냈어요</h1>
+          <h1 className="text-xl font-bold">{MESSAGES.auth.forgotPassword.sentTitle}</h1>
           {/* 입력한 이메일 주소를 강조 → 어느 메일함을 열지 목적지를 구체화한다 */}
           <p className="break-all text-sm font-semibold text-blue-700 dark:text-blue-400">{trimmedEmail}</p>
         </div>
 
         {/* 상태 보고가 아닌 "다음 행동" 지시형 문구 */}
         <p className="text-center text-sm leading-relaxed text-neutral-600 dark:text-neutral-300">
-          받은 메일함을 열어 <strong>비밀번호 재설정 링크</strong>를 눌러주세요.
+          {MESSAGES.auth.forgotPassword.sentInstructionPrefix}
+          <strong>{MESSAGES.auth.forgotPassword.sentInstructionEmphasis}</strong>
+          {MESSAGES.auth.forgotPassword.sentInstructionSuffix}
         </p>
 
         {/* 스팸함 안내는 부차 정보로 분리(작은 회색) → 메인 문구를 가볍게 유지 */}
         <p className="text-center text-xs text-neutral-400 dark:text-neutral-500">
-          메일이 보이지 않으면 스팸함도 확인해주세요.
+          {MESSAGES.auth.forgotPassword.spamHint}
         </p>
 
         {/* 미인증 계정은 재설정 메일이 발송되지 않는다 → 자가 해결 경로.
@@ -110,12 +113,11 @@ export default function ForgotPasswordForm() {
         {showHelp ? (
           <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 dark:border-amber-500/30 dark:bg-amber-500/10">
             <p className="text-xs leading-relaxed text-amber-800 dark:text-amber-300">
-              이메일 인증이 완료되지 않은 계정에는 재설정 메일이 발송되지 않습니다. 아래에서 인증 메일을
-              먼저 받아 인증을 완료한 뒤 다시 시도해주세요.
+              {MESSAGES.auth.forgotPassword.unverifiedHelp}
             </p>
             {verifySent ? (
               <p className="mt-2 text-xs font-medium text-amber-800 dark:text-amber-300">
-                인증 메일을 보냈습니다(가입·미인증 계정인 경우). 인증 완료 후 다시 시도해주세요.
+                {MESSAGES.auth.forgotPassword.verifyResent}
               </p>
             ) : (
               <button

@@ -7,6 +7,7 @@ import Image from '@tiptap/extension-image'
 import { Placeholder } from '@tiptap/extensions'
 import { imagesApi } from '@/lib/api/images'
 import { ApiError } from '@/lib/api/client'
+import { MESSAGES } from '@/lib/messages'
 
 // 백엔드와 동일한 제약 (S3ImageUploader / PostCreateRequest 기준)
 export const MAX_CONTENT_LENGTH = 20000 // content HTML 최대 길이
@@ -148,7 +149,7 @@ export default function TiptapEditor({
 
     // 클라이언트 1차 검증 — 백엔드와 동일 기준으로 미리 걸러 불필요한 업로드 방지
     if (!ALLOWED_EXT.includes(ext)) {
-      setUploadError('지원하지 않는 형식입니다. (jpg, jpeg, png, gif, webp)')
+      setUploadError(MESSAGES.post.editor.unsupportedFormat)
       return
     }
     // 확장자 검사를 먼저 통과했으므로 ext는 허용 목록 안의 값이 확정된 상태다.
@@ -156,12 +157,12 @@ export default function TiptapEditor({
     const maxSize = MAX_IMAGE_SIZE_BY_EXT[ext] ?? DEFAULT_MAX_IMAGE_SIZE
     if (file.size > maxSize) {
       setUploadError(
-        `${ext.toUpperCase()} 파일은 ${toMb(maxSize)}MB 이하여야 합니다. (현재 약 ${(file.size / 1024 / 1024).toFixed(1)}MB)`
+        MESSAGES.post.editor.fileTooLarge(ext, toMb(maxSize), (file.size / 1024 / 1024).toFixed(1))
       )
       return
     }
     if (countImages(editor) >= MAX_IMAGES) {
-      setUploadError(`이미지는 최대 ${MAX_IMAGES}장까지 첨부할 수 있습니다.`)
+      setUploadError(MESSAGES.post.editor.tooManyImages(MAX_IMAGES))
       return
     }
 
@@ -174,7 +175,7 @@ export default function TiptapEditor({
       editor.chain().focus().setImage({ src: url }).run()
     } catch (e) {
       setUploadError(
-        e instanceof ApiError ? e.message : '이미지 업로드에 실패했습니다.'
+        e instanceof ApiError ? e.message : MESSAGES.post.editor.uploadFailed
       )
     }
   }
@@ -247,7 +248,7 @@ export default function TiptapEditor({
 function setLink(editor: Editor) {
   // 커서가 기존 링크 위에 있으면 그 URL을 기본값으로 보여준다.
   const prevUrl = editor.getAttributes('link').href as string | undefined
-  const input = window.prompt('링크 URL을 입력하세요 (비우면 링크 해제)', prevUrl ?? '')
+  const input = window.prompt(MESSAGES.post.editor.linkPrompt, prevUrl ?? '')
   if (input === null) return // 취소
 
   // extendMarkRange: 커서만 있어도 링크 전체 범위에 적용/해제되도록 확장
@@ -258,7 +259,7 @@ function setLink(editor: Editor) {
 
   const url = normalizeLinkUrl(input)
   if (!url) {
-    window.alert('사용할 수 없는 링크입니다. http/https 주소를 입력해주세요.')
+    window.alert(MESSAGES.post.editor.invalidLink)
     return
   }
   editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run()

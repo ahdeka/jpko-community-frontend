@@ -4,20 +4,21 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { authApi } from '@/lib/api/auth'
 import { ApiError } from '@/lib/api/client'
+import { MESSAGES } from '@/lib/messages'
 
 const inputClass =
   'w-full rounded border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none transition-colors focus:border-blue-400 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-blue-500'
 
 // 백엔드 에러 code를 재설정 화면 맥락의 문구로 변환한다.
 function resetErrorMessage(err: unknown): string {
-  if (!(err instanceof ApiError)) return '비밀번호 재설정에 실패했습니다. 잠시 후 다시 시도해주세요.'
+  if (!(err instanceof ApiError)) return MESSAGES.auth.resetPassword.genericError
   switch (err.code) {
     case 'EXPIRED_VERIFICATION_TOKEN':
-      return '재설정 링크가 만료되었습니다. 비밀번호 찾기를 다시 진행해주세요.'
+      return MESSAGES.auth.resetPassword.expiredToken
     case 'INVALID_VERIFICATION_TOKEN':
-      return '유효하지 않은 재설정 링크입니다. 비밀번호 찾기를 다시 진행해주세요.'
+      return MESSAGES.auth.resetPassword.invalidToken
     case 'PASSWORD_MISMATCH':
-      return '새 비밀번호가 일치하지 않습니다.'
+      return MESSAGES.auth.resetPassword.passwordMismatch
     default:
       return err.message
   }
@@ -34,9 +35,9 @@ export default function ResetPasswordForm({ token }: { token: string }) {
   if (!token) {
     return (
       <div className="flex flex-col items-center gap-4 py-2 text-center">
-        <h1 className="text-lg font-bold">유효하지 않은 링크</h1>
+        <h1 className="text-lg font-bold">{MESSAGES.auth.resetPassword.missingTokenTitle}</h1>
         <p className="text-sm text-neutral-600 dark:text-neutral-300">
-          재설정 링크가 올바르지 않습니다. 비밀번호 찾기를 다시 진행해주세요.
+          {MESSAGES.auth.resetPassword.missingTokenDescription}
         </p>
         <Link
           href="/forgot-password"
@@ -51,9 +52,9 @@ export default function ResetPasswordForm({ token }: { token: string }) {
   if (done) {
     return (
       <div className="flex flex-col items-center gap-4 py-2 text-center">
-        <h1 className="text-lg font-bold">비밀번호 변경 완료</h1>
+        <h1 className="text-lg font-bold">{MESSAGES.auth.resetPassword.doneTitle}</h1>
         <p className="text-sm text-neutral-600 dark:text-neutral-300">
-          새 비밀번호로 변경되었습니다. 보안을 위해 다른 기기의 로그인은 모두 해제되었습니다.
+          {MESSAGES.auth.resetPassword.doneDescription}
         </p>
         <Link
           href="/login"
@@ -71,11 +72,11 @@ export default function ResetPasswordForm({ token }: { token: string }) {
 
     // 백엔드(@Size 8~50)와 동일 기준으로 클라이언트에서 먼저 검증한다.
     if (newPassword.length < 8 || newPassword.length > 50) {
-      setError('새 비밀번호는 8~50자 사이여야 합니다.')
+      setError(MESSAGES.auth.resetPassword.passwordLength)
       return
     }
     if (newPassword !== newPasswordConfirm) {
-      setError('새 비밀번호가 일치하지 않습니다.')
+      setError(MESSAGES.auth.resetPassword.passwordMismatch)
       return
     }
 

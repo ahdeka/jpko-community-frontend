@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usersApi } from '@/lib/api/users'
 import { ApiError } from '@/lib/api/client'
 import { formatRelativeTime } from '@/lib/format'
+import { MESSAGES } from '@/lib/messages'
 import type { MyComment } from '@/types'
 
 const PAGE_SIZE = 10
@@ -31,7 +32,7 @@ export default function MyCommentsTab() {
       })
       .catch((e: unknown) => {
         if (cancelled) return
-        setError(e instanceof ApiError ? e.message : '댓글을 불러오지 못했습니다.')
+        setError(e instanceof ApiError ? e.message : MESSAGES.mypage.myComments.loadFailed)
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -53,7 +54,7 @@ export default function MyCommentsTab() {
   if (comments.length === 0) {
     return (
       <div className="py-12 text-center text-sm text-neutral-400 dark:text-neutral-500">
-        아직 작성한 댓글이 없습니다.
+        {MESSAGES.mypage.myComments.empty}
       </div>
     )
   }

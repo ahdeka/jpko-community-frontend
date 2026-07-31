@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { commentsApi } from '@/lib/api/comments'
 import { ApiError } from '@/lib/api/client'
+import { MESSAGES } from '@/lib/messages'
 
 interface Props {
   postId: number
@@ -35,7 +36,7 @@ export default function CommentForm({ postId, parentId, mention, onCancel }: Pro
     return (
       <div className="mt-4 py-4 text-center text-sm text-gray-500 dark:text-neutral-400 border border-gray-300 dark:border-neutral-700 rounded">
         <Link href="/login" className="text-blue-600 dark:text-blue-400 hover:underline">로그인</Link>
-        {' '}후 댓글을 작성할 수 있습니다.
+        {' '}{MESSAGES.comment.form.loginGateSuffix}
       </div>
     )
   }
@@ -44,7 +45,7 @@ export default function CommentForm({ postId, parentId, mention, onCancel }: Pro
     e.preventDefault()
 
     if (!content.trim()) {
-      setError('내용을 입력해주세요.')
+      setError(MESSAGES.comment.form.contentRequired)
       return
     }
 
