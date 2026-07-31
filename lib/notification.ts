@@ -21,8 +21,8 @@ export function truncatePostTitle(title: string, max = 15): string {
 //  - suffix:    키워드 뒤에 붙는 서술어
 //  - icon:      좌측 아이콘 종류
 //
-// ⚠️ CONTENT_REMOVED/POINT_STOLEN은 문구 구조 자체가 달라(전자는 발신자를 밝히지 않고 대상이
-//    이미 삭제됨, 후자는 애초에 게시글/댓글과 무관함) label/target/suffix를 쓰지 않는다.
+// ⚠️ CONTENT_REMOVED/POINT_STOLEN/POINT_WON은 문구 구조 자체가 달라(첫 번째는 발신자를 밝히지 않고
+//    대상이 이미 삭제됨, 나머지 둘은 애초에 게시글/댓글과 무관함) label/target/suffix를 쓰지 않는다.
 //    NotificationBody와 notificationText가 별도로 분기하며, 여기서는 아이콘/색만 의미를 갖는다.
 export interface NotificationMeta {
   label: string
@@ -68,11 +68,20 @@ const META: Record<NotificationType, NotificationMeta> = {
     suffix: '되었습니다.',
     icon: 'removed',
   },
-  // 룰렛(베팅) 대결에서 상대가 이겨 내 포인트를 뺏김. target/suffix는 미사용(NotificationBody가 별도 분기).
+  // 룰렛(베팅) 대결에서 패배해 내 포인트를 뺏김. target/suffix는 미사용(NotificationBody가 별도 분기).
   POINT_STOLEN: {
     label: '포인트',
     accentText: 'text-red-600 dark:text-red-400',
     iconBg: 'bg-red-100 text-red-600 dark:bg-red-500/15 dark:text-red-400',
+    target: 'post',
+    suffix: '',
+    icon: 'point',
+  },
+  // 룰렛(베팅) 대결에서 승리해 포인트를 얻음. POINT_STOLEN과 반대로 좋은 소식이라 에메랄드 계열로 구분한다.
+  POINT_WON: {
+    label: '포인트',
+    accentText: 'text-emerald-600 dark:text-emerald-400',
+    iconBg: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400',
     target: 'post',
     suffix: '',
     icon: 'point',
@@ -97,12 +106,12 @@ export function isRemovedComment(n: Notification): boolean {
 //  - 게시글이 삭제된 알림: 원문 자체가 사라졌으므로 이동할 곳이 없다 → null.
 //  - 댓글이 삭제된 알림: 원문 게시글은 살아 있으므로 그 글의 댓글 영역으로 보낸다.
 //    (내 댓글은 "삭제된 댓글입니다"로 보이지만, 어떤 글에서 벌어진 일인지 맥락은 확인할 수 있다.)
-// POINT_STOLEN(룰렛 패배 알림)은 애초에 게시글/댓글과 무관해 postId가 항상 null로 오므로 이동할 곳이 없다.
+// POINT_STOLEN/POINT_WON(룰렛 알림)은 애초에 게시글/댓글과 무관해 postId가 항상 null로 오므로 이동할 곳이 없다.
 export function notificationHref(n: Notification): string | null {
   if (n.type === 'CONTENT_REMOVED') {
     return isRemovedComment(n) ? `/posts/${n.postId}#comments` : null
   }
-  if (n.type === 'POINT_STOLEN') return null
+  if (n.type === 'POINT_STOLEN' || n.type === 'POINT_WON') return null
   return n.postId !== null ? `/posts/${n.postId}` : null
 }
 
@@ -117,11 +126,15 @@ export function notificationText(n: Notification): string {
     return `운영 정책에 따라 회원님의 ${what} 삭제되었습니다.`
   }
 
-  // 룰렛 대결에서 뺏긴 경우: 게시글/댓글과 무관하므로 별도 문구로 조립한다.
-  // 가해자는 익명 처리되지 않는다(백엔드가 isAnonymous를 항상 false로 보냄).
+  // 룰렛 대결 결과: 게시글/댓글과 무관하므로 별도 문구로 조립한다.
+  // 상대는 익명 처리되지 않는다(백엔드가 isAnonymous를 항상 false로 보냄).
   if (n.type === 'POINT_STOLEN') {
     const who = notificationSenderLabel(n)
     return `${who}님이 포인트 룰렛으로 회원님의 포인트 ${(n.amount ?? 0).toLocaleString()}P를 가져갔습니다.`
+  }
+  if (n.type === 'POINT_WON') {
+    const who = notificationSenderLabel(n)
+    return `${who}님과의 포인트 룰렛에서 승리해 포인트 ${(n.amount ?? 0).toLocaleString()}P를 얻었습니다.`
   }
 
   const who = notificationSenderLabel(n)

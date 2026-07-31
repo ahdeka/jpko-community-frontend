@@ -100,7 +100,7 @@ function NotificationBody({ n, meta }: { n: Notification; meta: NotificationMeta
   }
 
   // 포인트 룰렛으로 뺏긴 경우: 게시글/댓글과 무관하므로 별도 문구로 조립한다.
-  // 가해자는 익명 처리되지 않는다(백엔드가 isAnonymous를 항상 false로 보냄).
+  // 상대는 익명 처리되지 않는다(백엔드가 isAnonymous를 항상 false로 보냄).
   if (n.type === 'POINT_STOLEN') {
     const who = <span className="font-semibold text-neutral-900 dark:text-white">{notificationSenderLabel(n)}</span>
     return (
@@ -108,6 +108,18 @@ function NotificationBody({ n, meta }: { n: Notification; meta: NotificationMeta
         {who}님이 포인트 룰렛으로 회원님의 포인트{' '}
         <span className={`font-semibold ${meta.accentText}`}>{(n.amount ?? 0).toLocaleString()}P</span>
         를 가져갔습니다.
+      </>
+    )
+  }
+
+  // 포인트 룰렛으로 얻은 경우: POINT_STOLEN과 대칭 문구.
+  if (n.type === 'POINT_WON') {
+    const who = <span className="font-semibold text-neutral-900 dark:text-white">{notificationSenderLabel(n)}</span>
+    return (
+      <>
+        {who}님과의 포인트 룰렛에서 승리해{' '}
+        <span className={`font-semibold ${meta.accentText}`}>{(n.amount ?? 0).toLocaleString()}P</span>
+        를 얻었습니다.
       </>
     )
   }

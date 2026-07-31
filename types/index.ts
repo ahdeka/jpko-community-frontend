@@ -358,9 +358,10 @@ export interface RouletteSpinResult {
 //  CONTENT_REMOVED: 관리자가 내 게시글/댓글을 강제 삭제함
 //    ⚠️ 다른 타입과 성격이 다르다 — 발신자가 관리자이고, 대상 글이 이미 삭제된 상태라
 //       클릭해도 이동할 곳이 없다(404). NotificationBell에서 이동을 막는 분기가 필요하다.
-//  POINT_STOLEN: 룰렛(베팅) 대결에서 상대가 이겨 내 포인트를 뺏김. postId/commentId가 항상 null이고
-//    amount(뺏긴 금액)가 채워진다. 발신자(가해자)는 익명 처리되지 않는다(isAnonymous 항상 false).
-export type NotificationType = 'COMMENT' | 'REPLY' | 'LIKE' | 'CONTENT_REMOVED' | 'POINT_STOLEN';
+//  POINT_STOLEN: 룰렛(베팅) 대결에서 패배해 포인트를 뺏김. postId/commentId가 항상 null이고
+//    amount(뺏긴 금액)가 채워진다. 발신자(상대)는 익명 처리되지 않는다(isAnonymous 항상 false).
+//  POINT_WON: 룰렛(베팅) 대결에서 승리해 포인트를 얻음. POINT_STOLEN과 postId/amount 규칙은 동일.
+export type NotificationType = 'COMMENT' | 'REPLY' | 'LIKE' | 'CONTENT_REMOVED' | 'POINT_STOLEN' | 'POINT_WON';
 
 // 알림 (백엔드 NotificationResponse record와 1:1)
 // ⚠️ 키 이름 주의: 백엔드 record의 boolean 컴포넌트는 "선언명 그대로" 직렬화된다.
@@ -371,7 +372,7 @@ export interface Notification {
   type: NotificationType;
   isAnonymous: boolean;       // 익명 댓글/답글로 생긴 알림인지
   senderName: string | null;  // 익명이면 백엔드가 null로 내려줌
-  // 클릭 시 이동할 원본 게시글. ⚠️ POINT_STOLEN은 항상 null (DB 제약 ck_notifications_post_id_by_type로 보장).
+  // 클릭 시 이동할 원본 게시글. ⚠️ POINT_STOLEN/POINT_WON은 항상 null (DB 제약 ck_notifications_post_id_by_type로 보장).
   postId: number | null;
   // 알림 대상 게시글 제목. 백엔드 NotificationResponse에 postTitle이 추가되면 채워진다.
   // 아직 배포 전이거나 값이 없으면 undefined/null일 수 있어, 렌더 시 "회원님의 게시글"로 폴백한다.
@@ -379,5 +380,5 @@ export interface Notification {
   commentId: number | null;   // 댓글/답글 알림이면 해당 댓글 id, 좋아요면 null
   isRead: boolean;
   createdAt: string;
-  amount: number | null;      // POINT_STOLEN 전용, 도난당한 포인트 액수. 그 외 타입은 null.
+  amount: number | null;      // POINT_STOLEN/POINT_WON 전용, 오간 포인트 액수. 그 외 타입은 null.
 }

@@ -19,6 +19,14 @@ const WHEEL_BACKGROUND = `conic-gradient(from 0deg, ${SEGMENT_OUTCOMES
   })
   .join(', ')})`
 
+// 실제 상대를 아직 모를 때(랜덤 상대, 스핀 전) 세그먼트에 채우는 자리표시자.
+const UNKNOWN_OPPONENT_LABEL = '○○○'
+
+// 세그먼트가 좁아 닉네임이 다 안 들어가므로 짧게 자른다(백엔드 닉네임 최대 20자).
+function truncateForWheel(name: string): string {
+  return name.length > 5 ? `${name.slice(0, 4)}…` : name
+}
+
 // 결과가 실제로 도착한 뒤 그 결과와 같은 색 세그먼트가 포인터(12시 방향)에 오도록
 // 다음 회전각을 계산한다. 같은 색 세그먼트가 여러 개라 매번 다른 위치에 멈춰 단조롭지 않게 한다.
 function computeNextRotation(currentRotation: number, win: boolean): number {
@@ -173,6 +181,20 @@ export default function RouletteGame() {
     }
   }
 
+  // 휠 세그먼트에 표시할 닉네임 8개. "여러 후보가 스쳐 지나가다 실제 상대에서 멈추는" 느낌을 위해
+  // 진짜 상대 이름은 결과와 같은 색 세그먼트에만 넣고, 나머지는 자리표시자로 채운다.
+  //  - 스핀 중(결과는 이미 받았지만 아직 공개 전): 실제 상대 닉네임 vs 자리표시자
+  //  - 상대가 고정되어 있으면(다음 판도 확정): 모든 세그먼트에 그 닉네임을 보여준다
+  //  - 그 외(대기 상태, 다음 상대 미정): 전부 자리표시자
+  const pendingSpin = pendingResultRef.current
+  const wheelLabels = pendingSpin
+    ? SEGMENT_OUTCOMES.map(outcome =>
+        outcome === (pendingSpin.win ? 'win' : 'lose') ? pendingSpin.opponentNickname : UNKNOWN_OPPONENT_LABEL
+      )
+    : opponent
+      ? SEGMENT_OUTCOMES.map(() => opponent.opponentNickname)
+      : SEGMENT_OUTCOMES.map(() => UNKNOWN_OPPONENT_LABEL)
+
   return (
     <div className="flex flex-col gap-6">
       {/* 잔액 */}
@@ -235,8 +257,21 @@ export default function RouletteGame() {
           <div
             onTransitionEnd={handleWheelTransitionEnd}
             style={{ transform: `rotate(${rotation}deg)`, background: WHEEL_BACKGROUND }}
-            className="roulette-wheel h-40 w-40 rounded-full border-4 border-white shadow-inner dark:border-neutral-900"
-          />
+            className="roulette-wheel relative h-40 w-40 overflow-hidden rounded-full border-4 border-white shadow-inner dark:border-neutral-900"
+          >
+            {wheelLabels.map((label, i) => {
+              const angle = i * SEGMENT_DEG + SEGMENT_DEG / 2
+              return (
+                <span
+                  key={i}
+                  className="absolute left-1/2 top-1/2 w-12 text-center text-[9px] font-bold leading-tight text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]"
+                  style={{ transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(-56px)` }}
+                >
+                  {truncateForWheel(label)}
+                </span>
+              )
+            })}
+          </div>
           <div className="absolute inset-0 m-auto flex h-11 w-11 items-center justify-center rounded-full bg-white text-[10px] font-bold text-neutral-400 shadow dark:bg-neutral-900 dark:text-neutral-500">
             승 / 패
           </div>
