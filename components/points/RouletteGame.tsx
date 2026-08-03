@@ -3,7 +3,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { pointsApi } from '@/lib/api/points'
 import { rouletteApi } from '@/lib/api/roulette'
+import { authApi } from '@/lib/api/auth'
 import { ApiError } from '@/lib/api/client'
+import { useAuth } from '@/lib/auth-context'
 import { MESSAGES } from '@/lib/messages'
 import type { RouletteConfig, RouletteOpponent, RouletteSpinResult } from '@/types'
 
@@ -48,6 +50,8 @@ function computeNextRotation(currentRotation: number, win: boolean): number {
 // 룰렛(베팅형 대결) 플레이 화면. 상대는 처음엔 랜덤이고, 원하면 다음 스핀부터 고정할 수 있다.
 // 승률은 백엔드가 의도적으로 내려주지 않으므로 안내 문구에도 구체적 수치를 넣지 않는다.
 export default function RouletteGame() {
+  const { user, fetchUser } = useAuth()
+
   const [balance, setBalance] = useState<number | null>(null)
   const [config, setConfig] = useState<RouletteConfig | null>(null)
   const [opponent, setOpponent] = useState<RouletteOpponent | null>(null)
@@ -58,6 +62,11 @@ export default function RouletteGame() {
   const [error, setError] = useState('')
   const [result, setResult] = useState<RouletteSpinResult | null>(null)
   const [lockPending, setLockPending] = useState(false)
+
+  // 이메일 미인증으로 스핀이 막힌 경우에만 에러 문구 아래 "인증 메일 보내기" 액션을 같이 보여준다.
+  const [emailGateHit, setEmailGateHit] = useState(false)
+  const [verifySending, setVerifySending] = useState(false)
+  const [verifySent, setVerifySent] = useState(false)
 
   const [rotation, setRotation] = useState(0)
   // 서버 응답은 이미 받았지만, 휠 애니메이션이 끝날 때까지 결과 공개를 미루기 위한 보관소.
@@ -146,9 +155,37 @@ export default function RouletteGame() {
     revealPendingResult()
   }
 
+  async function handleSendVerification() {
+    setVerifySending(true)
+    try {
+      await authApi.requestEmailVerification()
+      setVerifySent(true)
+    } catch (e) {
+      if (e instanceof ApiError && e.code === 'ALREADY_VERIFIED_EMAIL') {
+        // 다른 탭/기기에서 이미 인증을 마친 경우. 최신 상태를 다시 받아오면 다음 스핀부터 정상 동작한다.
+        await fetchUser()
+        setError('')
+        setEmailGateHit(false)
+      } else if (e instanceof ApiError && e.code === 'INVALID_EMAIL_DOMAIN') {
+        setError(MESSAGES.mypage.emailVerification.invalidDomain)
+      } else {
+        setError(e instanceof ApiError ? e.message : MESSAGES.mypage.emailVerification.sendFailed)
+      }
+    } finally {
+      setVerifySending(false)
+    }
+  }
+
   async function handleSpin() {
     if (!config) return
     setError('')
+    setEmailGateHit(false)
+
+    if (!user?.emailVerified) {
+      setError(MESSAGES.points.roulette.emailNotVerified)
+      setEmailGateHit(true)
+      return
+    }
 
     const amount = Number(betAmount)
     if (!Number.isFinite(amount) || amount <= 0) {
@@ -293,7 +330,27 @@ export default function RouletteGame() {
             {config.maxBet.toLocaleString()}P · 수수료 {Math.round(config.feeRate * 100)}%
           </p>
         )}
-        {error && <p className="mt-2 text-center text-xs text-red-500">{error}</p>}
+        {error && (
+          <div className="mt-2 text-center">
+            <p className="text-xs text-red-500">{error}</p>
+            {emailGateHit && (
+              verifySent ? (
+                <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                  <strong>{user?.email}</strong> {MESSAGES.mypage.emailVerification.sentAfterEmail}
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleSendVerification}
+                  disabled={verifySending}
+                  className="mt-1 text-xs font-medium text-orange-600 underline underline-offset-2 hover:text-orange-700 disabled:opacity-50 dark:text-orange-400"
+                >
+                  {verifySending ? '전송 중…' : '인증 메일 보내기'}
+                </button>
+              )
+            )}
+          </div>
+        )}
       </div>
 
       {/* 결과 */}

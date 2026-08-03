@@ -167,6 +167,7 @@ export const MESSAGES = {
       betRange: (min: string, max: string) => `${min}P ~ ${max}P 사이로 베팅하셈`,
       betUnitMismatch: (unit: string) => `${unit}P 단위로만 베팅하셈`,
       spinFailed: 'ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ룰렛! 실패!',
+      emailNotVerified: '이메일 인증부터 하고 오셈',
       win: (nickname: string, amount: string) => `${nickname}한테서 ${amount}P 털음 ㅊㅋㅊㅋ`,
       lose: (nickname: string, amount: string) => `ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ${nickname}한테 ${amount}P 털렸누...  ㅠ`,
       randomOpponentHint: '다음 스핀은 랜덤 상대하고 ㄱㄱ',
