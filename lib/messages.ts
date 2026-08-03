@@ -195,6 +195,9 @@ export const MESSAGES = {
       stolenSuffix: ' 헌납. 이대로 끝?',
       wonAfterName: '님을 포인트 룰렛에서 개발라버리고 ',
       wonSuffix: '털음 ㅊㅋㅊㅋ!',
+      // POST_REWARD/COMMENT_REWARD/LIKE_REWARD 공용 suffix. 앞부분(어떤 글/댓글인지)은
+      // postTitle/commentContent 유무에 따라 문구가 갈려 lib/notification.ts·NotificationBell.tsx가 직접 조립한다.
+      rewardSuffix: 'P를 받았습니다!',
     },
   },
 

@@ -87,6 +87,33 @@ const META: Record<NotificationType, NotificationMeta> = {
     suffix: '',
     icon: 'point',
   },
+  // 게시글 작성으로 포인트를 받음. 시스템이 지급하는 알림이라 발신자가 없다(POINT_WON과 달리 상대가 없음).
+  POST_REWARD: {
+    label: '포인트',
+    accentText: 'text-emerald-600 dark:text-emerald-400',
+    iconBg: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400',
+    target: 'post',
+    suffix: '',
+    icon: 'point',
+  },
+  // 댓글 작성으로 포인트를 받음.
+  COMMENT_REWARD: {
+    label: '포인트',
+    accentText: 'text-emerald-600 dark:text-emerald-400',
+    iconBg: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400',
+    target: 'post',
+    suffix: '',
+    icon: 'point',
+  },
+  // 좋아요를 받아 포인트를 받음.
+  LIKE_REWARD: {
+    label: '포인트',
+    accentText: 'text-emerald-600 dark:text-emerald-400',
+    iconBg: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400',
+    target: 'post',
+    suffix: '',
+    icon: 'point',
+  },
 }
 
 export function notificationMeta(type: NotificationType): NotificationMeta {
@@ -136,6 +163,24 @@ export function notificationText(n: Notification): string {
   if (n.type === 'POINT_WON') {
     const who = notificationSenderLabel(n)
     return `${who}${MESSAGES.points.notification.wonAfterName}${(n.amount ?? 0).toLocaleString()}P${MESSAGES.points.notification.wonSuffix}`
+  }
+
+  // 게시글 작성 포인트 지급: 시스템 알림이라 발신자를 밝히지 않는다. 어떤 글인지 제목으로 보여준다.
+  if (n.type === 'POST_REWARD') {
+    const what = n.postTitle ? `게시글 "${truncatePostTitle(n.postTitle)}" 작성으로` : '게시글 작성으로'
+    return `${what} ${(n.amount ?? 0).toLocaleString()}${MESSAGES.points.notification.rewardSuffix}`
+  }
+
+  // 댓글 작성 포인트 지급: POST_REWARD와 동일한 이유로 발신자를 밝히지 않는다. 어떤 댓글인지 내용으로 보여준다.
+  if (n.type === 'COMMENT_REWARD') {
+    const what = n.commentContent ? `댓글 "${truncatePostTitle(n.commentContent)}"으로` : '댓글 작성으로'
+    return `${what} ${(n.amount ?? 0).toLocaleString()}${MESSAGES.points.notification.rewardSuffix}`
+  }
+
+  // 좋아요 받아 포인트 지급: 마찬가지로 발신자를 밝히지 않는다(누가 눌렀는지는 LIKE 알림이 따로 알려준다).
+  if (n.type === 'LIKE_REWARD') {
+    const what = n.postTitle ? `게시글 "${truncatePostTitle(n.postTitle)}"이(가)` : '게시글이'
+    return `${what} 좋아요를 받아 ${(n.amount ?? 0).toLocaleString()}${MESSAGES.points.notification.rewardSuffix}`
   }
 
   const who = notificationSenderLabel(n)
