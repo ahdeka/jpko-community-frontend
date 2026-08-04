@@ -12,7 +12,8 @@ import RedirectingOverlay from './RedirectingOverlay'
 import SuspendedAccountModal from './SuspendedAccountModal'
 
 interface FieldErrors {
-  email?: string
+  // 로그인 식별자(아이디 또는 이메일) 입력 칸의 에러.
+  loginId?: string
   password?: string
 }
 
@@ -24,7 +25,8 @@ export default function LoginForm() {
   const { fetchUser, notifyCheckInResult } = useAuth()
   // 이미 로그인한 사용자는 홈으로 돌려보낸다(뒤로가기·주소창 직접 진입 차단)
   const { blocked } = useRedirectIfAuthenticated()
-  const [email, setEmail] = useState('')
+  // 아이디 또는 이메일 둘 다 받는 로그인 식별자.
+  const [loginId, setLoginId] = useState('')
   const [password, setPassword] = useState('')
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [apiError, setApiError] = useState('')
@@ -34,7 +36,7 @@ export default function LoginForm() {
 
   function validate(): FieldErrors {
     const errs: FieldErrors = {}
-    if (!email.trim()) errs.email = MESSAGES.auth.login.emailRequired
+    if (!loginId.trim()) errs.loginId = MESSAGES.auth.login.identifierRequired
     if (!password) errs.password = MESSAGES.auth.login.passwordRequired
     return errs
   }
@@ -52,13 +54,15 @@ export default function LoginForm() {
 
     setLoading(true)
     try {
-      // 백엔드 LoginRequest가 email을 trim().toLowerCase()로 정규화하므로, 저장된 값과
-      // 확실히 매칭되도록 전송값도 동일하게 맞춘다(대소문자·공백 차이로 인한 로그인 실패 방지).
-      const res = await authApi.login({ email: email.trim().toLowerCase(), password })
+      // 백엔드 LoginRequest가 loginId를 trim().toLowerCase()로 정규화하므로(아이디·이메일 공통),
+      // 저장된 값과 확실히 매칭되도록 전송값도 동일하게 맞춘다(대소문자·공백 차이로 인한 실패 방지).
+      const res = await authApi.login({ loginId: loginId.trim().toLowerCase(), password })
       await fetchUser()
       if (res.data?.checkIn) notifyCheckInResult(res.data.checkIn)
-      // replace로 이동해 히스토리에 로그인 페이지를 남기지 않는다
-      router.replace('/')
+      // 아직 계정 전환(온보딩)이 필요한 기존 유저는 홈이 아니라 온보딩 화면으로 보낸다.
+      // (전역 가드도 동일하게 막지만, 여기서 곧바로 보내 깜빡임을 없앤다.)
+      // replace로 이동해 히스토리에 로그인 페이지를 남기지 않는다.
+      router.replace(res.data?.needsOnboarding ? '/onboarding' : '/')
     } catch (e) {
       if (e instanceof ApiError) {
         if (e.code === 'WRONG_PASSWORD' || e.code === 'USER_NOT_FOUND') {
@@ -88,14 +92,18 @@ export default function LoginForm() {
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div>
         <input
-          type="email"
-          placeholder="이메일"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
+          type="text"
+          placeholder="아이디 또는 이메일"
+          value={loginId}
+          onChange={e => setLoginId(e.target.value)}
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          autoComplete="username"
           className={inputClass}
         />
-        {fieldErrors.email && (
-          <p className="text-xs text-red-500 mt-1">{fieldErrors.email}</p>
+        {fieldErrors.loginId && (
+          <p className="text-xs text-red-500 mt-1">{fieldErrors.loginId}</p>
         )}
       </div>
 
@@ -144,7 +152,8 @@ export default function LoginForm() {
       <SuspendedAccountModal
         open={suspendedOpen}
         onClose={() => setSuspendedOpen(false)}
-        email={email.trim().toLowerCase()}
+        // 문의 메일 프리필용. 식별자로 이메일을 입력한 경우에만 넘긴다(아이디면 비운다).
+        email={loginId.includes('@') ? loginId.trim().toLowerCase() : undefined}
       />
     </>
   )

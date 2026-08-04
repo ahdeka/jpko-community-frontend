@@ -97,7 +97,8 @@
       "Bash(curl -s -b ./a.jar -X PATCH http://localhost:8080/api/admin/users/4/status -H \"Content-Type: application/json\" -d '{\"status\":\"SUSPENDED\"}' -w \"\\\\nHTTP %{http_code}\\\\n\")",
       "Bash(curl -s -b ./u3.jar \"http://localhost:8080/api/notifications?page=0&size=10\" -w \"\\\\nHTTP %{http_code}\\\\n\")",
       "Bash(curl -s -b ./a.jar -X PATCH http://localhost:8080/api/admin/users/4/status -H \"Content-Type: application/json\" -d '{\"status\":\"ACTIVE\"}' -w \"\\\\nHTTP %{http_code}\\\\n\")",
-      "Bash(curl -s -X POST http://localhost:8080/api/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"user3@test.com\",\"password\":\"test1234\"}' -o /dev/null -w \"HTTP %{http_code}\\\\n\")"
+      "Bash(curl -s -X POST http://localhost:8080/api/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"user3@test.com\",\"password\":\"test1234\"}' -o /dev/null -w \"HTTP %{http_code}\\\\n\")",
+      "Bash(node -e \"console.log\\(require\\('./node_modules/next/package.json'\\).version\\)\")"
     ],
     "additionalDirectories": [
       "\\tmp"

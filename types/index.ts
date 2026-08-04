@@ -47,6 +47,11 @@ export interface User {
   // 자기소개(최대 200자). 백엔드 /api/auth/me(UserInfoResponse)가 내려주며, 없으면 null.
   // 마이페이지 자기소개 편집의 현재 값으로 쓴다.
   bio: string | null;
+  // 계정 전환(온보딩)이 아직 필요한지. 백엔드 isFullyOnboarded()의 반대값으로,
+  // loginId가 아직 없거나(마이그레이션 대상) 이메일 미인증이면 true.
+  // true인 유저는 전역 가드(AuthProvider)가 /onboarding으로 강제 이동시킨다.
+  // ⚠️ 마이그레이션이 끝나면 백엔드와 함께 정리될 필드.
+  needsOnboarding: boolean;
 }
 
 // 로그인/회원가입 응답 (백엔드 LoginResponse와 1:1)
@@ -55,6 +60,9 @@ export interface LoginResponse {
   nickname: string;
   role: UserRole;
   checkIn: CheckInInfo;
+  // 로그인(또는 회원가입 완료 직후 자동 로그인) 시점에 계정 전환이 아직 필요한지.
+  // true면 로그인 폼이 홈 대신 /onboarding으로 보낸다. (User.needsOnboarding과 동일 규칙)
+  needsOnboarding: boolean;
 }
 
 // 공개 프로필 (백엔드 PublicProfileResponse와 1:1)

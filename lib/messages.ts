@@ -29,13 +29,35 @@ export const MESSAGES = {
 
   auth: {
     login: {
-      emailRequired: '이메일을 입력해주세요.',
+      // 로그인 식별자는 아이디 또는 이메일 둘 다 허용한다.
+      identifierRequired: '아이디 또는 이메일을 입력해주세요.',
       passwordRequired: '비밀번호를 입력해주세요.',
-      invalidCredentials: '이메일 또는 비밀번호가 올바르지 않습니다.',
+      invalidCredentials: '아이디(또는 이메일) 또는 비밀번호가 올바르지 않습니다.',
     },
-    signup: {
+    // 신규 가입 1단계: 이메일 입력 → 인증 메일 발송.
+    signupInit: {
       emailRequired: '이메일을 입력해주세요.',
       emailInvalid: '이메일 형식이 올바르지 않습니다.',
+      turnstileRequired: '보안 문자 인증을 완료해주세요.',
+      duplicateEmail: '이미 가입된 이메일입니다. 로그인을 이용해주세요.',
+      invalidDomain: '메일을 받을 수 없는 이메일 주소입니다. 이메일을 다시 확인해주세요.',
+      genericError: '인증 메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.',
+      sentTitle: '인증 메일을 보냈어요',
+      sentInstructionPrefix: '받은 메일함을 열어 ',
+      sentInstructionEmphasis: '회원가입 계속하기',
+      sentInstructionSuffix: ' 링크를 눌러 가입을 이어가주세요.',
+      spamHint: '메일이 보이지 않으면 스팸함도 확인해주세요.',
+      linkValidity: '링크는 24시간 동안 유효합니다.',
+    },
+    // 신규 가입 2단계: 메일 링크 진입 후 아이디·닉네임·비밀번호·약관 입력 → 가입 확정.
+    signup: {
+      // 토큰(메일 링크) 자체가 유효하지 않을 때.
+      invalidLinkTitle: '유효하지 않은 링크',
+      expiredLink: '회원가입 링크가 만료되었습니다. 회원가입을 처음부터 다시 진행해주세요.',
+      invalidLink: '유효하지 않거나 이미 사용된 회원가입 링크입니다. 회원가입을 처음부터 다시 진행해주세요.',
+      verifyingLink: '회원가입 정보를 확인하고 있습니다…',
+      loginIdRequired: '아이디를 입력해주세요.',
+      loginIdPattern: '아이디는 영문 소문자·숫자·언더바(_) 4~20자만 사용할 수 있습니다.',
       passwordRequired: '비밀번호를 입력해주세요.',
       passwordTooShort: '비밀번호는 8자 이상이어야 합니다.',
       passwordConfirmRequired: '비밀번호 확인을 입력해주세요.',
@@ -46,9 +68,52 @@ export const MESSAGES = {
       nicknamePattern: '닉네임은 한글, 영문, 숫자만 사용할 수 있습니다.',
       termsRequired: '이용약관에 동의해주세요.',
       privacyRequired: '개인정보처리방침에 동의해주세요.',
-      duplicateEmail: '이미 사용 중인 이메일입니다.',
+      duplicateEmail: '이미 가입된 이메일입니다. 로그인을 이용해주세요.',
+      duplicateLoginId: '이미 사용 중인 아이디입니다.',
       duplicateNickname: '이미 사용 중인 닉네임입니다.',
       genericError: '회원가입 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+    },
+    // 기존 유저 온보딩(마이그레이션) 화면 전용 문구.
+    onboarding: {
+      // 안내(상단 설명).
+      introTitle: '계정 전환이 필요합니다',
+      introEmailStep: '더 안전한 로그인을 위해, 인증받을 이메일을 먼저 등록해주세요.',
+      introLoginIdStep: '이제 로그인에 사용할 아이디와 비밀번호를 설정해주세요.',
+      // 이메일 단계.
+      emailRequired: '이메일을 입력해주세요.',
+      emailInvalid: '이메일 형식이 올바르지 않습니다.',
+      duplicateEmail: '이미 다른 계정에서 사용 중인 이메일입니다. 다른 이메일을 입력해주세요.',
+      invalidDomain: '메일을 받을 수 없는 이메일 주소입니다. 이메일을 다시 확인해주세요.',
+      emailSentTitle: '인증 메일을 보냈어요',
+      emailSentPrefix: '',
+      emailSentSuffix: ' 으로 인증 메일을 보냈습니다. 메일함(스팸함 포함)의 링크를 눌러 인증을 완료해주세요.',
+      emailSentContinue: '인증을 완료한 뒤, 아래 버튼을 눌러 계속 진행해주세요.',
+      refreshAfterVerify: '인증을 완료했어요',
+      stillNotVerified: '아직 인증이 확인되지 않았습니다. 메일의 링크를 눌러 인증을 완료한 뒤 다시 시도해주세요.',
+      emailGenericError: '인증 메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.',
+      // 아이디·비밀번호 단계.
+      loginIdRequired: '아이디를 입력해주세요.',
+      loginIdPattern: '아이디는 영문 소문자·숫자·언더바(_) 4~20자만 사용할 수 있습니다.',
+      duplicateLoginId: '이미 사용 중인 아이디입니다.',
+      passwordRequired: '비밀번호를 입력해주세요.',
+      passwordTooShort: '비밀번호는 8자 이상이어야 합니다.',
+      passwordConfirmRequired: '비밀번호 확인을 입력해주세요.',
+      passwordMismatch: '비밀번호와 비밀번호 확인이 일치하지 않습니다.',
+      passwordMatched: '비밀번호가 일치합니다.',
+      emailVerificationRequired: '이메일 인증을 먼저 완료해주세요.',
+      genericError: '계정 전환에 실패했습니다. 잠시 후 다시 시도해주세요.',
+    },
+    // 이메일 변경(EMAIL_CHANGE) 링크 확인 결과 화면(/verify-email-change).
+    emailChange: {
+      missingToken: '유효하지 않은 인증 링크입니다. 메일의 링크를 다시 확인해주세요.',
+      verifying: '이메일 인증을 확인하고 있습니다…',
+      successTitle: '이메일 인증 완료',
+      successDescription: '이메일 인증이 정상적으로 완료되었습니다.',
+      failTitle: '인증에 실패했습니다',
+      expiredToken: '인증 링크가 만료되었습니다. 계정 전환 화면에서 인증 메일을 다시 받아주세요.',
+      invalidToken: '유효하지 않거나 이미 사용된 인증 링크입니다. 계정 전환 화면에서 인증 메일을 다시 받아주세요.',
+      duplicateEmail: '이미 다른 계정에서 사용 중인 이메일입니다. 다른 이메일로 다시 시도해주세요.',
+      continueOnboarding: '계정 전환 계속하기',
     },
     forgotPassword: {
       emailRequired: '이메일을 입력해주세요.',

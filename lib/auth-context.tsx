@@ -2,11 +2,20 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import type { ReactNode } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
 import type { CheckInInfo, User } from '@/types'
 import { authApi } from '@/lib/api/auth'
 import { ApiError, SESSION_EXPIRED_EVENT, ACCOUNT_SUSPENDED_EVENT } from '@/lib/api/client'
 import SuspendedAccountModal from '@/components/auth/SuspendedAccountModal'
 import CheckInResultModal from '@/components/points/CheckInResultModal'
+import RedirectingOverlay from '@/components/auth/RedirectingOverlay'
+
+// 계정 전환(온보딩)이 필요한 유저에게도 접근을 허용하는 경로.
+// 이 목록 밖의 모든 경로는 전역 가드가 /onboarding으로 되돌린다.
+//  - /onboarding          : 전환 화면 그 자체
+//  - /verify-email-change  : 온보딩 중 등록한 이메일의 인증 링크 착지점
+//  - /terms, /privacy      : 전환 화면에서 여는 약관/개인정보(새 탭) 열람 허용
+const ONBOARDING_ALLOWED_PATHS = new Set(['/onboarding', '/verify-email-change', '/terms', '/privacy'])
 
 interface AuthContextType {
   user: User | null
@@ -28,6 +37,8 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname()
+  const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   // 세션 도중 계정이 정지됐을 때 띄우는 전역 안내 모달의 표시 여부.
@@ -102,9 +113,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (info.checkedIn) setCheckInResult(info)
   }, [])
 
+  // ===== 전역 온보딩 하드 게이트 =====
+  // 기존 유저는 배포 전 발급된 세션 쿠키를 그대로 들고 있어 "재로그인 없이" 로그인 상태로 진입한다.
+  // 그래서 로그인 시점 리다이렉트만으로는 전환을 강제할 수 없다 → 어느 경로에 있든 needsOnboarding
+  // 유저를 /onboarding으로 모은다. (인증 상태 확정 전(isLoading)에는 판단을 보류한다.)
+  // pathname이 null인 과도기에는 섣불리 리다이렉트하지 않는다.
+  const gating =
+    !isLoading &&
+    !!user &&
+    user.needsOnboarding &&
+    pathname !== null &&
+    !ONBOARDING_ALLOWED_PATHS.has(pathname)
+
+  useEffect(() => {
+    if (gating) router.replace('/onboarding')
+  }, [gating, router])
+
   return (
     <AuthContext.Provider value={{ user, isLoading, fetchUser, logout, clearAuth, notifyCheckInResult }}>
-      {children}
+      {/* 온보딩 게이트가 걸린 동안에는 리다이렉트가 끝날 때까지 본문 대신 전환 오버레이만 보여줘
+          게이트 대상 페이지 내용이 잠깐 노출되는 것을 막는다. */}
+      {gating ? <RedirectingOverlay /> : children}
       {/* 세션 도중 정지된 경우의 전역 안내. 닫으면 로그인 화면으로 하드 네비게이션해
           RSC 캐시·서버 페치 데이터까지 완전 초기화한다. */}
       <SuspendedAccountModal
