@@ -24,6 +24,22 @@ export function encodeListContext(ctx: ListContext): string {
   return p.toString()
 }
 
+// "목록으로" 버튼이 돌아갈 목록 URL을 만든다.
+// 상세 하단 목록(SiblingList)의 basePath/page/searchParams를 그대로 넘기면,
+// 하단 목록과 "목록으로" 버튼이 항상 같은 목록·같은 페이지를 가리키게 된다.
+// page는 0-based이며, 0페이지일 때는 page 파라미터를 생략해 주소를 깔끔하게 유지한다
+// (searchHref와 같은 규칙 — 생략해도 결과는 동일한 첫 페이지다).
+export function buildListHref(
+  basePath: string,
+  page: number,
+  searchParams?: Record<string, string>
+): string {
+  const params = new URLSearchParams(searchParams)
+  if (page > 0) params.set('page', String(page))
+  const qs = params.toString()
+  return qs ? `${basePath}?${qs}` : basePath
+}
+
 // 상세 페이지의 searchParams에서 컨텍스트를 복원. 유효하지 않으면 null(→ 폴백 처리).
 export function parseListContext(sp: {
   from?: string
