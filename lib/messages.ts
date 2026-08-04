@@ -12,6 +12,7 @@ export const MESSAGES = {
     unsavedChangesConfirm:
       '작성 중인 내용이 있습니다.\n페이지를 벗어나면 저장되지 않은 변경 사항이 사라집니다. 이동하시겠습니까?',
     loginRequiredToReport: '신고하려면 로그인이 필요합니다.',
+    loginRequiredToTransfer: '포인트를 보내려면 로그인이 필요합니다.',
     errorBoundary: {
       title: '문제가 발생했습니다',
       description: '일시적인 오류일 수 있습니다. 잠시 후 다시 시도해주세요.',
@@ -188,13 +189,45 @@ export const MESSAGES = {
       lostSuffix: '날라감ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ',
       neutral: '쟌-넨',
     },
-    // 룰렛 승/패 알림(POINT_STOLEN/POINT_WON). lib/notification.ts(순수 텍스트)와
-    // NotificationBell.tsx(강조 포함 JSX)가 동일한 prefix/suffix를 조합해 쓴다.
+    // 룰렛 승/패 알림(POINT_STOLEN/POINT_WON), 송금 알림(TRANSFER).
+    // lib/notification.ts(순수 텍스트)와 NotificationBell.tsx(강조 포함 JSX)가
+    // 동일한 prefix/suffix를 조합해 쓴다.
     notification: {
       stolenAfterName: '가 니꺼 포인트 털엇데요ㅠ ',
       stolenSuffix: ' 헌납. 이대로 끝?',
       wonAfterName: '님을 포인트 룰렛에서 개발라버리고 ',
       wonSuffix: '털음 ㅊㅋㅊㅋ!',
+      transferAfterName: '님이 회원님에게 ',
+      transferSuffix: 'P를 보냈습니다.',
+    },
+    // 포인트 송금 모달 (TransferPointsModal).
+    transfer: {
+      title: '포인트 보내기',
+      balanceLabel: '보유 포인트',
+      feeNotice: '송금 시 소정의 수수료가 무작위로 부과되거나, 반대로 보너스가 지급될 수 있어요.',
+      recipientLabel: '받는 사람 닉네임',
+      recipientPlaceholder: '닉네임을 입력하세요',
+      recipientRequired: '받는 사람 닉네임을 입력해주세요.',
+      recipientNotFound: '존재하지 않는 닉네임입니다.',
+      selfTransferNotAllowed: '본인에게는 송금할 수 없습니다.',
+      amountLabel: '보낼 포인트',
+      amountPlaceholder: '금액을 입력하세요',
+      amountRequired: '보낼 금액을 입력해주세요.',
+      amountInvalid: '송금 금액은 0보다 커야 합니다.',
+      lookupFailed: '닉네임 확인에 실패했습니다. 잠시 후 다시 시도해주세요.',
+      genericFailed: '송금에 실패했습니다. 잠시 후 다시 시도해주세요.',
+      // 백엔드 ErrorCode 이름 → 한글 메시지. src/main/java/.../global/exception/ErrorCode.java와 동일한 문구.
+      errorCodeMessages: {
+        INSUFFICIENT_BALANCE: '포인트 잔액이 부족합니다.',
+        INVALID_TRANSACTION_AMOUNT: '송금 금액은 0보다 커야 합니다.',
+        SUSPENDED_ACCOUNT: '이용이 제한된 계정입니다.',
+        SYSTEM_ACCOUNT_NOT_FOUND: '일시적인 오류로 송금에 실패했습니다. 잠시 후 다시 시도해주세요.',
+        USER_ID_NOT_FOUND: '받는 사람을 찾을 수 없습니다.',
+      } as Record<string, string>,
+      doneTitle: '송금 완료',
+      doneDescription: (nickname: string, amount: string) => `${nickname}님에게 ${amount}P를 보냈습니다.`,
+      feeChargedNote: (amount: string) => `수수료 ${amount}P가 함께 부과되었습니다.`,
+      feeRefundedNote: (amount: string) => `수수료 대신 보너스 ${amount}P가 지급되었습니다.`,
     },
   },
 

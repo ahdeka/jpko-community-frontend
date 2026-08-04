@@ -22,8 +22,8 @@ export function truncatePostTitle(title: string, max = 15): string {
 //  - suffix:    키워드 뒤에 붙는 서술어
 //  - icon:      좌측 아이콘 종류
 //
-// ⚠️ CONTENT_REMOVED/POINT_STOLEN/POINT_WON은 문구 구조 자체가 달라(첫 번째는 발신자를 밝히지 않고
-//    대상이 이미 삭제됨, 나머지 둘은 애초에 게시글/댓글과 무관함) label/target/suffix를 쓰지 않는다.
+// ⚠️ CONTENT_REMOVED/POINT_STOLEN/POINT_WON/TRANSFER는 문구 구조 자체가 달라(첫 번째는 발신자를
+//    밝히지 않고 대상이 이미 삭제됨, 나머지는 애초에 게시글/댓글과 무관함) label/target/suffix를 쓰지 않는다.
 //    NotificationBody와 notificationText가 별도로 분기하며, 여기서는 아이콘/색만 의미를 갖는다.
 export interface NotificationMeta {
   label: string
@@ -87,6 +87,15 @@ const META: Record<NotificationType, NotificationMeta> = {
     suffix: '',
     icon: 'point',
   },
+  // 다른 회원이 나에게 포인트를 직접 송금함. 룰렛 결과(POINT_WON/STOLEN)와 구분하려 violet 계열로 둔다.
+  TRANSFER: {
+    label: '포인트',
+    accentText: 'text-violet-600 dark:text-violet-400',
+    iconBg: 'bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-400',
+    target: 'post',
+    suffix: '',
+    icon: 'point',
+  },
 }
 
 export function notificationMeta(type: NotificationType): NotificationMeta {
@@ -107,12 +116,13 @@ export function isRemovedComment(n: Notification): boolean {
 //  - 게시글이 삭제된 알림: 원문 자체가 사라졌으므로 이동할 곳이 없다 → null.
 //  - 댓글이 삭제된 알림: 원문 게시글은 살아 있으므로 그 글의 댓글 영역으로 보낸다.
 //    (내 댓글은 "삭제된 댓글입니다"로 보이지만, 어떤 글에서 벌어진 일인지 맥락은 확인할 수 있다.)
-// POINT_STOLEN/POINT_WON(룰렛 알림)은 애초에 게시글/댓글과 무관해 postId가 항상 null로 오므로 이동할 곳이 없다.
+// POINT_STOLEN/POINT_WON(룰렛 알림)/TRANSFER(송금 알림)는 애초에 게시글/댓글과 무관해
+// postId가 항상 null로 오므로 이동할 곳이 없다.
 export function notificationHref(n: Notification): string | null {
   if (n.type === 'CONTENT_REMOVED') {
     return isRemovedComment(n) ? `/posts/${n.postId}#comments` : null
   }
-  if (n.type === 'POINT_STOLEN' || n.type === 'POINT_WON') return null
+  if (n.type === 'POINT_STOLEN' || n.type === 'POINT_WON' || n.type === 'TRANSFER') return null
   return n.postId !== null ? `/posts/${n.postId}` : null
 }
 
@@ -136,6 +146,12 @@ export function notificationText(n: Notification): string {
   if (n.type === 'POINT_WON') {
     const who = notificationSenderLabel(n)
     return `${who}${MESSAGES.points.notification.wonAfterName}${(n.amount ?? 0).toLocaleString()}P${MESSAGES.points.notification.wonSuffix}`
+  }
+
+  // 포인트 송금: 게시글/댓글과 무관하므로 별도 문구로 조립한다.
+  if (n.type === 'TRANSFER') {
+    const who = notificationSenderLabel(n)
+    return `${who}${MESSAGES.points.notification.transferAfterName}${(n.amount ?? 0).toLocaleString()}P${MESSAGES.points.notification.transferSuffix}`
   }
 
   const who = notificationSenderLabel(n)

@@ -125,6 +125,18 @@ function NotificationBody({ n, meta }: { n: Notification; meta: NotificationMeta
     )
   }
 
+  // 다른 회원이 포인트를 직접 송금한 경우: 게시글/댓글과 무관하므로 별도 문구로 조립한다.
+  if (n.type === 'TRANSFER') {
+    const who = <span className="font-semibold text-neutral-900 dark:text-white">{notificationSenderLabel(n)}</span>
+    return (
+      <>
+        {who}{MESSAGES.points.notification.transferAfterName}
+        <span className={`font-semibold ${meta.accentText}`}>{(n.amount ?? 0).toLocaleString()}P</span>
+        {MESSAGES.points.notification.transferSuffix}
+      </>
+    )
+  }
+
   const who = <span className="font-semibold text-neutral-900 dark:text-white">{notificationSenderLabel(n)}</span>
   // 액션 키워드는 좌측 색상 아이콘이 이미 종류를 알려주므로 별도 색을 넣지 않고 본문과 같은 톤으로 둔다.
   const keyword = meta.label

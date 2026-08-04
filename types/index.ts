@@ -299,7 +299,10 @@ export interface AdminReportDetail {
 //  CHECKIN: 시스템 ↔ 유저, 매일 로그인 시 자동 출첵. amount는 플러스(지급)·마이너스(차감) 둘 다 가능.
 //  ROULETTE: 유저 ↔ 유저(시스템 경유), 유저가 직접 베팅해 상대와 겨루는 룰렛 승부.
 //  ROULETTE_FEE: 유저 → 시스템, 룰렛 판당 수수료.
-export type TransactionType = 'GRANT' | 'COLLECT' | 'ACCOUNT_OPENED' | 'CHECKIN' | 'ROULETTE' | 'ROULETTE_FEE';
+//  TRANSFER: 유저 → 유저, 회원이 직접 다른 회원에게 보내는 포인트 송금.
+//  TRANSFER_FEE: 송금 시 붙는 수수료. 랜덤이라 방향이 뒤바뀔 수 있다(유저→시스템이 기본이지만,
+//    음수로 뽑히면 시스템→유저로 오히려 보너스가 지급된다). sender/recipient 중 하나가 시스템(null)이다.
+export type TransactionType = 'GRANT' | 'COLLECT' | 'ACCOUNT_OPENED' | 'CHECKIN' | 'ROULETTE' | 'ROULETTE_FEE' | 'TRANSFER' | 'TRANSFER_FEE';
 
 // 포인트 잔액 (백엔드 PointResponse와 1:1)
 export interface PointBalance {
@@ -355,6 +358,23 @@ export interface RouletteSpinResult {
   opponentLocked: boolean;
 }
 
+// 포인트 송금 요청 (백엔드 TransferRequest와 1:1)
+export interface TransferRequestBody {
+  recipientId: number;
+  amount: number;
+}
+
+// 포인트 송금 결과 (백엔드 TransferResponse와 1:1)
+// ⚠️ 이 API는 항상 HTTP 200으로 응답한다 — 실제 성공/실패는 이 안의 status로 판단해야 한다.
+// (ApiError의 HTTP status 기반 분기가 통하지 않는 유일한 API)
+export interface TransferResult {
+  status: 'ACCEPTED' | 'NOT_ACCEPTABLE';
+  code?: string;              // 실패 시 백엔드 ErrorCode 이름(예: INSUFFICIENT_BALANCE). 없을 수도 있다.
+  transfer?: PointTransaction | null;
+  fee?: PointTransaction | null;
+  e?: string;                 // 실패 시 예외 메시지. code가 없을 때의 폴백으로 쓴다.
+}
+
 // 알림 종류 — 백엔드 NotificationType enum과 1:1.
 //  COMMENT: 내 게시글에 댓글 / REPLY: 내 댓글에 답글 / LIKE: 내 게시글에 좋아요
 //  CONTENT_REMOVED: 관리자가 내 게시글/댓글을 강제 삭제함
@@ -363,7 +383,9 @@ export interface RouletteSpinResult {
 //  POINT_STOLEN: 룰렛(베팅) 대결에서 패배해 포인트를 뺏김. postId/commentId가 항상 null이고
 //    amount(뺏긴 금액)가 채워진다. 발신자(상대)는 익명 처리되지 않는다(isAnonymous 항상 false).
 //  POINT_WON: 룰렛(베팅) 대결에서 승리해 포인트를 얻음. POINT_STOLEN과 postId/amount 규칙은 동일.
-export type NotificationType = 'COMMENT' | 'REPLY' | 'LIKE' | 'CONTENT_REMOVED' | 'POINT_STOLEN' | 'POINT_WON';
+//  TRANSFER: 다른 회원이 나에게 포인트를 송금함. postId/commentId 항상 null, amount(받은 금액,
+//    수수료 제외)가 채워진다. POINT_STOLEN/WON과 마찬가지로 isAnonymous 항상 false.
+export type NotificationType = 'COMMENT' | 'REPLY' | 'LIKE' | 'CONTENT_REMOVED' | 'POINT_STOLEN' | 'POINT_WON' | 'TRANSFER';
 
 // 알림 (백엔드 NotificationResponse record와 1:1)
 // ⚠️ 키 이름 주의: 백엔드 record의 boolean 컴포넌트는 "선언명 그대로" 직렬화된다.

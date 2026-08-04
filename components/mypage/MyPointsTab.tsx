@@ -7,18 +7,23 @@ import { formatDateTime } from '@/lib/format'
 import { describeTransaction, transactionTypeMeta } from '@/lib/point'
 import { useAuth } from '@/lib/auth-context'
 import { MESSAGES } from '@/lib/messages'
+import TransferPointsModal from '@/components/points/TransferPointsModal'
 import type { PointTransaction } from '@/types'
 
 const PAGE_SIZE = 20
 
-// 내 포인트 거래 내역 탭. 조회 전용이며, 잔액 자체는 마이페이지 상단 통계 카드가 보여준다.
-export default function MyPointsTab() {
+// 내 포인트 거래 내역 탭. 잔액 자체는 마이페이지 상단 통계 카드가 보여준다.
+// onBalanceChange: 송금 성공 시 상단 통계 카드의 잔액도 갱신할 수 있도록 부모(MyPage)에 알린다.
+export default function MyPointsTab({ onBalanceChange }: { onBalanceChange?: () => void }) {
   const { user } = useAuth()
   const [transactions, setTransactions] = useState<PointTransaction[]>([])
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [transferOpen, setTransferOpen] = useState(false)
+  // 송금 성공 시 값을 바꿔 아래 useEffect가 목록을 다시 불러오게 한다.
+  const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(() => {
     if (!user) return
@@ -44,26 +49,69 @@ export default function MyPointsTab() {
     return () => {
       cancelled = true
     }
-  }, [page, user])
+  }, [page, user, refreshKey])
+
+  function handleTransferSuccess() {
+    setPage(0)
+    setRefreshKey(k => k + 1)
+    onBalanceChange?.()
+  }
+
+  const transferButton = user && (
+    <div className="mb-4 flex justify-end">
+      <button
+        type="button"
+        onClick={() => setTransferOpen(true)}
+        className="rounded-md bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-700"
+      >
+        송금하기
+      </button>
+    </div>
+  )
+
+  const transferModal = user && (
+    <TransferPointsModal
+      open={transferOpen}
+      onClose={() => setTransferOpen(false)}
+      onSuccess={handleTransferSuccess}
+    />
+  )
 
   if (loading) {
-    return <p className="py-12 text-center text-sm text-neutral-400">불러오는 중…</p>
+    return (
+      <div>
+        {transferButton}
+        <p className="py-12 text-center text-sm text-neutral-400">불러오는 중…</p>
+        {transferModal}
+      </div>
+    )
   }
 
   if (error) {
-    return <p className="py-12 text-center text-sm text-red-500">{error}</p>
+    return (
+      <div>
+        {transferButton}
+        <p className="py-12 text-center text-sm text-red-500">{error}</p>
+        {transferModal}
+      </div>
+    )
   }
 
   if (!user || transactions.length === 0) {
     return (
-      <div className="py-12 text-center text-sm text-neutral-400 dark:text-neutral-500">
-        {MESSAGES.mypage.myPoints.empty}
+      <div>
+        {transferButton}
+        <div className="py-12 text-center text-sm text-neutral-400 dark:text-neutral-500">
+          {MESSAGES.mypage.myPoints.empty}
+        </div>
+        {transferModal}
       </div>
     )
   }
 
   return (
     <div>
+      {transferButton}
       <ul className="divide-y divide-neutral-100 border-y border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
         {transactions.map(tx => {
           const typeMeta = transactionTypeMeta(tx.type)
@@ -114,6 +162,7 @@ export default function MyPointsTab() {
           </button>
         </div>
       )}
+      {transferModal}
     </div>
   )
 }

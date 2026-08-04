@@ -41,6 +41,16 @@ export const TRANSACTION_TYPES: TransactionTypeMeta[] = [
     label: '룰렛 수수료',
     badge: 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400',
   },
+  {
+    value: 'TRANSFER',
+    label: '송금',
+    badge: 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300',
+  },
+  {
+    value: 'TRANSFER_FEE',
+    label: '송금 수수료',
+    badge: 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400',
+  },
 ]
 
 export const transactionTypeMeta = (type: TransactionType): TransactionTypeMeta =>
@@ -58,7 +68,10 @@ export interface TransactionDisplay {
 // ROULETTE는 sender/recipient가 항상 유저 대 유저(시스템 경유)라 방향에 따라 승리/피해가 갈리고,
 // CHECKIN은 시스템이 상대라 counterpart가 없지만 방향(recipient/sender)에 따라 지급/차감이 갈리며,
 // GRANT/COLLECT/ROULETTE_FEE는 상대가 항상 시스템이라 counterpart가 없고,
-// ACCOUNT_OPENED는 금액 이동이 없는 감사 로그라 항상 중립(0P) 처리한다.
+// ACCOUNT_OPENED는 금액 이동이 없는 감사 로그라 항상 중립(0P) 처리하며,
+// TRANSFER는 유저 대 유저 직접 송금이라 ROULETTE와 동일한 구조로 방향에 따라 갈리고,
+// TRANSFER_FEE는 상대가 항상 시스템이지만 금액이 랜덤이라 방향이 뒤바뀔 수 있다
+// (수수료가 음수로 뽑히면 시스템→유저로 보너스가 지급되어 내가 recipient가 된다).
 export function describeTransaction(tx: PointTransaction, myUserId: number): TransactionDisplay {
   const isRecipient = tx.recipientId === myUserId
 
@@ -119,5 +132,33 @@ export function describeTransaction(tx: PointTransaction, myUserId: number): Tra
         description: '포인트 계좌가 개설되었습니다',
         counterpartLabel: null,
       }
+    case 'TRANSFER':
+      return isRecipient
+        ? {
+            signedAmountLabel: `+${tx.amount.toLocaleString()}P`,
+            colorClass: 'text-emerald-600 dark:text-emerald-400',
+            description: '송금 받음',
+            counterpartLabel: tx.senderNickname ? `${tx.senderNickname}님으로부터` : null,
+          }
+        : {
+            signedAmountLabel: `-${tx.amount.toLocaleString()}P`,
+            colorClass: 'text-red-600 dark:text-red-400',
+            description: '송금 보냄',
+            counterpartLabel: tx.recipientNickname ? `${tx.recipientNickname}님에게` : null,
+          }
+    case 'TRANSFER_FEE':
+      return isRecipient
+        ? {
+            signedAmountLabel: `+${tx.amount.toLocaleString()}P`,
+            colorClass: 'text-emerald-600 dark:text-emerald-400',
+            description: '송금 수수료 환급',
+            counterpartLabel: null,
+          }
+        : {
+            signedAmountLabel: `-${tx.amount.toLocaleString()}P`,
+            colorClass: 'text-red-600 dark:text-red-400',
+            description: '송금 수수료',
+            counterpartLabel: null,
+          }
   }
 }
