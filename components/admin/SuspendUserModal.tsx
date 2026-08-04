@@ -23,17 +23,17 @@ interface Props {
   open: boolean
   onClose: () => void
   targetNickname: string
-  // 경매(권한 경매)로 획득한 ADMIN 권한으로 정지하는 경우: 기한 선택이 필수이고 "무기한" 옵션이 없다.
-  // 진짜 ADMIN/ROOT: 기본이 무기한이고, 원하면 기한을 선택적으로 걸 수 있다.
-  actingIsTempAdmin: boolean
+  // ADMIN이 정지하는 경우: 기한 선택이 필수이고 "무기한" 옵션이 없다(경매로 얻었든 수동 임명이든 동일).
+  // ROOT: 기본이 무기한이고, 원하면 기한을 선택적으로 걸 수 있다 — 진짜 관리자는 ROOT뿐이라는 원칙.
+  actingIsAdmin: boolean
   // 실제 API 호출은 호출부(AdminUsersPage/AdminReportsPage)가 담당한다 — 정지 후 후속 처리
   // (신고 자동 처리 등)가 화면마다 달라서, 이 모달은 순수 표시/입력만 맡는다.
   onConfirm: (suspendedUntil?: string) => Promise<void>
 }
 
 // 정지 기한 선택 모달. TransferPointsModal과 동일한 구조(오버레이/ESC/스크롤 잠금)를 따른다.
-export default function SuspendUserModal({ open, onClose, targetNickname, actingIsTempAdmin, onConfirm }: Props) {
-  const [selectedMinutes, setSelectedMinutes] = useState<number | null>(actingIsTempAdmin ? 1440 : null)
+export default function SuspendUserModal({ open, onClose, targetNickname, actingIsAdmin, onConfirm }: Props) {
+  const [selectedMinutes, setSelectedMinutes] = useState<number | null>(actingIsAdmin ? 1440 : null)
   const [confirming, setConfirming] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -54,11 +54,11 @@ export default function SuspendUserModal({ open, onClose, targetNickname, acting
 
   useEffect(() => {
     if (!open) {
-      setSelectedMinutes(actingIsTempAdmin ? 1440 : null)
+      setSelectedMinutes(actingIsAdmin ? 1440 : null)
       setConfirming(false)
       setError(null)
     }
-  }, [open, actingIsTempAdmin])
+  }, [open, actingIsAdmin])
 
   if (!open) return null
 
@@ -103,7 +103,7 @@ export default function SuspendUserModal({ open, onClose, targetNickname, acting
         <p className="mb-4 text-xs text-neutral-500 dark:text-neutral-400">{targetNickname}</p>
 
         <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
-          {actingIsTempAdmin ? T.durationRequiredNotice : T.durationOptionalNotice}
+          {actingIsAdmin ? T.durationRequiredNotice : T.durationOptionalNotice}
         </p>
 
         <p className="mb-2 text-xs font-medium text-neutral-600 dark:text-neutral-400">{T.presetLabel}</p>
@@ -119,7 +119,7 @@ export default function SuspendUserModal({ open, onClose, targetNickname, acting
               {preset.label}
             </button>
           ))}
-          {!actingIsTempAdmin && (
+          {!actingIsAdmin && (
             <button
               type="button"
               onClick={() => setSelectedMinutes(null)}

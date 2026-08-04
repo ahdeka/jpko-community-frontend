@@ -16,9 +16,10 @@ export const rouletteApi = {
   spin: (betAmount: number) =>
     apiClient.post<RouletteSpinResult>('/api/roulette/spin', { betAmount }),
 
-  // 다음 스핀부터 이 상대로 고정한다.
-  lockOpponent: (opponentId: number) =>
-    apiClient.put<void>(`/api/roulette/opponent/${opponentId}`),
+  // 다음 스핀부터 이 상대로 고정한다. betAmount는 상대가 그만큼 잃을 여력이 있는지
+  // 백엔드가 확인하는 데 쓰인다(RouletteSpinRequest와 동일한 바디, NotNull 필수).
+  lockOpponent: (opponentId: number, betAmount: number) =>
+    apiClient.put<void>(`/api/roulette/opponent/${opponentId}`, { betAmount }),
 
   // 고정을 해제한다(다음 스핀부터 다시 랜덤 상대).
   unlockOpponent: () =>

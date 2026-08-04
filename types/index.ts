@@ -485,6 +485,7 @@ export interface BlockAppeal {
 // 진행 중인 권한 경매 회차 (백엔드 RoleAuctionRoundResponse와 1:1)
 export interface RoleAuctionRound {
   id: number;
+  shopItemId: number;   // 어떤 ROLE_AUCTION 상품(shop_item)에서 열린 회차인지 — 관리자 화면에서 매칭용
   targetRole: UserRole;
   quantity: number;
   minPrice: number;
@@ -497,6 +498,12 @@ export interface RoleAuctionRound {
 // 입찰/재입찰 요청 (백엔드 PlaceBidRequest와 1:1)
 export interface PlaceBidBody {
   amount: number;
+}
+
+// 진행 중인 경매 회차 종료 시각 수정 요청 (백엔드 UpdateRoleAuctionRoundRequest와 1:1, ROOT 전용)
+// endAt이 현재/과거 시각이면 조기 종료(즉시 정산)로 처리된다.
+export interface UpdateRoleAuctionRoundBody {
+  endAt: string;
 }
 
 // 내 권한 경매 낙찰(보유) 현황 (백엔드 RolePurchaseStatusResponse와 1:1)

@@ -70,8 +70,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           {navItem('/admin/notices', '공지사항 관리')}
           {navItem('/admin/users', '회원 관리')}
           {navItem('/admin/reports', '신고 관리')}
-          {navItem('/admin/shop/block-appeals', '차단 이의제기')}
-          {navItem('/admin/shop/role-purchases', '임시 관리자 현황')}
+          {/* 차단 이의제기·임시 관리자 현황은 ROOT 전용 — 감시 대상이 ADMIN 자신일 수 있어
+              동료 ADMIN에게는 노출하지 않는다(백엔드도 hasRole('ROOT')로 보호). */}
+          {isRoot(user.role) && navItem('/admin/shop/block-appeals', '차단 이의제기')}
+          {isRoot(user.role) && navItem('/admin/shop/role-purchases', '임시 관리자 현황')}
           {isRoot(user.role) && navItem('/admin/shop/items', '상점 관리')}
         </nav>
       </aside>

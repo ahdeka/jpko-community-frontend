@@ -4,12 +4,17 @@ import { useCallback, useEffect, useState } from 'react'
 import { adminApi } from '@/lib/api/admin'
 import { ApiError } from '@/lib/api/client'
 import { formatDateTime } from '@/lib/format'
+import { useAuth } from '@/lib/auth-context'
+import { isRoot } from '@/lib/role'
 import type { RolePurchaseAdmin } from '@/types'
 
 const PAGE_SIZE = 20
 
 // 경매로 ADMIN 권한을 보유 중인 유저 현황 — 임시 관리자 남용 감시용. 읽기 전용.
+// ROOT 전용 — 감시 대상이 ADMIN 자신일 수 있어 일반 ADMIN에게는 노출하지 않는다
+// (백엔드도 hasRole('ROOT')로 보호).
 export default function AdminRolePurchasesPage() {
+  const { user } = useAuth()
   const [items, setItems] = useState<RolePurchaseAdmin[]>([])
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
@@ -29,6 +34,15 @@ export default function AdminRolePurchasesPage() {
   }, [page])
 
   useEffect(load, [load])
+
+  if (!user || !isRoot(user.role)) {
+    return (
+      <div className="py-16 text-center">
+        <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200">접근 권한이 없습니다.</p>
+        <p className="mt-1 text-xs text-neutral-400">ROOT 전용 페이지입니다.</p>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-4">

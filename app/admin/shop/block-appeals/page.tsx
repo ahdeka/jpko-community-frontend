@@ -4,12 +4,17 @@ import { useCallback, useEffect, useState } from 'react'
 import { adminApi } from '@/lib/api/admin'
 import { ApiError } from '@/lib/api/client'
 import { formatDateTime } from '@/lib/format'
+import { useAuth } from '@/lib/auth-context'
+import { isRoot } from '@/lib/role'
 import type { BlockAppeal } from '@/types'
 
 const PAGE_SIZE = 20
 
 // 차단 이의제기 관리. AdminUsersPage의 테이블+페이징+pendingId 패턴을 그대로 따른다.
+// ROOT 전용 — 이의제기가 ADMIN(경매로 획득한 임시 ADMIN 포함)의 차단권 남용을 신고하는
+// 내용일 수 있어, 일반 ADMIN에게는 노출하지 않는다(백엔드도 hasRole('ROOT')로 보호).
 export default function AdminBlockAppealsPage() {
+  const { user } = useAuth()
   const [appeals, setAppeals] = useState<BlockAppeal[]>([])
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
@@ -31,6 +36,15 @@ export default function AdminBlockAppealsPage() {
   }, [handledFilter, page])
 
   useEffect(load, [load])
+
+  if (!user || !isRoot(user.role)) {
+    return (
+      <div className="py-16 text-center">
+        <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200">접근 권한이 없습니다.</p>
+        <p className="mt-1 text-xs text-neutral-400">ROOT 전용 페이지입니다.</p>
+      </div>
+    )
+  }
 
   function handleFilterChange(next: boolean) {
     setPage(0)

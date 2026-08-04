@@ -381,10 +381,10 @@ export const MESSAGES = {
       statusChangeFailed: '상태 변경에 실패했습니다.',
       searchEmpty: (keyword: string) => `'${keyword}' 검색 결과가 없습니다.`,
       empty: '회원이 없습니다.',
-      // 경매(권한 경매)로 획득한 ADMIN 권한으로 정지할 때 기한 선택 모달(SuspendUserModal) 전용 문구.
+      // ADMIN 계정으로 정지할 때 기한 선택 모달(SuspendUserModal) 전용 문구. ROOT만 무기한 정지 가능.
       suspendModal: {
         title: '계정 정지',
-        durationRequiredNotice: '경매로 획득한 관리자 권한은 기한이 있는 정지만 가능합니다. 기한을 선택해주세요.',
+        durationRequiredNotice: 'ADMIN 권한으로는 기한이 있는 정지만 가능합니다. 기한을 선택해주세요.',
         durationOptionalNotice: '기한을 정하지 않으면 무기한 정지됩니다.',
         presetLabel: '정지 기한',
         preset1h: '1시간',
@@ -398,7 +398,7 @@ export const MESSAGES = {
       },
       // 백엔드 ErrorCode 이름 → 한글 메시지 (정지 모달에서 사용).
       errorCodeMessages: {
-        SUSPEND_DURATION_REQUIRED: '경매로 획득한 관리자 권한으로는 기한이 있는 정지만 가능합니다.',
+        SUSPEND_DURATION_REQUIRED: 'ADMIN 권한으로는 기한이 있는 정지만 가능합니다.',
         SUSPEND_DURATION_TOO_LONG: '정지 기한이 허용된 최대 기간(7일)을 초과했습니다.',
         CANNOT_SUSPEND_ROOT: '최고 관리자 계정은 정지할 수 없습니다.',
       } as Record<string, string>,

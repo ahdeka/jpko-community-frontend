@@ -2,11 +2,13 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { adminApi } from '@/lib/api/admin'
+import { shopApi } from '@/lib/api/shop'
 import { ApiError } from '@/lib/api/client'
+import { formatDateTime } from '@/lib/format'
 import { useAuth } from '@/lib/auth-context'
 import { isRoot } from '@/lib/role'
 import { shopItemTypeMeta } from '@/lib/shop'
-import type { CreateShopItemBody, ShopItem, ShopItemType, UpdateShopItemBody, UserRole } from '@/types'
+import type { CreateShopItemBody, RoleAuctionRound, ShopItem, ShopItemType, UpdateShopItemBody, UserRole } from '@/types'
 
 const EMPTY_CREATE_FORM: CreateShopItemBody = {
   type: 'BLOCK',
@@ -38,6 +40,13 @@ export default function AdminShopItemsPage() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editForm, setEditForm] = useState<UpdateShopItemBody>({})
 
+  // 진행 중인 경매 회차. GET /api/shop/role-auctions/current는 ROOT도 그냥 일반 유저 권한으로
+  // 호출 가능한 공개 API라 별도 관리자 전용 조회 없이 재사용한다.
+  const [rounds, setRounds] = useState<RoleAuctionRound[]>([])
+  const [roundEndInputs, setRoundEndInputs] = useState<Record<number, string>>({})
+  const [roundBusyId, setRoundBusyId] = useState<number | null>(null)
+  const [roundError, setRoundError] = useState<string | null>(null)
+
   const load = useCallback(() => {
     setLoading(true)
     setError(null)
@@ -45,6 +54,10 @@ export default function AdminShopItemsPage() {
       .then(res => setItems(res.data ?? []))
       .catch((e: unknown) => setError(e instanceof ApiError ? e.message : '상품 목록을 불러오지 못했습니다.'))
       .finally(() => setLoading(false))
+
+    shopApi.getCurrentRounds()
+      .then(res => setRounds(res.data ?? []))
+      .catch(() => setRounds([]))
   }, [])
 
   useEffect(load, [load])
@@ -115,6 +128,48 @@ export default function AdminShopItemsPage() {
       alert(err instanceof ApiError ? err.message : '수정에 실패했습니다.')
     } finally {
       setPendingId(null)
+    }
+  }
+
+  // <input type="datetime-local">는 로컬 벽시계 문자열을 주고받는데, 이 앱은 항상 KST로 동작하므로
+  // (lib/format.ts와 동일한 전제) 브라우저 시간대와 무관하게 KST 벽시계 값을 그대로 다룬다.
+  function toKstInputValue(iso: string): string {
+    return new Intl.DateTimeFormat('sv-SE', {
+      timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    }).format(new Date(iso)).replace(' ', 'T')
+  }
+
+  function fromKstInputValue(value: string): string {
+    return `${value}:00+09:00`
+  }
+
+  async function handleUpdateRoundEnd(round: RoleAuctionRound) {
+    const value = roundEndInputs[round.id]
+    if (!value) return
+    setRoundError(null)
+    setRoundBusyId(round.id)
+    try {
+      await adminApi.updateRoleAuctionRound(round.id, { endAt: fromKstInputValue(value) })
+      load()
+    } catch (err) {
+      setRoundError(err instanceof ApiError ? err.message : '회차 종료 시각 변경에 실패했습니다.')
+    } finally {
+      setRoundBusyId(null)
+    }
+  }
+
+  async function handleEndRoundNow(round: RoleAuctionRound) {
+    if (!confirm('이 회차를 지금 즉시 종료하고 정산할까요?')) return
+    setRoundError(null)
+    setRoundBusyId(round.id)
+    try {
+      await adminApi.updateRoleAuctionRound(round.id, { endAt: new Date().toISOString() })
+      load()
+    } catch (err) {
+      setRoundError(err instanceof ApiError ? err.message : '조기 종료에 실패했습니다.')
+    } finally {
+      setRoundBusyId(null)
     }
   }
 
@@ -333,6 +388,47 @@ export default function AdminShopItemsPage() {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* 진행 중인 경매 회차 — 종료 시각 직접 수정/조기 종료 */}
+      {rounds.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">진행 중인 경매 회차</h2>
+          {rounds.map(round => {
+            const item = items.find(i => i.id === round.shopItemId)
+            const busy = roundBusyId === round.id
+            return (
+              <div key={round.id} className="flex flex-wrap items-center gap-3 rounded-lg border border-neutral-200 p-3 text-sm dark:border-neutral-800">
+                <span className="font-medium text-neutral-800 dark:text-neutral-100">{item?.name ?? `상품 #${round.shopItemId}`}</span>
+                <span className="text-xs text-neutral-400">현재 종료: {formatDateTime(round.endAt)}</span>
+                <input
+                  type="datetime-local"
+                  disabled={busy}
+                  defaultValue={toKstInputValue(round.endAt)}
+                  onChange={e => setRoundEndInputs(prev => ({ ...prev, [round.id]: e.target.value }))}
+                  className="rounded border border-neutral-300 bg-white px-2 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-900"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleUpdateRoundEnd(round)}
+                  disabled={busy || !roundEndInputs[round.id]}
+                  className="rounded border border-orange-300 px-2 py-1 text-xs text-orange-600 hover:bg-orange-50 disabled:opacity-50 dark:border-orange-500/30 dark:text-orange-400 dark:hover:bg-orange-500/10"
+                >
+                  {busy ? '처리 중…' : '저장'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleEndRoundNow(round)}
+                  disabled={busy}
+                  className="rounded border border-red-300 px-2 py-1 text-xs text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-red-500/30 dark:text-red-400 dark:hover:bg-red-500/10"
+                >
+                  지금 종료
+                </button>
+              </div>
+            )
+          })}
+          {roundError && <p className="text-xs text-red-500">{roundError}</p>}
         </div>
       )}
     </div>

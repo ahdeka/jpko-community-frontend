@@ -4,11 +4,11 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { adminReportsApi } from '@/lib/api/reports'
 import { adminApi } from '@/lib/api/admin'
-import { shopApi } from '@/lib/api/shop'
 import { postsApi } from '@/lib/api/posts'
 import { commentsApi } from '@/lib/api/comments'
 import { ApiError } from '@/lib/api/client'
 import { formatDateTime } from '@/lib/format'
+import { useAuth } from '@/lib/auth-context'
 import {
   REPORT_STATUSES,
   reasonMeta,
@@ -46,6 +46,7 @@ const targetKey = (targetType: ReportTargetType, targetId: number) => `${targetT
 // 프론트가 ① 회원 정지(adminApi.updateStatus) → ② 신고 RESOLVED 전환
 // (adminReportsApi.updateTargetStatus)을 이어서 호출해 "정지 = 조치 완료"를 만든다.
 export default function AdminReportsPage() {
+  const { user: actingUser } = useAuth()
   const [reports, setReports] = useState<AdminReportSummary[]>([])
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
@@ -68,14 +69,8 @@ export default function AdminReportsPage() {
 
   // 회원 정지 모달 대상. null이면 닫힌 상태.
   const [suspendReport, setSuspendReport] = useState<AdminReportSummary | null>(null)
-  // 지금 로그인한 관리자 본인이 "경매로 획득한 ADMIN 권한"인지 — 정지 시 기한 필수 여부를 결정한다.
-  const [actingIsTempAdmin, setActingIsTempAdmin] = useState(false)
-
-  useEffect(() => {
-    shopApi.getMyRoleStatus()
-      .then(res => setActingIsTempAdmin(!!res.data?.active && res.data.targetRole === 'ADMIN'))
-      .catch(() => setActingIsTempAdmin(false))
-  }, [])
+  // 지금 로그인한 계정이 ADMIN인지 — ROOT만 무기한 정지 가능하고 ADMIN은 항상 기한이 필요하다.
+  const actingIsAdmin = actingUser?.role === 'ADMIN'
 
   const load = useCallback(() => {
     setLoading(true)
@@ -459,7 +454,7 @@ export default function AdminReportsPage() {
         open={!!suspendReport}
         onClose={() => setSuspendReport(null)}
         targetNickname={suspendReport?.targetPreview ?? ''}
-        actingIsTempAdmin={actingIsTempAdmin}
+        actingIsAdmin={actingIsAdmin}
         onConfirm={handleSuspendConfirm}
       />
     </div>

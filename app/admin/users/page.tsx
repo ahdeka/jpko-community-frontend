@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { adminApi } from '@/lib/api/admin'
-import { shopApi } from '@/lib/api/shop'
 import { ApiError } from '@/lib/api/client'
 import { formatDate } from '@/lib/format'
 // 등급 메타(한글명·색상·순서)는 lib/grade.ts가 단일 출처. 마이페이지 등과 공유한다.
@@ -10,12 +9,14 @@ import { formatDate } from '@/lib/format'
 // UI에서도 일반 회원에겐 해당 옵션을 비활성화해 "무조건 실패할 요청"을 원천 차단한다.
 import { GRADES, gradeMeta } from '@/lib/grade'
 import { MESSAGES } from '@/lib/messages'
+import { useAuth } from '@/lib/auth-context'
 import SuspendUserModal from '@/components/admin/SuspendUserModal'
 import type { AdminUser, UserGrade } from '@/types'
 
 const PAGE_SIZE = 20
 
 export default function AdminUsersPage() {
+  const { user: actingUser } = useAuth()
   const [users, setUsers] = useState<AdminUser[]>([])
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
@@ -31,16 +32,11 @@ export default function AdminUsersPage() {
   // 현재 상태/등급 변경 요청이 진행 중인 유저 id. 해당 행의 컨트롤만 비활성화한다.
   const [pendingId, setPendingId] = useState<number | null>(null)
 
-  // 지금 로그인한 관리자 본인이 "경매로 획득한 ADMIN 권한"인지 — 정지 시 기한 필수 여부를 결정한다.
-  const [actingIsTempAdmin, setActingIsTempAdmin] = useState(false)
+  // 지금 로그인한 계정이 ADMIN인지 — ROOT만 무기한 정지 가능하고 ADMIN은 항상 기한이 필요하다
+  // (경매로 획득했는지 여부와 무관하게 ADMIN이면 전부 적용).
+  const actingIsAdmin = actingUser?.role === 'ADMIN'
   // 정지 모달을 띄울 대상. null이면 닫힌 상태.
   const [suspendTarget, setSuspendTarget] = useState<AdminUser | null>(null)
-
-  useEffect(() => {
-    shopApi.getMyRoleStatus()
-      .then(res => setActingIsTempAdmin(!!res.data?.active && res.data.targetRole === 'ADMIN'))
-      .catch(() => setActingIsTempAdmin(false))
-  }, [])
 
   const load = useCallback(() => {
     setLoading(true)
@@ -303,7 +299,7 @@ export default function AdminUsersPage() {
         open={!!suspendTarget}
         onClose={() => setSuspendTarget(null)}
         targetNickname={suspendTarget?.nickname ?? ''}
-        actingIsTempAdmin={actingIsTempAdmin}
+        actingIsAdmin={actingIsAdmin}
         onConfirm={handleSuspendConfirm}
       />
     </div>
