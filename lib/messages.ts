@@ -277,6 +277,8 @@ export const MESSAGES = {
       recipientPlaceholder: '닉네임을 입력하세요',
       recipientRequired: '받는 사람 닉네임을 입력해주세요.',
       recipientNotFound: '존재하지 않는 닉네임입니다.',
+      recipientChecking: '확인 중…',
+      recipientFound: (nickname: string) => `✓ ${nickname}님에게 보냅니다`,
       selfTransferNotAllowed: '본인에게는 송금할 수 없습니다.',
       amountLabel: '보낼 포인트',
       amountPlaceholder: '금액을 입력하세요',
@@ -379,6 +381,27 @@ export const MESSAGES = {
       statusChangeFailed: '상태 변경에 실패했습니다.',
       searchEmpty: (keyword: string) => `'${keyword}' 검색 결과가 없습니다.`,
       empty: '회원이 없습니다.',
+      // ADMIN 계정으로 정지할 때 기한 선택 모달(SuspendUserModal) 전용 문구. ROOT만 무기한 정지 가능.
+      suspendModal: {
+        title: '계정 정지',
+        durationRequiredNotice: 'ADMIN 권한으로는 기한이 있는 정지만 가능합니다. 기한을 선택해주세요.',
+        durationOptionalNotice: '기한을 정하지 않으면 무기한 정지됩니다.',
+        presetLabel: '정지 기한',
+        preset1h: '1시간',
+        preset6h: '6시간',
+        preset24h: '24시간',
+        preset3d: '3일',
+        preset7d: '7일',
+        indefinite: '무기한',
+        confirm: '정지',
+        confirming: '처리 중…',
+      },
+      // 백엔드 ErrorCode 이름 → 한글 메시지 (정지 모달에서 사용).
+      errorCodeMessages: {
+        SUSPEND_DURATION_REQUIRED: 'ADMIN 권한으로는 기한이 있는 정지만 가능합니다.',
+        SUSPEND_DURATION_TOO_LONG: '정지 기한이 허용된 최대 기간(7일)을 초과했습니다.',
+        CANNOT_SUSPEND_ROOT: '최고 관리자 계정은 정지할 수 없습니다.',
+      } as Record<string, string>,
     },
     notices: {
       loadFailed: '목록을 불러오지 못했습니다.',
@@ -402,11 +425,6 @@ export const MESSAGES = {
         `· 작성자(${author})에게 삭제 알림이 전송됩니다.\n` +
         `· 이 대상에 접수된 신고 ${count}건이 '조치 완료'로 처리됩니다.`,
       deleteFailed: '삭제에 실패했습니다.',
-      suspendUserConfirm: (target: string, count: number) =>
-        `'${target}' 회원을 정지할까요?\n\n` +
-        `· 해당 회원은 즉시 로그아웃되며 로그인할 수 없습니다.\n` +
-        `· 이 회원에 접수된 신고 ${count}건이 '조치 완료'로 처리됩니다.`,
-      suspendUserFailed: '회원 정지에 실패했습니다.',
       rejectConfirm:
         '이 신고를 반려할까요?\n\n' +
         '· 대상은 삭제되지 않고 그대로 유지됩니다.\n' +
@@ -426,5 +444,72 @@ export const MESSAGES = {
   share: {
     copied: '복사됨',
     copyFallbackPrompt: '아래 링크를 복사하세요',
+  },
+
+  shop: {
+    // 전체화면 차단 안내(ActivityBlockScreen).
+    blockScreen: {
+      title: '활동이 제한되었습니다',
+      loading: '차단 정보를 불러오는 중…',
+      loadFailed: '차단 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.',
+      actionFailed: '요청에 실패했습니다. 잠시 후 다시 시도해주세요.',
+      expiresAtLabel: '해제 시각:',
+      unblockTitle: '포인트로 즉시 해제',
+      unblockDescription: (itemName?: string, price?: number) =>
+        itemName && price != null
+          ? `[${itemName}] ${price.toLocaleString()}P를 지불하면 즉시 차단이 해제됩니다.`
+          : '포인트를 지불하면 즉시 차단이 해제됩니다.',
+      unblockButton: '포인트로 즉시 해제',
+      unblocking: '해제 중…',
+      appealTitle: '관리자에게 메시지 보내기',
+      appealPlaceholder: '상황을 설명해주세요.',
+      sendAppeal: '보내기',
+      sendingAppeal: '보내는 중…',
+      appealSent: '전송 완료. 운영진이 확인 후 조치할 예정입니다.',
+      logout: '로그아웃',
+    },
+    // 상점 허브 페이지(/shop).
+    catalog: {
+      loginGateSuffix: '후 상점을 이용할 수 있습니다.',
+      description: '포인트로 활동 차단권을 사용하거나, 관리자 권한 경매에 입찰할 수 있습니다.',
+      loadFailed: '상품 목록을 불러오지 못했습니다.',
+      blockItemHint: '다른 회원의 프로필 페이지에서 사용할 수 있습니다.',
+      blockItemDurationSuffix: '시간 동안 활동 제한',
+    },
+    // 권한 경매 섹션(RoleAuctionSection).
+    roleAuction: {
+      loadFailed: '경매 정보를 불러오지 못했습니다.',
+      empty: '진행 중인 경매가 없습니다.',
+      minPriceLabel: '최저가',
+      topBidLabel: '현재 최고가',
+      noBidYet: '아직 입찰 없음',
+      bidCountLabel: (count: number) => `입찰 ${count}건`,
+      endsAtLabel: '마감',
+      quantityLabel: (quantity: number) => `${quantity}명 선발`,
+      amountPlaceholder: '입찰 금액',
+      amountRequired: '입찰 금액을 입력해주세요.',
+      placeBid: '입찰하기',
+      raiseBid: '입찰가 올리기',
+      cancelBid: '입찰 취소',
+      bidding: '처리 중…',
+      bidSuccess: '입찰이 완료되었습니다.',
+      cancelSuccess: '입찰을 취소했습니다.',
+      myStatusActive: (targetRole: string, expiresAt: string) => `현재 ${targetRole} 권한 보유 중 · ${expiresAt}까지`,
+    },
+    // 백엔드 ErrorCode 이름 → 한글 메시지 (상점 전반에서 공용으로 사용).
+    errorCodeMessages: {
+      ACTIVITY_BLOCKED: '활동이 제한된 상태입니다.',
+      SELF_BLOCK_NOT_ALLOWED: '본인을 차단할 수 없습니다.',
+      TARGET_NOT_BLOCKABLE: '차단할 수 없는 대상입니다.',
+      BLOCK_NOT_FOUND: '활성화된 차단이 없습니다.',
+      ITEM_NOT_FOUND: '존재하지 않는 상품입니다.',
+      ITEM_INACTIVE: '판매 중지된 상품입니다.',
+      CANNOT_AUCTION_ROOT_ROLE: 'ROOT 권한은 경매 대상으로 등록할 수 없습니다.',
+      AUCTION_ROUND_NOT_OPEN: '진행 중인 경매 회차가 아니거나 존재하지 않습니다.',
+      BID_TOO_LOW: '입찰가가 최저가 또는 기존 입찰가보다 낮습니다.',
+      BID_NOT_FOUND: '입찰 내역이 없습니다.',
+      INSUFFICIENT_BALANCE: '포인트 잔액이 부족합니다.',
+      SUSPENDED_ACCOUNT: '이용이 제한된 계정입니다.',
+    } as Record<string, string>,
   },
 } as const

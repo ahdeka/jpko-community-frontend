@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import type { User } from '@/types'
 import { pointsApi } from '@/lib/api/points'
+import { isStaff } from '@/lib/role'
 
 interface Props {
   user: User
@@ -21,14 +22,14 @@ function UserIcon() {
 }
 
 // 닉네임(왼쪽) + 프로필 아이콘(오른쪽). 아이콘을 누르면 메뉴가 열린다.
-// 관리자(role === 'ADMIN')에게만 "관리자 페이지" 항목을 추가로 노출한다.
+// 운영진(ADMIN·ROOT)에게만 "관리자 페이지" 항목을 추가로 노출한다.
 export default function UserMenu({ user, onLogout }: Props) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   // 잔액은 /api/auth/me에 포함되지 않으므로 이 컴포넌트가 마운트 시 직접 조회한다.
   const [balance, setBalance] = useState<number | null>(null)
 
-  const isAdmin = user.role === 'ADMIN'
+  const isAdmin = isStaff(user.role)
 
   useEffect(() => {
     let cancelled = false
@@ -96,6 +97,9 @@ export default function UserMenu({ user, onLogout }: Props) {
           </Link>
           <Link href="/roulette" role="menuitem" className={menuItem} onClick={() => setOpen(false)}>
             룰렛
+          </Link>
+          <Link href="/shop" role="menuitem" className={menuItem} onClick={() => setOpen(false)}>
+            상점
           </Link>
 
           {isAdmin && (

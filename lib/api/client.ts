@@ -28,6 +28,13 @@ export const SESSION_EXPIRED_EVENT = 'auth:session-expired'
 // 쿠키를 정리하고 로그인 상태를 비운다. 세션 만료(401)와 성격이 달라 별도 이벤트로 분리한다.
 export const ACCOUNT_SUSPENDED_EVENT = 'auth:account-suspended'
 
+// 세션 도중 계정이 임시 활동 차단(#6, ACTIVITY_BLOCKED)됐음을 브라우저 전역에 알리는 이벤트 이름.
+// 정지(SUSPENDED)와 달리 세션 자체는 유효하고, 백엔드가 허용한 몇 개 경로
+// (/api/shop/blocks/me, .../unblock, .../appeal, /api/auth/logout)는 계속 정상 동작한다.
+// 그래서 정지처럼 자동 로그아웃하지 않는다 — AuthProvider가 이 이벤트를 받아
+// 전체 화면 안내(ActivityBlockScreen)를 띄우기만 한다.
+export const ACTIVITY_BLOCKED_EVENT = 'auth:activity-blocked'
+
 // 이 엔드포인트들의 401은 "액세스 토큰 만료"가 아니라 그 자체가 정상적인 인증 응답이므로
 // 재발급 재시도 대상에서 제외한다.
 //  - refresh: 여기서 재발급을 다시 부르면 무한 재귀가 된다(엣지케이스 ①).
@@ -143,6 +150,18 @@ async function request<T>(
       !isAuthFlow(endpoint)
     ) {
       window.dispatchEvent(new Event(ACCOUNT_SUSPENDED_EVENT))
+    }
+
+    // 임시 활동 차단 전역 감지. 백엔드가 허용한 경로(차단 상태 조회/해제/이의제기, 로그아웃) 자체가
+    // 이 조건에 걸릴 일은 없지만(그 경로들은 애초에 403을 안 준다), 혹시 모를 경쟁 상황을 대비해
+    // isAuthFlow와 같은 정신으로 auth 플로우는 제외한다.
+    if (
+      response.status === 403 &&
+      code === 'ACTIVITY_BLOCKED' &&
+      typeof window !== 'undefined' &&
+      !isAuthFlow(endpoint)
+    ) {
+      window.dispatchEvent(new Event(ACTIVITY_BLOCKED_EVENT))
     }
 
     throw new ApiError(message, response.status, code)

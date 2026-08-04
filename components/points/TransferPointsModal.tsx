@@ -6,7 +6,7 @@ import { pointsApi } from '@/lib/api/points'
 import { usersApi } from '@/lib/api/users'
 import { ApiError } from '@/lib/api/client'
 import { MESSAGES } from '@/lib/messages'
-import type { PointTransaction } from '@/types'
+import type { PointTransaction, PublicProfile } from '@/types'
 
 const T = MESSAGES.points.transfer
 
@@ -37,6 +37,14 @@ export default function TransferPointsModal({ open, onClose, onSuccess, fixedRec
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<{ recipientNickname: string; transfer: PointTransaction | null; fee: PointTransaction | null } | null>(null)
+
+  // 닉네임 실시간 존재 확인. checkedNickname은 "마지막으로 완료된 확인이 어떤 닉네임에 대한 것인지" —
+  // nickname을 더 타이핑해 trim() 값이 달라지면 checkedNickname과 어긋나므로, 화면은 그 결과를
+  // 낡은 값으로 취급해 숨긴다(별도의 stale 플래그 없이 두 값 비교만으로 처리).
+  // checkedProfile은 찾았으면 프로필, 404로 못 찾았으면 null.
+  const [checking, setChecking] = useState(false)
+  const [checkedNickname, setCheckedNickname] = useState<string | null>(null)
+  const [checkedProfile, setCheckedProfile] = useState<PublicProfile | null>(null)
 
   const nicknameRef = useRef<HTMLInputElement>(null)
   const amountRef = useRef<HTMLInputElement>(null)
@@ -70,6 +78,47 @@ export default function TransferPointsModal({ open, onClose, onSuccess, fixedRec
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, loading, onClose])
 
+  // 닉네임을 타이핑하는 동안 짧은 디바운스(350ms) 후 자동으로 존재 여부를 확인한다.
+  // 매 키 입력마다 바로 부르면 요청이 과도해지므로, 이 저장소 다른 곳(MyPointsTab 등)에서
+  // 쓰는 "let cancelled = false" 취소 패턴을 그대로 쓴다.
+  useEffect(() => {
+    if (!open || fixedRecipient) return
+
+    const trimmed = nickname.trim()
+    if (!trimmed) {
+      setChecking(false)
+      setCheckedNickname(null)
+      setCheckedProfile(null)
+      return
+    }
+
+    setChecking(true)
+    let cancelled = false
+    const timer = setTimeout(() => {
+      usersApi.getPublicProfile(trimmed)
+        .then(res => {
+          if (cancelled) return
+          setCheckedProfile(res.data ?? null)
+          setCheckedNickname(trimmed)
+        })
+        .catch((e: unknown) => {
+          if (cancelled) return
+          // 404(존재하지 않는 닉네임)만 결과로 확정한다. 그 외(네트워크 오류 등)는 일시적일 수 있어
+          // "존재하지 않음"으로 단정하지 않고 확인 안 된 상태로 남긴다.
+          if (e instanceof ApiError && e.status === 404) {
+            setCheckedProfile(null)
+            setCheckedNickname(trimmed)
+          }
+        })
+        .finally(() => { if (!cancelled) setChecking(false) })
+    }, 350)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [open, fixedRecipient, nickname])
+
   // 닫힐 때 입력 상태를 초기화해, 다음에 열 때 깨끗한 상태로 시작한다.
   useEffect(() => {
     if (!open) {
@@ -79,10 +128,19 @@ export default function TransferPointsModal({ open, onClose, onSuccess, fixedRec
       setError(null)
       setLoading(false)
       setResult(null)
+      setChecking(false)
+      setCheckedNickname(null)
+      setCheckedProfile(null)
     }
   }, [open])
 
   if (!open) return null
+
+  const trimmedNickname = nickname.trim()
+  // checkedNickname이 현재 입력값과 일치할 때만 그 결과를 신뢰한다 — 더 타이핑했는데 아직
+  // 디바운스가 안 끝났으면(=값이 어긋나면) "확인 중"도 "찾음/못찾음"도 아닌 빈 상태로 둔다.
+  const checkMatchesInput = !fixedRecipient && checkedNickname === trimmedNickname
+  const checkedIsSelf = !!(user && checkedProfile && checkedProfile.id === user.id)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -115,15 +173,27 @@ export default function TransferPointsModal({ open, onClose, onSuccess, fixedRec
           return
         }
 
-        try {
-          const profileRes = await usersApi.getPublicProfile(trimmed)
-          if (!profileRes.data) throw new ApiError(T.recipientNotFound, 404, 'USER_NOT_FOUND')
-          recipientId = profileRes.data.id
-          recipientNickname = profileRes.data.nickname
-        } catch (err) {
-          setLoading(false)
-          setError(err instanceof ApiError && err.status === 404 ? T.recipientNotFound : T.lookupFailed)
-          return
+        // 실시간 확인 결과가 지금 입력값과 일치하면 재조회하지 않고 그대로 재사용한다.
+        // (디바운스 대기 중 곧바로 제출한 엣지케이스만 아래에서 새로 조회한다.)
+        if (checkedNickname === trimmed) {
+          if (!checkedProfile) {
+            setLoading(false)
+            setError(T.recipientNotFound)
+            return
+          }
+          recipientId = checkedProfile.id
+          recipientNickname = checkedProfile.nickname
+        } else {
+          try {
+            const profileRes = await usersApi.getPublicProfile(trimmed)
+            if (!profileRes.data) throw new ApiError(T.recipientNotFound, 404, 'USER_NOT_FOUND')
+            recipientId = profileRes.data.id
+            recipientNickname = profileRes.data.nickname
+          } catch (err) {
+            setLoading(false)
+            setError(err instanceof ApiError && err.status === 404 ? T.recipientNotFound : T.lookupFailed)
+            return
+          }
         }
 
         if (user && recipientId === user.id) {
@@ -245,6 +315,21 @@ export default function TransferPointsModal({ open, onClose, onSuccess, fixedRec
                     disabled={loading}
                     className="w-full rounded border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-violet-400 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-violet-500"
                   />
+                  {trimmedNickname && (
+                    <p className="mt-1 text-xs">
+                      {checking ? (
+                        <span className="text-neutral-400">{T.recipientChecking}</span>
+                      ) : !checkMatchesInput ? null : checkedProfile ? (
+                        checkedIsSelf ? (
+                          <span className="text-red-500">{T.selfTransferNotAllowed}</span>
+                        ) : (
+                          <span className="text-emerald-600 dark:text-emerald-400">{T.recipientFound(checkedProfile.nickname)}</span>
+                        )
+                      ) : (
+                        <span className="text-red-500">{T.recipientNotFound}</span>
+                      )}
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -279,7 +364,12 @@ export default function TransferPointsModal({ open, onClose, onSuccess, fixedRec
                 </button>
                 <button
                   type="submit"
-                  disabled={loading || !amount}
+                  disabled={
+                    loading || !amount ||
+                    // 확인 결과가 지금 입력값과 일치하는데 못 찾았거나 본인이면 뻔히 실패할 제출을 막는다.
+                    // 아직 확인 중/디바운스 대기 중이면(=checkMatchesInput false) 막지 않고 제출 시 재조회한다.
+                    (checkMatchesInput && (!checkedProfile || checkedIsSelf))
+                  }
                   className="rounded-md bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {loading ? '처리 중…' : '보내기'}

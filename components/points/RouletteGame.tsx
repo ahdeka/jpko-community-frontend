@@ -120,9 +120,17 @@ export default function RouletteGame() {
   }
 
   async function handleLock(opponentId: number) {
+    // 백엔드가 상대의 잔액이 이 금액을 감당할 수 있는지 확인하는 데 쓰므로 필수다
+    // (NotNull — 안 보내면 400). 다음 스핀에 넣을 배팅액 입력값을 그대로 재사용한다.
+    const amount = Number(betAmount)
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setError(MESSAGES.points.roulette.betRequired)
+      return
+    }
+
     setLockPending(true)
     try {
-      await rouletteApi.lockOpponent(opponentId)
+      await rouletteApi.lockOpponent(opponentId, amount)
       refreshOpponent()
     } catch (e) {
       setError(e instanceof ApiError ? e.message : MESSAGES.points.roulette.lockFailed)
