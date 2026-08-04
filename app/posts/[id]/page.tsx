@@ -6,7 +6,7 @@ import { commentsApi } from '@/lib/api/comments'
 import { categoriesApi } from '@/lib/api/categories'
 import { authHeaders } from '@/lib/api/server'
 import { ApiError } from '@/lib/api/client'
-import { encodeListContext, parseListContext, type ListContext } from '@/lib/list-context'
+import { buildListHref, encodeListContext, parseListContext, type ListContext } from '@/lib/list-context'
 import { searchQueryParams } from '@/lib/search'
 import { excerpt } from '@/lib/site'
 import PostDetail from '@/components/post/PostDetail'
@@ -162,12 +162,19 @@ export default async function PostPage({
   // 하단 목록은 부가 기능이므로 실패해도 본문에 영향 주지 않게 catch로 감싼다.
   const siblingList = await loadSiblingList(ctx, post, categories).catch(() => null)
 
+  // "목록으로" 버튼은 보던 목록·페이지로 되돌아가야 한다.
+  // 하단 목록과 동일한 basePath/page/searchParams로 URL을 만들어 둘이 항상 일치하게 한다.
+  // 하단 목록조차 구성하지 못한 경우(카테고리 해석 실패 등)에만 전체글로 폴백한다.
+  const listHref = siblingList
+    ? buildListHref(siblingList.basePath, siblingList.page, siblingList.searchParams)
+    : '/posts'
+
   return (
     <div>
       {/* 이번 조회를 브라우저 쿠키로 표시 → 다음 새로고침부터 SSR이 백엔드로 전달해 조회수 중복 증가를 막는다.
           이름은 백엔드 PostController의 `viewedPost_{id}`와 정확히 일치시켜야 한다. */}
       <ViewMarker name={`viewedPost_${postId}`} />
-      <PostDetail post={post} />
+      <PostDetail post={post} listHref={listHref} />
       <CommentList postId={postId} comments={comments} />
 
       {/* 상세 하단에 "보던 목록"(없으면 글의 카테고리 목록)을 끼워 넣는다 */}

@@ -8,9 +8,12 @@ import AuthorName from '@/components/common/AuthorName'
 
 interface Props {
   post: PostDetailData
+  // "목록으로" 버튼이 돌아갈 목록 URL. 보던 목록(전체/카테고리/검색)의 해당 페이지를 가리킨다.
+  // (전달되지 않으면 PostActions 기본값인 전체글 목록으로 간다)
+  listHref?: string
 }
 
-export default function PostDetail({ post }: Props) {
+export default function PostDetail({ post, listHref }: Props) {
   return (
     <div>
       <div className="border-b border-gray-200 dark:border-neutral-800 pb-4 mb-4">
@@ -62,7 +65,7 @@ export default function PostDetail({ post }: Props) {
 
       {/* 좋아요와 댓글 영역을 구분선으로 나누는 하단 액션 바(목록/공유/신고).
           reportPostId를 넘기면 신고 메뉴가 켜진다(공지 상세는 넘기지 않아 꺼진 상태). */}
-      <PostActions shareTitle={post.title} reportPostId={post.id} isOwner={post.isOwner} />
+      <PostActions listHref={listHref} shareTitle={post.title} reportPostId={post.id} isOwner={post.isOwner} />
     </div>
   )
 }
