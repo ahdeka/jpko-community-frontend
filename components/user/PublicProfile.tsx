@@ -7,6 +7,7 @@ import AdminBadge from '@/components/common/AdminBadge'
 import Pagination from '@/components/common/Pagination'
 import ProfileReportButton from '@/components/user/ProfileReportButton'
 import TransferPointsButton from '@/components/user/TransferPointsButton'
+import ActivityBlockButton from '@/components/user/ActivityBlockButton'
 
 const CATEGORY_BADGE_STYLE =
   'bg-neutral-200 text-neutral-600 dark:bg-neutral-700/40 dark:text-neutral-300'
@@ -104,6 +105,7 @@ export default function PublicProfile({ profile, postsPage, currentPage, nicknam
             flex-1인 가운데 영역이 이 버튼들을 헤더 우측 상단으로 밀어낸다. */}
         <div className="flex shrink-0 items-center gap-2">
           <TransferPointsButton targetUserId={profile.id} targetNickname={profile.nickname} />
+          <ActivityBlockButton targetUserId={profile.id} targetNickname={profile.nickname} adminAuthor={profile.adminAuthor} />
           <ProfileReportButton targetUserId={profile.id} />
         </div>
       </section>

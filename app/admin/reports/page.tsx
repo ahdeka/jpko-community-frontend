@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { adminReportsApi } from '@/lib/api/reports'
 import { adminApi } from '@/lib/api/admin'
+import { shopApi } from '@/lib/api/shop'
 import { postsApi } from '@/lib/api/posts'
 import { commentsApi } from '@/lib/api/comments'
 import { ApiError } from '@/lib/api/client'
@@ -16,6 +17,7 @@ import {
   targetTypeLabel,
 } from '@/lib/report'
 import { MESSAGES } from '@/lib/messages'
+import SuspendUserModal from '@/components/admin/SuspendUserModal'
 import type {
   AdminReportDetail,
   AdminReportSummary,
@@ -63,6 +65,17 @@ export default function AdminReportsPage() {
 
   // 처리 중인 행 키. 해당 행의 버튼만 비활성화한다.
   const [pendingKey, setPendingKey] = useState<string | null>(null)
+
+  // 회원 정지 모달 대상. null이면 닫힌 상태.
+  const [suspendReport, setSuspendReport] = useState<AdminReportSummary | null>(null)
+  // 지금 로그인한 관리자 본인이 "경매로 획득한 ADMIN 권한"인지 — 정지 시 기한 필수 여부를 결정한다.
+  const [actingIsTempAdmin, setActingIsTempAdmin] = useState(false)
+
+  useEffect(() => {
+    shopApi.getMyRoleStatus()
+      .then(res => setActingIsTempAdmin(!!res.data?.active && res.data.targetRole === 'ADMIN'))
+      .catch(() => setActingIsTempAdmin(false))
+  }, [])
 
   const load = useCallback(() => {
     setLoading(true)
@@ -157,30 +170,24 @@ export default function AdminReportsPage() {
     }
   }
 
-  // 회원 신고 조치 = 계정 정지 + 신고 RESOLVED 전환.
+  // 회원 신고 조치 = 계정 정지 + 신고 RESOLVED 전환. 정지 기한 선택은 SuspendUserModal이 맡고,
+  // 확인 버튼을 누르면 handleSuspendConfirm이 아래 두 호출을 이어서 한다.
+  function handleSuspendUser(report: AdminReportSummary) {
+    setSuspendReport(report)
+  }
+
   // 백엔드에 "정지하면 신고를 자동 정리"하는 이벤트가 없으므로 두 호출을 이어서 한다.
   //  1) adminApi.updateStatus(SUSPENDED): 대상 회원을 정지(전 기기 로그아웃). 멱등하므로
-  //     이미 정지된 회원이어도 안전하다. ADMIN 대상이면 CANNOT_SUSPEND_ADMIN,
+  //     이미 정지된 회원이어도 안전하다. ROOT 대상이면 CANNOT_SUSPEND_ROOT,
   //     이미 탈퇴한 회원이면 ALREADY_WITHDRAWN이 온다.
   //  2) updateTargetStatus(USER, RESOLVED): 이 회원에 쌓인 PENDING 신고를 조치 완료로 바꾼다.
   // ①이 성공하고 ②가 실패하면 정지는 유지된 채 신고만 PENDING으로 남는데, 다시 눌러도
   // ①이 멱등이라 그대로 재시도하면 복구된다.
-  async function handleSuspendUser(report: AdminReportSummary) {
-    const target = report.targetPreview // USER 신고의 미리보기는 대상 회원의 닉네임이다.
-    const message = MESSAGES.admin.reports.suspendUserConfirm(target, report.reportCount)
-    if (!confirm(message)) return
-
-    const key = targetKey(report.targetType, report.targetId)
-    setPendingKey(key)
-    try {
-      await adminApi.updateStatus(report.targetId, 'SUSPENDED')
-      await adminReportsApi.updateTargetStatus('USER', report.targetId, 'RESOLVED')
-      afterResolved(key)
-    } catch (e) {
-      alert(e instanceof ApiError ? e.message : MESSAGES.admin.reports.suspendUserFailed)
-    } finally {
-      setPendingKey(null)
-    }
+  async function handleSuspendConfirm(suspendedUntil?: string) {
+    if (!suspendReport) return
+    await adminApi.updateStatus(suspendReport.targetId, 'SUSPENDED', suspendedUntil)
+    await adminReportsApi.updateTargetStatus('USER', suspendReport.targetId, 'RESOLVED')
+    afterResolved(targetKey(suspendReport.targetType, suspendReport.targetId))
   }
 
   // 반려 = 대상은 두고 신고만 기각. 되돌릴 수 없으므로 확인을 받는다.
@@ -447,6 +454,14 @@ export default function AdminReportsPage() {
           </button>
         </div>
       )}
+
+      <SuspendUserModal
+        open={!!suspendReport}
+        onClose={() => setSuspendReport(null)}
+        targetNickname={suspendReport?.targetPreview ?? ''}
+        actingIsTempAdmin={actingIsTempAdmin}
+        onConfirm={handleSuspendConfirm}
+      />
     </div>
   )
 }

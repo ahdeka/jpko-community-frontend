@@ -51,6 +51,26 @@ export const TRANSACTION_TYPES: TransactionTypeMeta[] = [
     label: '송금 수수료',
     badge: 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400',
   },
+  {
+    value: 'BLOCK_PURCHASE',
+    label: '차단권 구매',
+    badge: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300',
+  },
+  {
+    value: 'BLOCK_UNBLOCK',
+    label: '차단 해제',
+    badge: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300',
+  },
+  {
+    value: 'BID_HOLD',
+    label: '경매 입찰',
+    badge: 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300',
+  },
+  {
+    value: 'BID_REFUND',
+    label: '경매 환불',
+    badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
+  },
 ]
 
 export const transactionTypeMeta = (type: TransactionType): TransactionTypeMeta =>
@@ -72,6 +92,8 @@ export interface TransactionDisplay {
 // TRANSFER는 유저 대 유저 직접 송금이라 ROULETTE와 동일한 구조로 방향에 따라 갈리고,
 // TRANSFER_FEE는 상대가 항상 시스템이지만 금액이 랜덤이라 방향이 뒤바뀔 수 있다
 // (수수료가 음수로 뽑히면 시스템→유저로 보너스가 지급되어 내가 recipient가 된다).
+// BLOCK_PURCHASE/BLOCK_UNBLOCK/BID_HOLD는 항상 유저→시스템(내 내역에 있다는 건 내가 sender라는 뜻)이고,
+// BID_REFUND는 항상 시스템→유저라 GRANT/COLLECT처럼 방향 분기 없이 단일 케이스로 처리한다.
 export function describeTransaction(tx: PointTransaction, myUserId: number): TransactionDisplay {
   const isRecipient = tx.recipientId === myUserId
 
@@ -160,5 +182,33 @@ export function describeTransaction(tx: PointTransaction, myUserId: number): Tra
             description: '송금 수수료',
             counterpartLabel: null,
           }
+    case 'BLOCK_PURCHASE':
+      return {
+        signedAmountLabel: `-${tx.amount.toLocaleString()}P`,
+        colorClass: 'text-red-600 dark:text-red-400',
+        description: '활동 차단권 구매',
+        counterpartLabel: null,
+      }
+    case 'BLOCK_UNBLOCK':
+      return {
+        signedAmountLabel: `-${tx.amount.toLocaleString()}P`,
+        colorClass: 'text-red-600 dark:text-red-400',
+        description: '차단 조기 해제',
+        counterpartLabel: null,
+      }
+    case 'BID_HOLD':
+      return {
+        signedAmountLabel: `-${tx.amount.toLocaleString()}P`,
+        colorClass: 'text-orange-600 dark:text-orange-400',
+        description: '권한 경매 입찰',
+        counterpartLabel: null,
+      }
+    case 'BID_REFUND':
+      return {
+        signedAmountLabel: `+${tx.amount.toLocaleString()}P`,
+        colorClass: 'text-emerald-600 dark:text-emerald-400',
+        description: '권한 경매 입찰 환불',
+        counterpartLabel: null,
+      }
   }
 }

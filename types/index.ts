@@ -310,7 +310,13 @@ export interface AdminReportDetail {
 //  TRANSFER: 유저 → 유저, 회원이 직접 다른 회원에게 보내는 포인트 송금.
 //  TRANSFER_FEE: 송금 시 붙는 수수료. 랜덤이라 방향이 뒤바뀔 수 있다(유저→시스템이 기본이지만,
 //    음수로 뽑히면 시스템→유저로 오히려 보너스가 지급된다). sender/recipient 중 하나가 시스템(null)이다.
-export type TransactionType = 'GRANT' | 'COLLECT' | 'ACCOUNT_OPENED' | 'CHECKIN' | 'ROULETTE' | 'ROULETTE_FEE' | 'TRANSFER' | 'TRANSFER_FEE';
+//  BLOCK_PURCHASE: 유저 → 시스템, 다른 유저에게 활동 차단권 사용.
+//  BLOCK_UNBLOCK: 유저 → 시스템, 본인 차단을 포인트로 즉시 해제.
+//  BID_HOLD: 유저 → 시스템, 권한 경매 입찰 시 예탁(에스크로). 재입찰(인상) 시 차액만큼 추가로 발생.
+//  BID_REFUND: 시스템 → 유저, 낙찰 실패 또는 입찰 취소 시 예탁금 환불.
+export type TransactionType =
+  | 'GRANT' | 'COLLECT' | 'ACCOUNT_OPENED' | 'CHECKIN' | 'ROULETTE' | 'ROULETTE_FEE' | 'TRANSFER' | 'TRANSFER_FEE'
+  | 'BLOCK_PURCHASE' | 'BLOCK_UNBLOCK' | 'BID_HOLD' | 'BID_REFUND';
 
 // 포인트 잔액 (백엔드 PointResponse와 1:1)
 export interface PointBalance {
@@ -418,4 +424,120 @@ export interface Notification {
   isRead: boolean;
   createdAt: string;
   amount: number | null;      // POINT_STOLEN/POINT_WON 전용, 오간 포인트 액수. 그 외 타입은 null.
+}
+
+// ========== 상점 ==========
+
+// 상점 상품 종류 — 백엔드 ShopItemType enum과 1:1.
+//  BLOCK: 정가 판매되는 임시 활동 차단권 (price/durationMinutes 사용)
+//  ROLE_AUCTION: 주기적으로 경매가 열리는 UserRole 판매 설정 (targetRole~cadenceDays 사용)
+export type ShopItemType = 'BLOCK' | 'ROLE_AUCTION';
+
+// 상점 상품 (백엔드 ShopItemResponse와 1:1)
+// type에 따라 사용되는 필드가 다르다 — BLOCK은 price/durationMinutes만, ROLE_AUCTION은 나머지만 채워진다.
+export interface ShopItem {
+  id: number;
+  type: ShopItemType;
+  name: string;
+  price: number | null;
+  durationMinutes: number | null;
+  targetRole: UserRole | null;
+  quantity: number | null;
+  minPrice: number | null;
+  durationDays: number | null;
+  cadenceDays: number | null;
+  active: boolean;
+}
+
+// 임시 활동 차단 구매 요청 (백엔드 PurchaseBlockRequest와 1:1)
+export interface PurchaseBlockBody {
+  targetUserId: number;
+  itemId: number;
+}
+
+// 내 차단 상태 (백엔드 BlockStatusResponse와 1:1)
+// blocked=false면 나머지 필드는 내려오지 않는다.
+export interface BlockStatus {
+  blocked: boolean;
+  reason?: string;            // "OO님이 [24시간 차단권]을 사용해 차단했습니다" 형태의 조합 문구
+  blockerNickname?: string;
+  itemName?: string;
+  expiresAt?: string;
+  unblockItemName?: string;   // 해제에 사용할 상품명 (= 차단에 쓰인 상품과 동일)
+  unblockPrice?: number;      // 해제에 필요한 포인트
+}
+
+// 차단 이의제기 접수 요청 (백엔드 BlockAppealRequest와 1:1)
+export interface BlockAppealBody {
+  message: string;
+}
+
+// 관리자 - 차단 이의제기 목록 항목 (백엔드 BlockAppealResponse와 1:1)
+export interface BlockAppeal {
+  id: number;
+  activityBlockId: number;
+  senderNickname: string;
+  message: string;
+  handled: boolean;
+  createdAt: string;
+}
+
+// 진행 중인 권한 경매 회차 (백엔드 RoleAuctionRoundResponse와 1:1)
+export interface RoleAuctionRound {
+  id: number;
+  targetRole: UserRole;
+  quantity: number;
+  minPrice: number;
+  startAt: string;
+  endAt: string;
+  topBidAmount: number | null;   // 입찰이 없으면 null
+  activeBidCount: number;
+}
+
+// 입찰/재입찰 요청 (백엔드 PlaceBidRequest와 1:1)
+export interface PlaceBidBody {
+  amount: number;
+}
+
+// 내 권한 경매 낙찰(보유) 현황 (백엔드 RolePurchaseStatusResponse와 1:1)
+// active=false면 나머지 필드는 내려오지 않는다.
+export interface RolePurchaseStatus {
+  active: boolean;
+  targetRole?: UserRole;
+  expiresAt?: string;
+}
+
+// 관리자 - 경매로 role을 보유 중인 유저 현황 (백엔드 RolePurchaseAdminResponse와 1:1)
+export interface RolePurchaseAdmin {
+  userId: number;
+  nickname: string;
+  targetRole: UserRole;
+  previousRole: UserRole;
+  expiresAt: string;
+}
+
+// 상점 상품 등록 요청 (백엔드 CreateShopItemRequest와 1:1, ROOT 전용)
+// type=BLOCK이면 price/durationMinutes만, type=ROLE_AUCTION이면 targetRole~cadenceDays만 채운다.
+export interface CreateShopItemBody {
+  type: ShopItemType;
+  name: string;
+  price?: number;
+  durationMinutes?: number;
+  targetRole?: UserRole;
+  quantity?: number;
+  minPrice?: number;
+  durationDays?: number;
+  cadenceDays?: number;
+}
+
+// 상점 상품 수정 요청 (백엔드 UpdateShopItemRequest와 1:1, ROOT 전용)
+// 필드는 모두 선택 — 넘긴 값만 반영된다. 이미 OPEN인 경매 회차에는 소급 적용되지 않는다.
+export interface UpdateShopItemBody {
+  price?: number;
+  durationMinutes?: number;
+  quantity?: number;
+  minPrice?: number;
+  durationDays?: number;
+  cadenceDays?: number;
+  active?: boolean;
 }

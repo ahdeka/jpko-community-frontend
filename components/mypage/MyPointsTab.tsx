@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import type { ReactNode } from 'react'
 import { pointsApi } from '@/lib/api/points'
 import { ApiError } from '@/lib/api/client'
 import { formatDateTime } from '@/lib/format'
@@ -77,91 +78,82 @@ export default function MyPointsTab({ onBalanceChange }: { onBalanceChange?: () 
     />
   )
 
+  // loading/error/empty/목록을 각각 별도 return으로 두면 분기마다 형제 엘리먼트 구성(자식 개수)이
+  // 달라져, key 없는 형제를 인덱스로 매칭하는 React가 분기 전환 시점에 이 아래의 transferModal을
+  // 엉뚱한 자리의 다른 엘리먼트와 매칭해버릴 수 있다(리마운트로 이어짐). 그래서 "본문"만 갈아끼우고
+  // transferButton/transferModal은 항상 마지막에 고정된 위치로 딱 한 번만 렌더한다.
+  let content: ReactNode
   if (loading) {
-    return (
-      <div>
-        {transferButton}
-        <p className="py-12 text-center text-sm text-neutral-400">불러오는 중…</p>
-        {transferModal}
+    content = <p className="py-12 text-center text-sm text-neutral-400">불러오는 중…</p>
+  } else if (error) {
+    content = <p className="py-12 text-center text-sm text-red-500">{error}</p>
+  } else if (!user || transactions.length === 0) {
+    content = (
+      <div className="py-12 text-center text-sm text-neutral-400 dark:text-neutral-500">
+        {MESSAGES.mypage.myPoints.empty}
       </div>
     )
-  }
+  } else {
+    content = (
+      <>
+        <ul className="divide-y divide-neutral-100 border-y border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
+          {transactions.map(tx => {
+            const typeMeta = transactionTypeMeta(tx.type)
+            const display = describeTransaction(tx, user.id)
 
-  if (error) {
-    return (
-      <div>
-        {transferButton}
-        <p className="py-12 text-center text-sm text-red-500">{error}</p>
-        {transferModal}
-      </div>
-    )
-  }
+            return (
+              <li key={tx.transactionId} className="flex items-center justify-between gap-3 px-1 py-3">
+                <div className="min-w-0">
+                  <div className="mb-1 flex flex-wrap items-center gap-1.5">
+                    <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${typeMeta.badge}`}>
+                      {typeMeta.label}
+                    </span>
+                    <span className="text-[11px] text-neutral-400">{formatDateTime(tx.createdAt)}</span>
+                  </div>
+                  <p className="text-sm text-neutral-800 dark:text-neutral-100">
+                    {display.description}
+                    {display.counterpartLabel && (
+                      <span className="text-neutral-400"> · {display.counterpartLabel}</span>
+                    )}
+                  </p>
+                </div>
+                <span className={`shrink-0 text-sm font-bold ${display.colorClass}`}>
+                  {display.signedAmountLabel}
+                </span>
+              </li>
+            )
+          })}
+        </ul>
 
-  if (!user || transactions.length === 0) {
-    return (
-      <div>
-        {transferButton}
-        <div className="py-12 text-center text-sm text-neutral-400 dark:text-neutral-500">
-          {MESSAGES.mypage.myPoints.empty}
-        </div>
-        {transferModal}
-      </div>
+        {totalPages > 1 && (
+          <div className="mt-4 flex items-center justify-center gap-3 text-sm">
+            <button
+              type="button"
+              disabled={page === 0}
+              onClick={() => setPage(p => Math.max(0, p - 1))}
+              className="rounded px-3 py-1 text-neutral-500 hover:bg-neutral-100 disabled:opacity-40 dark:hover:bg-neutral-800"
+            >
+              이전
+            </button>
+            <span className="text-xs text-neutral-400">{page + 1} / {totalPages}</span>
+            <button
+              type="button"
+              disabled={page >= totalPages - 1}
+              onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+              className="rounded px-3 py-1 text-neutral-500 hover:bg-neutral-100 disabled:opacity-40 dark:hover:bg-neutral-800"
+            >
+              다음
+            </button>
+          </div>
+        )}
+      </>
     )
   }
 
   return (
     <div>
       {transferButton}
-      <ul className="divide-y divide-neutral-100 border-y border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
-        {transactions.map(tx => {
-          const typeMeta = transactionTypeMeta(tx.type)
-          const display = describeTransaction(tx, user.id)
-
-          return (
-            <li key={tx.transactionId} className="flex items-center justify-between gap-3 px-1 py-3">
-              <div className="min-w-0">
-                <div className="mb-1 flex flex-wrap items-center gap-1.5">
-                  <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${typeMeta.badge}`}>
-                    {typeMeta.label}
-                  </span>
-                  <span className="text-[11px] text-neutral-400">{formatDateTime(tx.createdAt)}</span>
-                </div>
-                <p className="text-sm text-neutral-800 dark:text-neutral-100">
-                  {display.description}
-                  {display.counterpartLabel && (
-                    <span className="text-neutral-400"> · {display.counterpartLabel}</span>
-                  )}
-                </p>
-              </div>
-              <span className={`shrink-0 text-sm font-bold ${display.colorClass}`}>
-                {display.signedAmountLabel}
-              </span>
-            </li>
-          )
-        })}
-      </ul>
-
-      {totalPages > 1 && (
-        <div className="mt-4 flex items-center justify-center gap-3 text-sm">
-          <button
-            type="button"
-            disabled={page === 0}
-            onClick={() => setPage(p => Math.max(0, p - 1))}
-            className="rounded px-3 py-1 text-neutral-500 hover:bg-neutral-100 disabled:opacity-40 dark:hover:bg-neutral-800"
-          >
-            이전
-          </button>
-          <span className="text-xs text-neutral-400">{page + 1} / {totalPages}</span>
-          <button
-            type="button"
-            disabled={page >= totalPages - 1}
-            onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
-            className="rounded px-3 py-1 text-neutral-500 hover:bg-neutral-100 disabled:opacity-40 dark:hover:bg-neutral-800"
-          >
-            다음
-          </button>
-        </div>
-      )}
+      {content}
       {transferModal}
     </div>
   )

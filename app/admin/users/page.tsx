@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { adminApi } from '@/lib/api/admin'
+import { shopApi } from '@/lib/api/shop'
 import { ApiError } from '@/lib/api/client'
 import { formatDate } from '@/lib/format'
 // 등급 메타(한글명·색상·순서)는 lib/grade.ts가 단일 출처. 마이페이지 등과 공유한다.
@@ -9,6 +10,7 @@ import { formatDate } from '@/lib/format'
 // UI에서도 일반 회원에겐 해당 옵션을 비활성화해 "무조건 실패할 요청"을 원천 차단한다.
 import { GRADES, gradeMeta } from '@/lib/grade'
 import { MESSAGES } from '@/lib/messages'
+import SuspendUserModal from '@/components/admin/SuspendUserModal'
 import type { AdminUser, UserGrade } from '@/types'
 
 const PAGE_SIZE = 20
@@ -28,6 +30,17 @@ export default function AdminUsersPage() {
 
   // 현재 상태/등급 변경 요청이 진행 중인 유저 id. 해당 행의 컨트롤만 비활성화한다.
   const [pendingId, setPendingId] = useState<number | null>(null)
+
+  // 지금 로그인한 관리자 본인이 "경매로 획득한 ADMIN 권한"인지 — 정지 시 기한 필수 여부를 결정한다.
+  const [actingIsTempAdmin, setActingIsTempAdmin] = useState(false)
+  // 정지 모달을 띄울 대상. null이면 닫힌 상태.
+  const [suspendTarget, setSuspendTarget] = useState<AdminUser | null>(null)
+
+  useEffect(() => {
+    shopApi.getMyRoleStatus()
+      .then(res => setActingIsTempAdmin(!!res.data?.active && res.data.targetRole === 'ADMIN'))
+      .catch(() => setActingIsTempAdmin(false))
+  }, [])
 
   const load = useCallback(() => {
     setLoading(true)
@@ -74,28 +87,27 @@ export default function AdminUsersPage() {
     }
   }
 
-  // 계정 정지 / 정지 해제. 정지는 대상 유저를 전 기기에서 로그아웃시키는 impactful 작업이라
-  // 명시적으로 확인받는다.
-  async function handleToggleStatus(user: AdminUser) {
-    const suspend = user.status === 'ACTIVE'
-    const message = suspend
-      ? MESSAGES.admin.users.suspendConfirm(user.nickname)
-      : MESSAGES.admin.users.unsuspendConfirm(user.nickname)
-    if (!confirm(message)) return
+  // 정지 해제. 정지와 달리 기한 선택이 필요 없어 확인창만으로 충분하다.
+  async function handleUnsuspend(user: AdminUser) {
+    if (!confirm(MESSAGES.admin.users.unsuspendConfirm(user.nickname))) return
 
     setPendingId(user.id)
     try {
-      await adminApi.updateStatus(user.id, suspend ? 'SUSPENDED' : 'ACTIVE')
-      setUsers(prev =>
-        prev.map(u =>
-          u.id === user.id ? { ...u, status: suspend ? 'SUSPENDED' : 'ACTIVE' } : u,
-        ),
-      )
+      await adminApi.updateStatus(user.id, 'ACTIVE')
+      setUsers(prev => prev.map(u => (u.id === user.id ? { ...u, status: 'ACTIVE' } : u)))
     } catch (err) {
       alert(err instanceof ApiError ? err.message : MESSAGES.admin.users.statusChangeFailed)
     } finally {
       setPendingId(null)
     }
+  }
+
+  // 정지는 대상 유저를 전 기기에서 로그아웃시키는 impactful 작업이라 모달로 명시적으로 확인받고,
+  // 경매로 획득한 ADMIN 권한이면 기한 선택도 여기서 함께 받는다(SuspendUserModal).
+  async function handleSuspendConfirm(suspendedUntil?: string) {
+    if (!suspendTarget) return
+    await adminApi.updateStatus(suspendTarget.id, 'SUSPENDED', suspendedUntil)
+    setUsers(prev => prev.map(u => (u.id === suspendTarget.id ? { ...u, status: 'SUSPENDED' } : u)))
   }
 
   return (
@@ -240,7 +252,7 @@ export default function AdminUsersPage() {
                       ) : user.status === 'SUSPENDED' ? (
                         <button
                           type="button"
-                          onClick={() => handleToggleStatus(user)}
+                          onClick={() => handleUnsuspend(user)}
                           disabled={busy}
                           className="rounded border border-green-300 px-2 py-1 text-xs text-green-700 hover:bg-green-50 disabled:opacity-50 dark:border-green-500/30 dark:text-green-400 dark:hover:bg-green-500/10"
                         >
@@ -249,11 +261,11 @@ export default function AdminUsersPage() {
                       ) : (
                         <button
                           type="button"
-                          onClick={() => handleToggleStatus(user)}
+                          onClick={() => setSuspendTarget(user)}
                           disabled={busy}
                           className="rounded border border-red-200 px-2 py-1 text-xs text-red-500 hover:bg-red-50 disabled:opacity-50 dark:border-red-500/30 dark:hover:bg-red-500/10"
                         >
-                          {busy ? '처리 중…' : '정지'}
+                          정지
                         </button>
                       )}
                     </td>
@@ -286,6 +298,14 @@ export default function AdminUsersPage() {
           </button>
         </div>
       )}
+
+      <SuspendUserModal
+        open={!!suspendTarget}
+        onClose={() => setSuspendTarget(null)}
+        targetNickname={suspendTarget?.nickname ?? ''}
+        actingIsTempAdmin={actingIsTempAdmin}
+        onConfirm={handleSuspendConfirm}
+      />
     </div>
   )
 }
