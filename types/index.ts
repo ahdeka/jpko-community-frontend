@@ -103,6 +103,9 @@ export interface AdminUser {
   displayGradeName: string;  // 등급 한글 표기 (예: "아시가루") — 백엔드 enum 표시명
   emailVerified: boolean;
   createdAt: string;
+  // 포인트로 산 차단권(#6 ActivityBlock)에 의해 현재 활동이 제한 중이면 그 해제 시각, 아니면 null.
+  // status(계정 정지)와는 완전히 별개 메커니즘 — 정지되지 않은 계정도 이 값이 있으면 차단 중이다.
+  activeBlockExpiresAt: string | null;
 }
 
 // 카테고리
@@ -555,16 +558,20 @@ export interface UpdateShopItemBody {
 
 // 정지 기한 프리셋 (백엔드 SuspendDurationPresetResponse와 1:1)
 // 조회는 정지 모달을 여는 어떤 관리자(ADMIN/ROOT)든 가능하지만, 구성(추가/삭제)은 ROOT 전용.
+// 이름·표시 순서는 따로 두지 않는다 — 프론트가 minutes로 라벨을 계산하고(lib/format.ts의
+// formatSuspendDuration), 항상 minutes 오름차순으로 정렬해 보여준다(백엔드가 이미 정렬해서 준다).
 export interface SuspendDurationPreset {
   id: number;
-  label: string;
   minutes: number;
-  displayOrder: number;
 }
 
 // 정지 기한 프리셋 등록 요청 (백엔드 CreateSuspendDurationPresetRequest와 1:1, ROOT 전용)
 export interface CreateSuspendDurationPresetBody {
-  label: string;
   minutes: number;
-  displayOrder: number;
+}
+
+// SUSPENDED_ACCOUNT 에러 응답의 부가 데이터(백엔드 SuspendedAccountResponse와 1:1).
+// suspendedUntil이 null이면 무기한 정지(ROOT만 가능).
+export interface SuspendedAccountData {
+  suspendedUntil: string | null;
 }

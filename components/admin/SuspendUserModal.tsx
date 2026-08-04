@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { adminApi } from '@/lib/api/admin'
 import { ApiError } from '@/lib/api/client'
+import { formatSuspendDuration } from '@/lib/format'
 import { MESSAGES } from '@/lib/messages'
 import type { SuspendDurationPreset } from '@/types'
 
@@ -130,7 +131,7 @@ export default function SuspendUserModal({ open, onClose, targetNickname, acting
                 disabled={confirming}
                 className={presetButtonClass(selectedMinutes === preset.minutes)}
               >
-                {preset.label}
+                {formatSuspendDuration(preset.minutes)}
               </button>
             ))}
             {!actingIsAdmin && (

@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { CONTACT_EMAIL, SITE_NAME } from '@/lib/site'
 import { MESSAGES } from '@/lib/messages'
+import { formatDateTime } from '@/lib/format'
 
 interface Props {
   open: boolean
@@ -10,18 +11,19 @@ interface Props {
   // 정지된 계정으로 로그인 시도할 때 유저가 입력한 이메일.
   // 문의 메일 본문에 미리 채워 넣어, 운영진이 어떤 계정인지 바로 확인할 수 있게 한다.
   email?: string
+  // 정지 해제 예정 시각(SUSPENDED_ACCOUNT 에러 응답의 부가 데이터). null이면 무기한 정지.
+  suspendedUntil?: string | null
 }
 
-// 정지(SUSPENDED)된 계정으로 로그인 시도했을 때 뜨는 안내 모달.
+// 정지(SUSPENDED)된 계정으로 로그인 시도했을 때(또는 세션 도중 정지가 감지됐을 때) 뜨는 안내 모달.
 //
 // 왜 빨간 한 줄이 아니라 모달인가:
 //  - "비밀번호 틀림"처럼 다시 시도하면 되는 오류와 성격이 전혀 다르다(유저가 할 수 있는 게 없다).
 //    폼 밑 에러 줄에 섞이면 유저가 입력 실수로 오해하므로, 시각적으로 확실히 분리한다.
 //
-// 문구를 일반적으로 쓰는 이유:
-//  - 백엔드는 정지 사유·기간을 내려주지 않는다(SUSPENDED_ACCOUNT 코드만 옴). 그래서 "왜/언제까지"를
-//    특정할 수 없다. 확인·해제 요청은 이메일 문의로 유도한다. (추후 백엔드가 사유/해제일을 주면 구체화)
-export default function SuspendedAccountModal({ open, onClose, email }: Props) {
+// 사유는 여전히 밝히지 않지만("관리자 재량"일 수도, 신고 누적일 수도 있어 프론트가 단정할 수 없다),
+// "누가"(관리자) "언제까지"(suspendedUntil)는 백엔드가 내려주는 값 그대로 보여준다.
+export default function SuspendedAccountModal({ open, onClose, email, suspendedUntil }: Props) {
   const dialogRef = useRef<HTMLDivElement>(null)
 
   // 열려 있는 동안: ESC로 닫기 + 배경 스크롤 잠금 + 모달에 포커스 이동.
@@ -89,6 +91,12 @@ export default function SuspendedAccountModal({ open, onClose, email }: Props) {
 
           <p className="text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">
             {MESSAGES.auth.suspendedAccount.description}
+          </p>
+
+          <p className="text-sm font-semibold text-red-600 dark:text-red-400">
+            {suspendedUntil
+              ? `${MESSAGES.auth.suspendedAccount.untilPrefix}${formatDateTime(suspendedUntil)}`
+              : MESSAGES.auth.suspendedAccount.indefinite}
           </p>
 
           {/* 이의/해제 안내 박스 — 유저가 다음에 뭘 하면 되는지 명확히 제시한다. */}

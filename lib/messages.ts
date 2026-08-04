@@ -150,7 +150,11 @@ export const MESSAGES = {
     },
     suspendedAccount: {
       title: '이용이 제한된 계정입니다',
-      description: '커뮤니티 이용약관 위반이 확인되어 계정 이용이 정지되었습니다.',
+      // 위반 여부를 단정하지 않는다 — 관리자 재량으로도 정지될 수 있어(포인트 차단 이의제기 처리 등),
+      // "약관 위반이 확인됨"이라 단정하면 사실과 다를 수 있다. 주체(관리자)만 명확히 밝힌다.
+      description: '관리자에 의해 계정 이용이 정지되었습니다.',
+      untilPrefix: '정지 해제 예정: ',
+      indefinite: '별도 안내 전까지 무기한 정지',
       inquiryTitle: '정지 사유 확인·해제 문의',
       inquiryDescriptionPrefix: '정지 사유가 궁금하거나 해제를 원하시면 아래 이메일로 문의해주세요. 확인이 빠르도록 ',
       inquiryDescriptionEmphasis: '가입하신 이메일 주소와 닉네임',
@@ -416,18 +420,15 @@ export const MESSAGES = {
     // 정지 기한 프리셋 관리 화면(/admin/settings/suspend-presets). ROOT 전용.
     suspendPresets: {
       title: '정지 기한 프리셋 설정',
-      description: 'ADMIN·ROOT가 유저 정지 시 고를 수 있는 기한 버튼 목록입니다.',
+      description: 'ADMIN·ROOT가 유저 정지 시 고를 수 있는 기한 버튼 목록입니다. 짧은 순서부터 자동으로 정렬됩니다.',
       loadFailed: '프리셋 목록을 불러오지 못했습니다.',
       empty: '등록된 프리셋이 없습니다.',
-      labelPlaceholder: '이름 (예: 1시간)',
       minutesPlaceholder: '기한(분)',
       addButton: '추가',
       adding: '추가 중…',
       addFailed: '프리셋 추가에 실패했습니다.',
       deleteConfirm: (label: string) => `'${label}' 프리셋을 삭제할까요?`,
       deleteFailed: '삭제에 실패했습니다.',
-      minutesColumn: '기한(분)',
-      orderColumn: '순서',
     },
     noticeForm: {
       titleRequired: '제목을 입력해주세요.',

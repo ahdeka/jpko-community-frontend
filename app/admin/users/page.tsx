@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { adminApi } from '@/lib/api/admin'
 import { ApiError } from '@/lib/api/client'
-import { formatDate } from '@/lib/format'
+import { formatDate, formatDateTime } from '@/lib/format'
 import { MESSAGES } from '@/lib/messages'
 import { useAuth } from '@/lib/auth-context'
 import SuspendUserModal from '@/components/admin/SuspendUserModal'
@@ -176,21 +176,32 @@ export default function AdminUsersPage() {
                       )}
                     </td>
 
-                    {/* 상태 */}
+                    {/* 상태: 계정 정지(status)와 포인트 차단권(#6 ActivityBlock)은 완전히 별개 메커니즘이라
+                        둘 다 있을 수 있다 — 정지/탈퇴/활성 뱃지에 더해, 차단 중이면 별도 뱃지를 함께 보여준다. */}
                     <td className="whitespace-nowrap px-3 py-2.5">
-                      {isDeleted ? (
-                        <span className="inline-block rounded bg-neutral-100 px-1.5 py-0.5 text-[11px] font-medium text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
-                          탈퇴
-                        </span>
-                      ) : user.status === 'SUSPENDED' ? (
-                        <span className="inline-block rounded bg-red-100 px-1.5 py-0.5 text-[11px] font-semibold text-red-600 dark:bg-red-500/15 dark:text-red-400">
-                          정지
-                        </span>
-                      ) : (
-                        <span className="inline-block rounded bg-green-100 px-1.5 py-0.5 text-[11px] font-semibold text-green-700 dark:bg-green-500/15 dark:text-green-400">
-                          활성
-                        </span>
-                      )}
+                      <div className="flex flex-wrap items-center gap-1">
+                        {isDeleted ? (
+                          <span className="inline-block rounded bg-neutral-100 px-1.5 py-0.5 text-[11px] font-medium text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+                            탈퇴
+                          </span>
+                        ) : user.status === 'SUSPENDED' ? (
+                          <span className="inline-block rounded bg-red-100 px-1.5 py-0.5 text-[11px] font-semibold text-red-600 dark:bg-red-500/15 dark:text-red-400">
+                            정지
+                          </span>
+                        ) : (
+                          <span className="inline-block rounded bg-green-100 px-1.5 py-0.5 text-[11px] font-semibold text-green-700 dark:bg-green-500/15 dark:text-green-400">
+                            활성
+                          </span>
+                        )}
+                        {user.activeBlockExpiresAt && (
+                          <span
+                            title={`${formatDateTime(user.activeBlockExpiresAt)}까지 활동 차단`}
+                            className="inline-block rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold text-amber-700 dark:bg-amber-500/15 dark:text-amber-400"
+                          >
+                            차단중
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     {/* 가입일 */}

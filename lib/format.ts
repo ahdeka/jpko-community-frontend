@@ -60,3 +60,12 @@ export function formatDateTime(dateString: string): string {
   // "2026-06-25 16:01:05" → "2026.06.25 16:01:05"
   return formatted.replace(/-/g, '.')
 }
+
+// 정지 기한 프리셋(SuspendDurationPreset)의 minutes를 "1시간"/"3일" 같은 라벨로 계산한다.
+// 프리셋에 별도 이름 필드가 없으므로(ROOT는 기한만 입력) 항상 이 값에서 유도한다.
+// 딱 떨어지지 않는 값(예: 90분)은 자연스럽게 "90분"으로 폴백한다.
+export function formatSuspendDuration(minutes: number): string {
+  if (minutes % 1440 === 0) return `${minutes / 1440}일`
+  if (minutes % 60 === 0) return `${minutes / 60}시간`
+  return `${minutes}분`
+}

@@ -5,7 +5,7 @@ import type { ReactNode } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import type { CheckInInfo, User } from '@/types'
 import { authApi } from '@/lib/api/auth'
-import { ApiError, SESSION_EXPIRED_EVENT, ACCOUNT_SUSPENDED_EVENT, ACTIVITY_BLOCKED_EVENT } from '@/lib/api/client'
+import { ApiError, SESSION_EXPIRED_EVENT, ACCOUNT_SUSPENDED_EVENT, ACTIVITY_BLOCKED_EVENT, type AccountSuspendedDetail } from '@/lib/api/client'
 import SuspendedAccountModal from '@/components/auth/SuspendedAccountModal'
 import CheckInResultModal from '@/components/points/CheckInResultModal'
 import RedirectingOverlay from '@/components/auth/RedirectingOverlay'
@@ -42,8 +42,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  // 세션 도중 계정이 정지됐을 때 띄우는 전역 안내 모달의 표시 여부.
+  // 세션 도중 계정이 정지됐을 때 띄우는 전역 안내 모달의 표시 여부 + 정지 해제 예정 시각(무기한이면 null).
   const [suspended, setSuspended] = useState(false)
+  const [suspendedUntil, setSuspendedUntil] = useState<string | null>(null)
   // 세션 도중(또는 새로고침 시점에) 임시 활동 차단이 감지됐는지. true면 children 대신
   // 전체 화면 ActivityBlockScreen을 렌더한다 — 정지와 달리 로그아웃은 하지 않는다.
   const [blocked, setBlocked] = useState(false)
@@ -85,11 +86,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // 처리: ① 화면상 로그인 상태 즉시 해제 → ② 전역 정지 모달 표시 → ③ 서버 로그아웃으로 httpOnly 쿠키 제거.
   // logout은 PublicAuthPaths라 정지 유저도 403 없이 호출 가능하다.
   useEffect(() => {
-    async function handleAccountSuspended() {
+    async function handleAccountSuspended(e: Event) {
       if (suspendHandledRef.current) return   // 다발적 403 중복 처리 차단
       suspendHandledRef.current = true
 
       setUser(null)
+      setSuspendedUntil((e as CustomEvent<AccountSuspendedDetail>).detail?.suspendedUntil ?? null)
       setSuspended(true)
       try {
         await authApi.logout()
@@ -158,6 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       <SuspendedAccountModal
         open={suspended}
         onClose={() => { window.location.href = '/login' }}
+        suspendedUntil={suspendedUntil}
       />
       <CheckInResultModal
         info={checkInResult}

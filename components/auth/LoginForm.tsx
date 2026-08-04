@@ -8,6 +8,7 @@ import { ApiError } from '@/lib/api/client'
 import { useAuth } from '@/lib/auth-context'
 import { useRedirectIfAuthenticated } from '@/lib/use-auth-guard'
 import { MESSAGES } from '@/lib/messages'
+import type { SuspendedAccountData } from '@/types'
 import RedirectingOverlay from './RedirectingOverlay'
 import SuspendedAccountModal from './SuspendedAccountModal'
 
@@ -33,6 +34,7 @@ export default function LoginForm() {
   const [loading, setLoading] = useState(false)
   // 정지 계정은 빨간 한 줄이 아니라 전용 모달로 안내한다(다시 시도해도 소용없는 상태라 성격이 다르다).
   const [suspendedOpen, setSuspendedOpen] = useState(false)
+  const [suspendedUntil, setSuspendedUntil] = useState<string | null>(null)
 
   function validate(): FieldErrors {
     const errs: FieldErrors = {}
@@ -69,6 +71,7 @@ export default function LoginForm() {
           setApiError(MESSAGES.auth.login.invalidCredentials)
         } else if (e.code === 'SUSPENDED_ACCOUNT') {
           // 비밀번호까지 맞아야 도달하는 분기. 인라인 에러 대신 모달로 상세 안내한다.
+          setSuspendedUntil((e.data as SuspendedAccountData | undefined)?.suspendedUntil ?? null)
           setSuspendedOpen(true)
         } else {
           setApiError(e.message)
@@ -154,6 +157,7 @@ export default function LoginForm() {
         onClose={() => setSuspendedOpen(false)}
         // 문의 메일 프리필용. 식별자로 이메일을 입력한 경우에만 넘긴다(아이디면 비운다).
         email={loginId.includes('@') ? loginId.trim().toLowerCase() : undefined}
+        suspendedUntil={suspendedUntil}
       />
     </>
   )
