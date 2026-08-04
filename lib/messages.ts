@@ -150,17 +150,25 @@ export const MESSAGES = {
     },
     suspendedAccount: {
       title: '이용이 제한된 계정입니다',
+      loading: '정지 정보를 불러오는 중…',
+      loadFailed: '정지 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.',
+      actionFailed: '요청에 실패했습니다. 잠시 후 다시 시도해주세요.',
       // 위반 여부를 단정하지 않는다 — 관리자 재량으로도 정지될 수 있어(포인트 차단 이의제기 처리 등),
       // "약관 위반이 확인됨"이라 단정하면 사실과 다를 수 있다. 주체(관리자)만 명확히 밝힌다.
       description: '관리자에 의해 계정 이용이 정지되었습니다.',
       untilPrefix: '정지 해제 예정: ',
       indefinite: '별도 안내 전까지 무기한 정지',
+      unlockTitle: '포인트로 즉시 해제',
+      unlockDescription: (price: number) => `${price.toLocaleString()}P를 지불하면 즉시 정지가 해제됩니다.`,
+      unlockButton: '포인트로 즉시 해제',
+      unlocking: '해제 중…',
       inquiryTitle: '정지 사유 확인·해제 문의',
       inquiryDescriptionPrefix: '정지 사유가 궁금하거나 해제를 원하시면 아래 이메일로 문의해주세요. 확인이 빠르도록 ',
       inquiryDescriptionEmphasis: '가입하신 이메일 주소와 닉네임',
       inquiryDescriptionSuffix: '을 함께 적어주세요.',
       mailSubject: (siteName: string) => `[${siteName}] 계정 정지 문의`,
       mailBody: '아래 정보를 확인해 계정 정지 관련 문의를 남깁니다.',
+      logout: '로그아웃',
     },
   },
 
@@ -417,9 +425,10 @@ export const MESSAGES = {
       deleteFailed: '삭제에 실패했습니다.',
       empty: '등록된 공지가 없습니다.',
     },
-    // 정지 기한 프리셋 관리 화면(/admin/settings/suspend-presets). ROOT 전용.
+    // 정지 관련 설정 화면(/admin/settings/suspend-presets) — 정지 기한 프리셋 + 정지 포인트 해제 가격. ROOT 전용.
     suspendPresets: {
-      title: '정지 기한 프리셋 설정',
+      title: '정지 설정',
+      presetsTitle: '정지 기한 프리셋',
       description: 'ADMIN·ROOT가 유저 정지 시 고를 수 있는 기한 버튼 목록입니다. 짧은 순서부터 자동으로 정렬됩니다.',
       loadFailed: '프리셋 목록을 불러오지 못했습니다.',
       empty: '등록된 프리셋이 없습니다.',
@@ -429,6 +438,15 @@ export const MESSAGES = {
       addFailed: '프리셋 추가에 실패했습니다.',
       deleteConfirm: (label: string) => `'${label}' 프리셋을 삭제할까요?`,
       deleteFailed: '삭제에 실패했습니다.',
+      // 정지를 포인트로 즉시 해제할 때의 가격 설정 (같은 화면 안에 함께 둔다).
+      unlockPriceTitle: '정지 포인트 해제 가격',
+      unlockPriceDescription: '관리자에게 정지당한 유저가 본인 포인트로 즉시 해제할 때 지불하는 가격입니다.',
+      unlockPriceLoadFailed: '가격을 불러오지 못했습니다.',
+      unlockPricePlaceholder: '가격(P)',
+      unlockPriceSave: '저장',
+      unlockPriceSaving: '저장 중…',
+      unlockPriceSaved: '저장되었습니다.',
+      unlockPriceSaveFailed: '저장에 실패했습니다.',
     },
     noticeForm: {
       titleRequired: '제목을 입력해주세요.',

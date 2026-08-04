@@ -1,5 +1,5 @@
 import { apiClient } from './client'
-import { PageResponse, MyPost, MyComment, PublicProfile, UserPost } from '@/types'
+import { PageResponse, MyPost, MyComment, PublicProfile, UserPost, SuspensionStatus } from '@/types'
 
 // 마이페이지 관련 API. 대부분의 엔드포인트는 로그인(쿠키) 필수이며,
 // apiClient가 credentials:'include'로 호출하므로 브라우저 쿠키가 자동 전송된다.
@@ -58,4 +58,13 @@ export const usersApi = {
   // 실패 code: WRONG_PASSWORD(비밀번호 불일치), ALREADY_WITHDRAWN(이미 탈퇴).
   withdraw: (password: string) =>
     apiClient.delete<void>('/api/users/me', { password }),
+
+  // 본인의 정지(SUSPENDED) 현황. 정지 중인 계정도 호출 가능(client.ts의 SUSPENDED_ACCOUNT
+  // 인터셉트 대상에서 백엔드가 예외 처리하는 경로 — global/security/SuspendAllowedPaths).
+  getMySuspensionStatus: () =>
+    apiClient.get<SuspensionStatus>('/api/users/me/suspension'),
+
+  // 포인트를 지불해 본인 정지를 즉시 해제. 정지 중인 계정도 호출 가능.
+  unlockSuspension: () =>
+    apiClient.post<void>('/api/users/me/suspension/unlock'),
 }

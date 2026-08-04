@@ -12,7 +12,7 @@ interface Props {
 }
 
 // 로그인(또는 회원가입 직후 자동 로그인) 직후 출첵 결과를 안내하는 모달.
-// SuspendedAccountModal과 동일한 모달 셸(ESC 닫기, 배경 스크롤 잠금, 포커스 이동)을 쓰되
+// TransferPointsModal과 동일한 모달 셸(ESC 닫기, 배경 스크롤 잠금, 포커스 이동)을 쓰되
 // 경고성이 아니라 중립적인 톤(오렌지/뉴트럴)으로 꾸민다. amount는 음수(차감)일 수도 있다.
 export default function CheckInResultModal({ info, onClose }: Props) {
   const dialogRef = useRef<HTMLDivElement>(null)

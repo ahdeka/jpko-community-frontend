@@ -1,12 +1,12 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import type { ReactNode } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import type { CheckInInfo, User } from '@/types'
 import { authApi } from '@/lib/api/auth'
-import { ApiError, SESSION_EXPIRED_EVENT, ACCOUNT_SUSPENDED_EVENT, ACTIVITY_BLOCKED_EVENT, type AccountSuspendedDetail } from '@/lib/api/client'
-import SuspendedAccountModal from '@/components/auth/SuspendedAccountModal'
+import { ApiError, SESSION_EXPIRED_EVENT, ACCOUNT_SUSPENDED_EVENT, ACTIVITY_BLOCKED_EVENT } from '@/lib/api/client'
+import SuspendedScreen from '@/components/auth/SuspendedScreen'
 import CheckInResultModal from '@/components/points/CheckInResultModal'
 import RedirectingOverlay from '@/components/auth/RedirectingOverlay'
 import ActivityBlockScreen from '@/components/auth/ActivityBlockScreen'
@@ -31,7 +31,7 @@ interface AuthContextType {
   // 성공 시 호출하며, AuthProvider가 렌더하는 CheckInResultModal이 이 값을 소비하고 null로 되돌린다.
   // 두 폼 모두 성공 즉시 router.replace로 이동하고 useRedirectIfAuthenticated가 폼을 언마운트하므로,
   // 폼 내부가 아니라 여기(AuthProvider)에서 상태를 들고 있어야 페이지 전환 중에도 모달이 살아남는다
-  // (SuspendedAccountModal과 동일한 이유).
+  // (SuspendedScreen/ActivityBlockScreen과 동일한 이유).
   notifyCheckInResult: (info: CheckInInfo) => void
 }
 
@@ -42,17 +42,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  // 세션 도중 계정이 정지됐을 때 띄우는 전역 안내 모달의 표시 여부 + 정지 해제 예정 시각(무기한이면 null).
+  // 세션 도중(또는 새로고침 시점에) 관리자 정지가 감지됐는지. true면 children 대신 전체 화면
+  // SuspendedScreen을 렌더한다 — 정지돼도 세션 자체는 유효하다(로그인은 되고 출첵도 처리됨).
   const [suspended, setSuspended] = useState(false)
-  const [suspendedUntil, setSuspendedUntil] = useState<string | null>(null)
   // 세션 도중(또는 새로고침 시점에) 임시 활동 차단이 감지됐는지. true면 children 대신
   // 전체 화면 ActivityBlockScreen을 렌더한다 — 정지와 달리 로그아웃은 하지 않는다.
   const [blocked, setBlocked] = useState(false)
   // 로그인/회원가입 직후 보여줄 출첵 결과. null이면 모달을 띄우지 않는다.
   const [checkInResult, setCheckInResult] = useState<CheckInInfo | null>(null)
-  // 여러 요청이 동시에 403을 받아도 로그아웃/상태정리를 딱 한 번만 하기 위한 가드.
-  // 리다이렉트(하드 네비게이션) 시 앱이 리로드되며 자연 초기화된다.
-  const suspendHandledRef = useRef(false)
 
   const fetchUser = useCallback(async () => {
     try {
@@ -83,21 +80,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   // 세션 도중 계정이 정지되면 client.ts가 이 이벤트를 쏜다(403 + code SUSPENDED_ACCOUNT).
-  // 처리: ① 화면상 로그인 상태 즉시 해제 → ② 전역 정지 모달 표시 → ③ 서버 로그아웃으로 httpOnly 쿠키 제거.
-  // logout은 PublicAuthPaths라 정지 유저도 403 없이 호출 가능하다.
+  // 활동 차단과 마찬가지로 로그아웃하지 않는다 — 정지된 계정도 세션은 유효하고, SuspendedScreen이
+  // 그 안에서 정지 현황 조회·포인트로 즉시 해제까지 처리한다(SuspendAllowedPaths로 제한된 API만 사용).
   useEffect(() => {
-    async function handleAccountSuspended(e: Event) {
-      if (suspendHandledRef.current) return   // 다발적 403 중복 처리 차단
-      suspendHandledRef.current = true
-
-      setUser(null)
-      setSuspendedUntil((e as CustomEvent<AccountSuspendedDetail>).detail?.suspendedUntil ?? null)
+    function handleAccountSuspended() {
       setSuspended(true)
-      try {
-        await authApi.logout()
-      } catch {
-        // 로그아웃 요청이 실패해 쿠키가 남아도, 다음 로드 때 /me가 다시 403을 받아 재시도되므로 상태에 갇히지 않는다.
-      }
     }
     window.addEventListener(ACCOUNT_SUSPENDED_EVENT, handleAccountSuspended)
     return () => window.removeEventListener(ACCOUNT_SUSPENDED_EVENT, handleAccountSuspended)
@@ -148,20 +135,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider value={{ user, isLoading, fetchUser, logout, clearAuth, notifyCheckInResult }}>
-      {/* 온보딩 게이트가 걸린 동안에는 리다이렉트가 끝날 때까지 본문 대신 전환 오버레이만 보여줘
+      {/* 정지(suspended)가 최우선이다 — 정지된 유저는 /api/auth/me 자체가 403이라 user가 null로
+          남으므로 gating(=!!user 전제)이 애초에 성립하지 않고, blocked보다도 먼저 확인해 우선순위
+          충돌 없이 SuspendedScreen을 보여준다.
+          온보딩 게이트가 걸린 동안에는 리다이렉트가 끝날 때까지 본문 대신 전환 오버레이만 보여줘
           게이트 대상 페이지 내용이 잠깐 노출되는 것을 막는다.
-          차단(blocked)은 그보다 먼저 걸린다 — 차단된 유저는 /api/auth/me 자체가 실패해 user가
-          null이라 gating(=!!user 전제)이 애초에 성립하지 않으므로 우선순위 충돌은 없다. */}
-      {gating ? <RedirectingOverlay /> : blocked ? (
+          차단(blocked)도 같은 이유로 gating보다 먼저 걸린다. */}
+      {suspended ? (
+        <SuspendedScreen onResolved={() => { window.location.href = '/' }} />
+      ) : gating ? <RedirectingOverlay /> : blocked ? (
         <ActivityBlockScreen onResolved={() => { window.location.href = '/' }} />
       ) : children}
-      {/* 세션 도중 정지된 경우의 전역 안내. 닫으면 로그인 화면으로 하드 네비게이션해
-          RSC 캐시·서버 페치 데이터까지 완전 초기화한다. */}
-      <SuspendedAccountModal
-        open={suspended}
-        onClose={() => { window.location.href = '/login' }}
-        suspendedUntil={suspendedUntil}
-      />
       <CheckInResultModal
         info={checkInResult}
         onClose={() => setCheckInResult(null)}

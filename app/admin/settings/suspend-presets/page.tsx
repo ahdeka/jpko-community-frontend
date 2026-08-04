@@ -27,6 +27,14 @@ export default function AdminSuspendPresetsPage() {
   const [adding, setAdding] = useState(false)
   const [addError, setAddError] = useState<string | null>(null)
 
+  // 정지 포인트 해제 가격. 프리셋과 별개 API지만 같은 화면(정지 관련 ROOT 설정)에 함께 둔다.
+  const [price, setPrice] = useState('')
+  const [priceLoading, setPriceLoading] = useState(true)
+  const [priceLoadError, setPriceLoadError] = useState<string | null>(null)
+  const [savingPrice, setSavingPrice] = useState(false)
+  const [priceSaveError, setPriceSaveError] = useState<string | null>(null)
+  const [priceSaved, setPriceSaved] = useState(false)
+
   const load = useCallback(() => {
     setLoading(true)
     setError(null)
@@ -37,6 +45,15 @@ export default function AdminSuspendPresetsPage() {
   }, [])
 
   useEffect(load, [load])
+
+  useEffect(() => {
+    setPriceLoading(true)
+    setPriceLoadError(null)
+    adminApi.getSuspendUnlockPrice()
+      .then(res => setPrice(res.data ? String(res.data.price) : ''))
+      .catch((e: unknown) => setPriceLoadError(e instanceof ApiError ? e.message : T.unlockPriceLoadFailed))
+      .finally(() => setPriceLoading(false))
+  }, [])
 
   if (!user || !isRoot(user.role)) {
     return (
@@ -82,11 +99,68 @@ export default function AdminSuspendPresetsPage() {
     }
   }
 
+  async function handleSavePrice(e: React.FormEvent) {
+    e.preventDefault()
+    if (savingPrice) return
+    const parsedPrice = Number(price)
+    if (!price || !Number.isInteger(parsedPrice) || parsedPrice <= 0) {
+      setPriceSaveError(T.unlockPricePlaceholder)
+      return
+    }
+
+    setPriceSaveError(null)
+    setSavingPrice(true)
+    try {
+      await adminApi.updateSuspendUnlockPrice(parsedPrice)
+      setPriceSaved(true)
+      setTimeout(() => setPriceSaved(false), 2000)
+    } catch (err) {
+      setPriceSaveError(err instanceof ApiError ? err.message : T.unlockPriceSaveFailed)
+    } finally {
+      setSavingPrice(false)
+    }
+  }
+
   return (
     <div className="flex flex-col gap-6">
+      <h1 className="text-xl font-bold">{T.title}</h1>
+
+      {/* 정지 포인트 해제 가격 */}
+      <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+        <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">{T.unlockPriceTitle}</p>
+        <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">{T.unlockPriceDescription}</p>
+
+        {priceLoading ? (
+          <p className="mt-3 text-xs text-neutral-400">불러오는 중…</p>
+        ) : priceLoadError ? (
+          <p className="mt-3 text-xs text-red-500">{priceLoadError}</p>
+        ) : (
+          <form onSubmit={handleSavePrice} className="mt-3 flex flex-wrap items-center gap-3">
+            <input
+              type="number"
+              min={1}
+              placeholder={T.unlockPricePlaceholder}
+              value={price}
+              onChange={e => setPrice(e.target.value)}
+              className="w-32 rounded border border-neutral-300 bg-white px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+            />
+            <button
+              type="submit"
+              disabled={savingPrice}
+              className="rounded-md bg-orange-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-orange-700 disabled:opacity-50"
+            >
+              {savingPrice ? T.unlockPriceSaving : T.unlockPriceSave}
+            </button>
+            {priceSaved && <span className="text-xs text-green-600 dark:text-green-400">{T.unlockPriceSaved}</span>}
+            {priceSaveError && <p className="w-full text-xs text-red-500">{priceSaveError}</p>}
+          </form>
+        )}
+      </div>
+
+      {/* 정지 기한 프리셋 */}
       <div>
-        <h1 className="text-xl font-bold">{T.title}</h1>
-        <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{T.description}</p>
+        <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">{T.presetsTitle}</p>
+        <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">{T.description}</p>
       </div>
 
       <form onSubmit={handleAdd} className="flex flex-wrap items-start gap-3 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">

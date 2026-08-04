@@ -8,9 +8,7 @@ import { ApiError } from '@/lib/api/client'
 import { useAuth } from '@/lib/auth-context'
 import { useRedirectIfAuthenticated } from '@/lib/use-auth-guard'
 import { MESSAGES } from '@/lib/messages'
-import type { SuspendedAccountData } from '@/types'
 import RedirectingOverlay from './RedirectingOverlay'
-import SuspendedAccountModal from './SuspendedAccountModal'
 
 interface FieldErrors {
   // 로그인 식별자(아이디 또는 이메일) 입력 칸의 에러.
@@ -32,9 +30,6 @@ export default function LoginForm() {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [apiError, setApiError] = useState('')
   const [loading, setLoading] = useState(false)
-  // 정지 계정은 빨간 한 줄이 아니라 전용 모달로 안내한다(다시 시도해도 소용없는 상태라 성격이 다르다).
-  const [suspendedOpen, setSuspendedOpen] = useState(false)
-  const [suspendedUntil, setSuspendedUntil] = useState<string | null>(null)
 
   function validate(): FieldErrors {
     const errs: FieldErrors = {}
@@ -58,6 +53,8 @@ export default function LoginForm() {
     try {
       // 백엔드 LoginRequest가 loginId를 trim().toLowerCase()로 정규화하므로(아이디·이메일 공통),
       // 저장된 값과 확실히 매칭되도록 전송값도 동일하게 맞춘다(대소문자·공백 차이로 인한 실패 방지).
+      // 정지(SUSPENDED)된 계정도 여기서 막히지 않는다 — 로그인은 되고, fetchUser() 이후 AuthProvider가
+      // 전역 SuspendedScreen으로 전환한다(정지된 계정도 출첵은 처리되고, 그 화면에서 포인트로 즉시 해제할 수 있다).
       const res = await authApi.login({ loginId: loginId.trim().toLowerCase(), password })
       await fetchUser()
       if (res.data?.checkIn) notifyCheckInResult(res.data.checkIn)
@@ -69,10 +66,6 @@ export default function LoginForm() {
       if (e instanceof ApiError) {
         if (e.code === 'WRONG_PASSWORD' || e.code === 'USER_NOT_FOUND') {
           setApiError(MESSAGES.auth.login.invalidCredentials)
-        } else if (e.code === 'SUSPENDED_ACCOUNT') {
-          // 비밀번호까지 맞아야 도달하는 분기. 인라인 에러 대신 모달로 상세 안내한다.
-          setSuspendedUntil((e.data as SuspendedAccountData | undefined)?.suspendedUntil ?? null)
-          setSuspendedOpen(true)
         } else {
           setApiError(e.message)
         }
@@ -151,14 +144,6 @@ export default function LoginForm() {
         </Link>
       </div>
       </form>
-
-      <SuspendedAccountModal
-        open={suspendedOpen}
-        onClose={() => setSuspendedOpen(false)}
-        // 문의 메일 프리필용. 식별자로 이메일을 입력한 경우에만 넘긴다(아이디면 비운다).
-        email={loginId.includes('@') ? loginId.trim().toLowerCase() : undefined}
-        suspendedUntil={suspendedUntil}
-      />
     </>
   )
 }

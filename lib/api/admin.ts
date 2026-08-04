@@ -3,6 +3,7 @@ import {
   PageResponse, AdminUser, UserStatus,
   BlockAppeal, RolePurchaseAdmin, ShopItem, CreateShopItemBody, UpdateShopItemBody,
   UpdateRoleAuctionRoundBody, SuspendDurationPreset, CreateSuspendDurationPresetBody,
+  SuspendUnlockPrice,
 } from '@/types'
 
 // 관리자 전용 회원 관리 API.
@@ -52,6 +53,13 @@ export const adminApi = {
 
   deleteSuspendPreset: (presetId: number) =>
     apiClient.delete<void>(`/api/admin/settings/suspend-presets/${presetId}`),
+
+  // 관리자 정지(SUSPENDED)를 본인이 포인트로 즉시 해제할 때의 가격. 조회/변경 모두 ROOT 전용.
+  getSuspendUnlockPrice: () =>
+    apiClient.get<SuspendUnlockPrice>('/api/admin/settings/suspend-unlock-price'),
+
+  updateSuspendUnlockPrice: (price: number) =>
+    apiClient.patch<void>('/api/admin/settings/suspend-unlock-price', { price }),
 
   // 이하 전부 ROOT 전용(백엔드가 hasRole('ROOT')로 보호, ADMIN도 접근 불가) — 감시·관리 대상이
   // ADMIN 자신일 수 있어 동료 ADMIN에게는 노출/허용하지 않는다.

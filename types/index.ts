@@ -570,8 +570,16 @@ export interface CreateSuspendDurationPresetBody {
   minutes: number;
 }
 
-// SUSPENDED_ACCOUNT 에러 응답의 부가 데이터(백엔드 SuspendedAccountResponse와 1:1).
-// suspendedUntil이 null이면 무기한 정지(ROOT만 가능).
-export interface SuspendedAccountData {
+// 본인의 정지 현황 (백엔드 SuspensionStatusResponse와 1:1, GET /api/users/me/suspension).
+// suspended가 false면 suspendedUntil/unlockPrice는 의미 없다(null).
+export interface SuspensionStatus {
+  suspended: boolean;
   suspendedUntil: string | null;
+  unlockPrice: number | null;
+}
+
+// 정지를 포인트로 즉시 해제할 때의 가격 (백엔드 SuspendUnlockPriceResponse와 1:1).
+// 조회/변경 모두 ROOT 전용.
+export interface SuspendUnlockPrice {
+  price: number;
 }

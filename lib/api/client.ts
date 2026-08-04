@@ -1,6 +1,6 @@
 // lib/api/client.ts
 
-import { ApiResponse, SuspendedAccountData } from '@/types'
+import { ApiResponse } from '@/types'
 import { MESSAGES } from '@/lib/messages'
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL
@@ -9,10 +9,7 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public status: number,
-    public code?: string,
-    // 에러 응답의 부가 데이터(CustomException.getData()). 대부분의 에러는 없다(undefined).
-    // SUSPENDED_ACCOUNT처럼 호출부가 구체적인 안내를 보여줘야 할 때만 채워진다.
-    public data?: unknown
+    public code?: string
   ) {
     super(message)
     this.name = 'ApiError'
@@ -27,11 +24,10 @@ export const SESSION_EXPIRED_EVENT = 'auth:session-expired'
 
 // 세션 도중 계정이 정지(SUSPENDED)됐음을 브라우저 전역에 알리는 이벤트 이름.
 // 관리자가 계정을 정지시키면 백엔드 JWT 필터가 매 요청마다 403 + code SUSPENDED_ACCOUNT를 준다.
-// accessToken은 httpOnly 쿠키라 JS로 못 지우므로, AuthProvider가 이 이벤트를 받아 서버 로그아웃(Set-Cookie)으로
-// 쿠키를 정리하고 로그인 상태를 비운다. 세션 만료(401)와 성격이 달라 별도 이벤트로 분리한다.
-// detail에 정지 해제 시각(suspendedUntil)을 실어, 전역 안내 모달이 "언제까지 정지인지" 보여줄 수 있게 한다.
+// 정지된 계정도 로그인은 유지되고(SuspendAllowedPaths로 제한된 API만 계속 쓸 수 있다), AuthProvider가
+// 이 이벤트를 받아 전체 화면 SuspendedScreen으로 전환한다 — 그 화면이 자체 API로 상세 정보를 조회한다
+// (ActivityBlockScreen과 동일한 패턴). 세션 만료(401)와 성격이 달라 별도 이벤트로 분리한다.
 export const ACCOUNT_SUSPENDED_EVENT = 'auth:account-suspended'
-export type AccountSuspendedDetail = SuspendedAccountData
 
 // 세션 도중 계정이 임시 활동 차단(#6, ACTIVITY_BLOCKED)됐음을 브라우저 전역에 알리는 이벤트 이름.
 // 정지(SUSPENDED)와 달리 세션 자체는 유효하고, 백엔드가 허용한 몇 개 경로
@@ -137,27 +133,24 @@ async function request<T>(
         ? MESSAGES.common.fileTooLarge
         : MESSAGES.common.requestFailed
     let code: string | undefined
-    let data: unknown
 
     try {
       const errData: ApiResponse<T> = await response.json()
       message = errData.message ?? message
       code = errData.code
-      data = errData.data
     } catch {}
 
     // 정지 계정 전역 감지. refresh로 풀 수 있는 문제가 아니므로(재발급해도 다시 403) 위 401 재시도 흐름과 분리한다.
-    // login/signup 등 auth 플로우는 화면(LoginForm)이 자체 모달로 처리하므로 제외해 이중 처리를 막는다.
+    // login은 이제 SUSPENDED_ACCOUNT를 던지지 않으므로(정지된 계정도 로그인은 된다) 실질적으로
+    // /api/auth/me 등 로그인 이후 요청에서만 감지된다. isAuthFlow 제외는 다른 두 이벤트와의 일관성 목적.
     // (/api/auth/me는 isAuthFlow에서 빠져 있어, 정지 상태로 새로고침해도 여기서 잡힌다.)
-    // 아래에서 그대로 ApiError를 던지므로 호출부의 개별 처리(예: LoginForm)도 영향받지 않는다.
     if (
       response.status === 403 &&
       code === 'SUSPENDED_ACCOUNT' &&
       typeof window !== 'undefined' &&
       !isAuthFlow(endpoint)
     ) {
-      const detail: AccountSuspendedDetail = { suspendedUntil: (data as SuspendedAccountData | undefined)?.suspendedUntil ?? null }
-      window.dispatchEvent(new CustomEvent(ACCOUNT_SUSPENDED_EVENT, { detail }))
+      window.dispatchEvent(new Event(ACCOUNT_SUSPENDED_EVENT))
     }
 
     // 임시 활동 차단 전역 감지. 백엔드가 허용한 경로(차단 상태 조회/해제/이의제기, 로그아웃) 자체가
@@ -172,7 +165,7 @@ async function request<T>(
       window.dispatchEvent(new Event(ACTIVITY_BLOCKED_EVENT))
     }
 
-    throw new ApiError(message, response.status, code, data)
+    throw new ApiError(message, response.status, code)
   }
 
   return response.json()

@@ -12,7 +12,7 @@ const T = MESSAGES.shop.blockScreen
 
 interface Props {
   // 차단이 해제됐을 때(직접 해제 성공, 또는 조회 시점에 이미 만료됨) 호출된다.
-  // 하드 네비게이션으로 앱 전체 상태를 리셋한다 — SuspendedAccountModal과 같은 이유.
+  // 하드 네비게이션으로 앱 전체 상태를 리셋한다 — SuspendedScreen과 같은 이유.
   onResolved: () => void
 }
 
