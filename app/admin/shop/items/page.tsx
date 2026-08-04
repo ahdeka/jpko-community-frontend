@@ -71,11 +71,29 @@ export default function AdminShopItemsPage() {
     )
   }
 
+  // 타입별 필수값을 제출 전에 미리 확인한다. 빈 칸으로 제출하면 백엔드가 400으로 거부하는데,
+  // 그 실패가 작은 빨간 글씨로만 표시돼 "등록해도 아무 변화가 없다"로 오인되기 쉬웠다.
+  function validateCreateForm(): string | null {
+    if (!form.name.trim()) return '상품명을 입력해주세요.'
+
+    if (form.type === 'BLOCK') {
+      if (!form.price || form.price <= 0) return '가격(P)을 입력해주세요.'
+      if (!form.durationMinutes || form.durationMinutes <= 0) return '지속 시간(분)을 입력해주세요.'
+    } else {
+      if (!form.quantity || form.quantity <= 0) return '선발 인원을 입력해주세요.'
+      if (!form.minPrice || form.minPrice <= 0) return '최저가(P)를 입력해주세요.'
+      if (!form.durationDays || form.durationDays <= 0) return '기간(일)을 입력해주세요.'
+      if (!form.cadenceDays || form.cadenceDays <= 0) return '개설 주기(일)를 입력해주세요.'
+    }
+    return null
+  }
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
     if (creating) return
-    if (!form.name.trim()) {
-      setCreateError('상품명을 입력해주세요.')
+    const validationError = validateCreateForm()
+    if (validationError) {
+      setCreateError(validationError)
       return
     }
 

@@ -204,6 +204,28 @@ function NotificationBody({ n, meta }: { n: Notification; meta: NotificationMeta
     )
   }
 
+  // 관리자 권한 경매 낙찰: 시스템 정산이라 발신자가 없다.
+  if (n.type === 'ROLE_AUCTION_WON') {
+    return (
+      <>
+        {MESSAGES.points.notification.auctionWonPrefix}
+        <span className={`font-semibold ${meta.accentText}`}>{(n.amount ?? 0).toLocaleString()}</span>
+        {MESSAGES.points.notification.auctionWonSuffix}
+      </>
+    )
+  }
+
+  // 관리자 권한 경매 낙첨: 마찬가지로 발신자가 없다.
+  if (n.type === 'ROLE_AUCTION_LOST') {
+    return (
+      <>
+        {MESSAGES.points.notification.auctionLostPrefix}
+        <span className={`font-semibold ${meta.accentText}`}>{(n.amount ?? 0).toLocaleString()}</span>
+        {MESSAGES.points.notification.auctionLostSuffix}
+      </>
+    )
+  }
+
   const who = <span className="font-semibold text-neutral-900 dark:text-white">{notificationSenderLabel(n)}</span>
   // 액션 키워드는 좌측 색상 아이콘이 이미 종류를 알려주므로 별도 색을 넣지 않고 본문과 같은 톤으로 둔다.
   const keyword = meta.label

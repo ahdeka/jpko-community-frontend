@@ -2,7 +2,6 @@ import Link from 'next/link'
 import type { PublicProfile as PublicProfileData, UserPost, PageResponse } from '@/types'
 import { formatDate, formatRelativeTime } from '@/lib/format'
 import { categoryShortLabel } from '@/lib/category'
-import { gradeMeta } from '@/lib/grade'
 import AdminBadge from '@/components/common/AdminBadge'
 import Pagination from '@/components/common/Pagination'
 import ProfileReportButton from '@/components/user/ProfileReportButton'
@@ -58,7 +57,6 @@ interface Props {
 }
 
 export default function PublicProfile({ profile, postsPage, currentPage, nickname }: Props) {
-  const grade = gradeMeta(profile.grade)
   const posts = postsPage.content
 
   return (
@@ -71,15 +69,7 @@ export default function PublicProfile({ profile, postsPage, currentPage, nicknam
             <h1 className="truncate text-lg font-bold text-neutral-900 dark:text-neutral-100">
               {profile.nickname}
             </h1>
-            {/* 운영진이면 왕관 뱃지만(등급 SHOGUN 라벨과 중복되므로 등급 뱃지는 생략).
-                일반 회원은 등급 뱃지를 보여준다. */}
-            {profile.adminAuthor ? (
-              <AdminBadge />
-            ) : (
-              <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold ${grade.badge}`}>
-                {grade.label}
-              </span>
-            )}
+            {profile.adminAuthor && <AdminBadge />}
             {profile.suspended && (
               <span className="shrink-0 rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-600 dark:bg-red-500/20 dark:text-red-400">
                 이용 정지

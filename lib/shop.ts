@@ -1,7 +1,7 @@
 import type { ShopItemType, UserRole } from '@/types'
 
-// 상점 표시 메타데이터의 단일 출처. lib/grade.ts(GRADES + gradeMeta), lib/point.ts(TRANSACTION_TYPES)와
-// 같은 패턴 — API 호출과 분리된 순수 표시 로직만 모은다.
+// 상점 표시 메타데이터의 단일 출처. lib/point.ts(TRANSACTION_TYPES)와 같은 패턴 —
+// API 호출과 분리된 순수 표시 로직만 모은다.
 
 export interface ShopItemTypeMeta {
   value: ShopItemType

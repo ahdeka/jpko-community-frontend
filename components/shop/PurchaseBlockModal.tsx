@@ -146,7 +146,40 @@ export default function PurchaseBlockModal({ open, onClose, targetUserId, target
               <p className="py-6 text-center text-sm text-neutral-400">현재 판매 중인 차단권이 없습니다.</p>
             )}
 
-            {selectedItem && (
+            {/* 상품이 2개 이상이면 라디오 카드 목록으로 골라야 한다 — 1개뿐이면 자동 선택된 상세만 보여준다. */}
+            {items && items.length > 1 && (
+              <div role="radiogroup" aria-label="차단권 선택" className="mb-4 flex flex-col gap-2">
+                {items.map(item => {
+                  const selected = item.id === selectedItemId
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      onClick={() => setSelectedItemId(item.id)}
+                      className={`flex items-center justify-between gap-3 rounded-lg border p-3 text-left text-sm transition-colors ${
+                        selected
+                          ? 'border-red-400 bg-red-50 dark:border-red-500/60 dark:bg-red-500/10'
+                          : 'border-neutral-200 hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-800/50'
+                      }`}
+                    >
+                      <span>
+                        <span className="block font-semibold text-neutral-800 dark:text-neutral-100">{item.name}</span>
+                        {item.durationMinutes != null && (
+                          <span className="block text-xs text-neutral-500 dark:text-neutral-400">
+                            {Math.round(item.durationMinutes / 60)}{MESSAGES.shop.catalog.blockItemDurationSuffix}
+                          </span>
+                        )}
+                      </span>
+                      <span className="shrink-0 font-bold text-red-600 dark:text-red-400">{item.price?.toLocaleString()}P</span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+
+            {selectedItem && items && items.length <= 1 && (
               <div className="mb-4 rounded-lg border border-neutral-200 bg-neutral-50 p-3 text-sm dark:border-neutral-800 dark:bg-neutral-800/50">
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-neutral-800 dark:text-neutral-100">{selectedItem.name}</span>

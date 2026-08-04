@@ -75,6 +75,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           {isRoot(user.role) && navItem('/admin/shop/block-appeals', '차단 이의제기')}
           {isRoot(user.role) && navItem('/admin/shop/role-purchases', '임시 관리자 현황')}
           {isRoot(user.role) && navItem('/admin/shop/items', '상점 관리')}
+          {isRoot(user.role) && navItem('/admin/settings/suspend-presets', '정지 기한 프리셋 설정')}
         </nav>
       </aside>
 

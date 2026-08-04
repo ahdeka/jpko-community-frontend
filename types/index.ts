@@ -402,7 +402,11 @@ export interface TransferResult {
 //  LIKE_REWARD: 내 게시글이 좋아요를 받아 포인트를 받음. postId가 채워지고, sender는 항상 null.
 //  TRANSFER: 다른 회원이 나에게 포인트를 송금함. postId/commentId 항상 null, amount(받은 금액,
 //    수수료 제외)가 채워진다. POINT_STOLEN/WON과 마찬가지로 isAnonymous 항상 false.
-export type NotificationType = 'COMMENT' | 'REPLY' | 'LIKE' | 'CONTENT_REMOVED' | 'POINT_STOLEN' | 'POINT_WON' | 'POST_REWARD' | 'COMMENT_REWARD' | 'LIKE_REWARD' | 'TRANSFER';
+//  ROLE_AUCTION_WON: 관리자 권한 경매에 낙찰됨. postId/commentId 항상 null, amount(지불한 낙찰가)가
+//    채워지고, sender는 시스템 정산이라 항상 null.
+//  ROLE_AUCTION_LOST: 관리자 권한 경매에 낙첨됨. postId/commentId 항상 null, amount(환불된 입찰가)가
+//    채워지고, sender는 항상 null.
+export type NotificationType = 'COMMENT' | 'REPLY' | 'LIKE' | 'CONTENT_REMOVED' | 'POINT_STOLEN' | 'POINT_WON' | 'POST_REWARD' | 'COMMENT_REWARD' | 'LIKE_REWARD' | 'TRANSFER' | 'ROLE_AUCTION_WON' | 'ROLE_AUCTION_LOST';
 
 // 알림 (백엔드 NotificationResponse record와 1:1)
 // ⚠️ 키 이름 주의: 백엔드 record의 boolean 컴포넌트는 "선언명 그대로" 직렬화된다.
@@ -547,4 +551,20 @@ export interface UpdateShopItemBody {
   durationDays?: number;
   cadenceDays?: number;
   active?: boolean;
+}
+
+// 정지 기한 프리셋 (백엔드 SuspendDurationPresetResponse와 1:1)
+// 조회는 정지 모달을 여는 어떤 관리자(ADMIN/ROOT)든 가능하지만, 구성(추가/삭제)은 ROOT 전용.
+export interface SuspendDurationPreset {
+  id: number;
+  label: string;
+  minutes: number;
+  displayOrder: number;
+}
+
+// 정지 기한 프리셋 등록 요청 (백엔드 CreateSuspendDurationPresetRequest와 1:1, ROOT 전용)
+export interface CreateSuspendDurationPresetBody {
+  label: string;
+  minutes: number;
+  displayOrder: number;
 }

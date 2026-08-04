@@ -1,23 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { adminApi } from '@/lib/api/admin'
 import { ApiError } from '@/lib/api/client'
 import { MESSAGES } from '@/lib/messages'
+import type { SuspendDurationPreset } from '@/types'
 
 const T = MESSAGES.admin.users.suspendModal
-
-interface Preset {
-  label: string
-  minutes: number | null // null = 무기한
-}
-
-const PRESETS: Preset[] = [
-  { label: T.preset1h, minutes: 60 },
-  { label: T.preset6h, minutes: 360 },
-  { label: T.preset24h, minutes: 1440 },
-  { label: T.preset3d, minutes: 4320 },
-  { label: T.preset7d, minutes: 10080 },
-]
 
 interface Props {
   open: boolean
@@ -32,8 +21,13 @@ interface Props {
 }
 
 // 정지 기한 선택 모달. TransferPointsModal과 동일한 구조(오버레이/ESC/스크롤 잠금)를 따른다.
+//
+// 정지 기한 프리셋 버튼 목록은 더 이상 하드코딩이 아니라 ROOT가 /admin/settings/suspend-presets에서
+// 구성한 값을 그대로 불러온다(GET /api/admin/settings/suspend-presets — 조회는 ADMIN도 가능).
 export default function SuspendUserModal({ open, onClose, targetNickname, actingIsAdmin, onConfirm }: Props) {
-  const [selectedMinutes, setSelectedMinutes] = useState<number | null>(actingIsAdmin ? 1440 : null)
+  const [presets, setPresets] = useState<SuspendDurationPreset[] | null>(null)
+  const [presetsError, setPresetsError] = useState<string | null>(null)
+  const [selectedMinutes, setSelectedMinutes] = useState<number | null>(null)
   const [confirming, setConfirming] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -45,20 +39,32 @@ export default function SuspendUserModal({ open, onClose, targetNickname, acting
     document.addEventListener('keydown', onKeyDown)
     const prevOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
+
+    adminApi.getSuspendPresets()
+      .then(res => {
+        const list = res.data ?? []
+        setPresets(list)
+        // ADMIN은 기한 선택이 필수라 첫 프리셋을 기본으로 선택해둔다. ROOT는 무기한이 기본이다.
+        if (actingIsAdmin) setSelectedMinutes(list[0]?.minutes ?? null)
+      })
+      .catch((e: unknown) => setPresetsError(e instanceof ApiError ? e.message : T.presetsLoadFailed))
+
     return () => {
       document.removeEventListener('keydown', onKeyDown)
       document.body.style.overflow = prevOverflow
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, confirming, onClose])
+  }, [open, confirming, onClose, actingIsAdmin])
 
   useEffect(() => {
     if (!open) {
-      setSelectedMinutes(actingIsAdmin ? 1440 : null)
+      setPresets(null)
+      setPresetsError(null)
+      setSelectedMinutes(null)
       setConfirming(false)
       setError(null)
     }
-  }, [open, actingIsAdmin])
+  }, [open])
 
   if (!open) return null
 
@@ -107,29 +113,38 @@ export default function SuspendUserModal({ open, onClose, targetNickname, acting
         </p>
 
         <p className="mb-2 text-xs font-medium text-neutral-600 dark:text-neutral-400">{T.presetLabel}</p>
-        <div className="mb-4 flex flex-wrap gap-2">
-          {PRESETS.map(preset => (
-            <button
-              key={preset.label}
-              type="button"
-              onClick={() => setSelectedMinutes(preset.minutes)}
-              disabled={confirming}
-              className={presetButtonClass(selectedMinutes === preset.minutes)}
-            >
-              {preset.label}
-            </button>
-          ))}
-          {!actingIsAdmin && (
-            <button
-              type="button"
-              onClick={() => setSelectedMinutes(null)}
-              disabled={confirming}
-              className={presetButtonClass(selectedMinutes === null)}
-            >
-              {T.indefinite}
-            </button>
-          )}
-        </div>
+
+        {presetsError && <p className="mb-3 text-xs text-red-500">{presetsError}</p>}
+
+        {!presetsError && presets === null && (
+          <p className="mb-4 text-xs text-neutral-400">불러오는 중…</p>
+        )}
+
+        {presets !== null && (
+          <div className="mb-4 flex flex-wrap gap-2">
+            {presets.map(preset => (
+              <button
+                key={preset.id}
+                type="button"
+                onClick={() => setSelectedMinutes(preset.minutes)}
+                disabled={confirming}
+                className={presetButtonClass(selectedMinutes === preset.minutes)}
+              >
+                {preset.label}
+              </button>
+            ))}
+            {!actingIsAdmin && (
+              <button
+                type="button"
+                onClick={() => setSelectedMinutes(null)}
+                disabled={confirming}
+                className={presetButtonClass(selectedMinutes === null)}
+              >
+                {T.indefinite}
+              </button>
+            )}
+          </div>
+        )}
 
         {error && <p className="mb-3 text-xs text-red-500">{error}</p>}
 
@@ -145,7 +160,7 @@ export default function SuspendUserModal({ open, onClose, targetNickname, acting
           <button
             type="button"
             onClick={handleConfirm}
-            disabled={confirming}
+            disabled={confirming || (actingIsAdmin && selectedMinutes == null)}
             className="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {confirming ? T.confirming : T.confirm}

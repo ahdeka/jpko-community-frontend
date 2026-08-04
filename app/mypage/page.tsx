@@ -11,9 +11,7 @@ import MyPointsTab from '@/components/mypage/MyPointsTab'
 import MyReportsTab from '@/components/mypage/MyReportsTab'
 import ProfileSettings from '@/components/mypage/ProfileSettings'
 import EmailVerificationBanner from '@/components/mypage/EmailVerificationBanner'
-import GradeInfoPopover from '@/components/common/GradeInfoPopover'
 import PointInfoPopover from '@/components/common/PointInfoPopover'
-import { gradeMeta } from '@/lib/grade'
 import { MESSAGES } from '@/lib/messages'
 
 type Tab = 'posts' | 'comments' | 'points' | 'reports' | 'profile'
@@ -138,7 +136,7 @@ export default function MyPage() {
       <EmailVerificationBanner />
 
       {/* 통계 카드 */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <StatCard label="내가 쓴 글" value={postCount} accent="text-neutral-900 dark:text-white" />
         <StatCard label="내가 쓴 댓글" value={commentCount} accent="text-neutral-900 dark:text-white" />
         {/* 포인트 카드: 라벨 우측에 룰렛 설명 팝오버 */}
@@ -150,21 +148,6 @@ export default function MyPage() {
           <p className="mt-1 text-2xl font-bold text-orange-600 dark:text-orange-400">
             {pointBalance === null ? '—' : `${pointBalance.toLocaleString()}P`}
           </p>
-        </div>
-        {/* 등급 카드: "회원 등급" 라벨 우측에 설명(?) 팝오버, 본문엔 등급명 + 간단한 계층 표기 */}
-        <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-800/50">
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">회원 등급</p>
-            <GradeInfoPopover grade={user.grade} />
-          </div>
-          <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="text-2xl font-bold text-neutral-900 dark:text-white">
-              {gradeMeta(user.grade).label}
-            </span>
-            <span className="text-xs text-neutral-400 dark:text-neutral-500">
-              {gradeMeta(user.grade).tier}
-            </span>
-          </div>
         </div>
       </div>
 

@@ -6,11 +6,13 @@ import { ApiError } from '@/lib/api/client'
 import { formatDateTime } from '@/lib/format'
 import { roleLabel } from '@/lib/shop'
 import { MESSAGES } from '@/lib/messages'
+import PlaceBidModal from '@/components/shop/PlaceBidModal'
 import type { RoleAuctionRound, RolePurchaseStatus } from '@/types'
 
 const T = MESSAGES.shop.roleAuction
 
-// 포인트 기반 ADMIN 권한 경매 섹션. 회차 목록 + 입찰 폼 + 내 보유 현황을 보여준다.
+// 포인트 기반 ADMIN 권한 경매 섹션. 회차를 카드로 나열하고, "참여하기"를 누르면
+// PlaceBidModal이 열려 그 안에서 입찰/재입찰/입찰취소를 처리한다.
 //
 // ⚠️ 백엔드가 "내가 이 회차에 이미 입찰했는지/얼마인지"를 조회하는 API를 제공하지 않는다
 // (GET /api/shop/role-auctions/current는 집계값만 준다). 그래서 "입찰 취소" 버튼은 서버에 물어보는 대신
@@ -20,10 +22,8 @@ export default function RoleAuctionSection() {
   const [rounds, setRounds] = useState<RoleAuctionRound[] | null>(null)
   const [myStatus, setMyStatus] = useState<RolePurchaseStatus | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [amounts, setAmounts] = useState<Record<number, string>>({})
-  const [busyRoundId, setBusyRoundId] = useState<number | null>(null)
-  const [actionError, setActionError] = useState<string | null>(null)
   const [biddedRoundIds, setBiddedRoundIds] = useState<Set<number>>(new Set())
+  const [activeRoundId, setActiveRoundId] = useState<number | null>(null)
 
   const load = useCallback(() => {
     Promise.all([shopApi.getCurrentRounds(), shopApi.getMyRoleStatus()])
@@ -36,48 +36,24 @@ export default function RoleAuctionSection() {
 
   useEffect(() => { load() }, [load])
 
-  function resolveError(e: unknown): string {
-    const code = e instanceof ApiError ? e.code : undefined
-    return (code && MESSAGES.shop.errorCodeMessages[code]) || (e instanceof ApiError ? e.message : T.loadFailed)
+  const activeRound = rounds?.find(r => r.id === activeRoundId) ?? null
+
+  function handleBidPlaced() {
+    if (activeRoundId != null) {
+      setBiddedRoundIds(prev => new Set(prev).add(activeRoundId))
+    }
+    load()
   }
 
-  async function handleBid(round: RoleAuctionRound) {
-    const raw = amounts[round.id]
-    const amount = Number(raw)
-    if (!raw || !Number.isInteger(amount) || amount <= 0) {
-      setActionError(T.amountRequired)
-      return
-    }
-
-    setActionError(null)
-    setBusyRoundId(round.id)
-    try {
-      await shopApi.placeBid(round.id, { amount })
-      setBiddedRoundIds(prev => new Set(prev).add(round.id))
-      load()
-    } catch (e) {
-      setActionError(resolveError(e))
-    } finally {
-      setBusyRoundId(null)
-    }
-  }
-
-  async function handleCancel(round: RoleAuctionRound) {
-    setActionError(null)
-    setBusyRoundId(round.id)
-    try {
-      await shopApi.cancelBid(round.id)
+  function handleBidCancelled() {
+    if (activeRoundId != null) {
       setBiddedRoundIds(prev => {
         const next = new Set(prev)
-        next.delete(round.id)
+        next.delete(activeRoundId)
         return next
       })
-      load()
-    } catch (e) {
-      setActionError(resolveError(e))
-    } finally {
-      setBusyRoundId(null)
     }
+    load()
   }
 
   return (
@@ -101,7 +77,6 @@ export default function RoleAuctionSection() {
       )}
 
       {rounds?.map(round => {
-        const busy = busyRoundId === round.id
         const hasBid = biddedRoundIds.has(round.id)
 
         return (
@@ -133,41 +108,30 @@ export default function RoleAuctionSection() {
               </div>
             </div>
 
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <input
-                type="number"
-                min={round.minPrice}
-                step={1}
-                value={amounts[round.id] ?? ''}
-                onChange={e => setAmounts(prev => ({ ...prev, [round.id]: e.target.value }))}
-                placeholder={T.amountPlaceholder}
-                disabled={busy}
-                className="w-32 rounded border border-neutral-300 bg-white px-3 py-1.5 text-sm text-neutral-900 outline-none focus:border-orange-400 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
-              />
+            <div className="mt-3 flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => handleBid(round)}
-                disabled={busy}
-                className="rounded-md bg-orange-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-700 disabled:opacity-50"
+                onClick={() => setActiveRoundId(round.id)}
+                className="rounded-md bg-orange-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-700"
               >
-                {busy ? T.bidding : hasBid ? T.raiseBid : T.placeBid}
+                참여하기
               </button>
               {hasBid && (
-                <button
-                  type="button"
-                  onClick={() => handleCancel(round)}
-                  disabled={busy}
-                  className="rounded-md border border-neutral-300 px-3 py-1.5 text-xs text-neutral-600 hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
-                >
-                  {T.cancelBid}
-                </button>
+                <span className="text-xs text-neutral-400">입찰하셨습니다.</span>
               )}
             </div>
           </div>
         )
       })}
 
-      {actionError && <p className="text-xs text-red-500">{actionError}</p>}
+      <PlaceBidModal
+        open={activeRoundId != null}
+        onClose={() => setActiveRoundId(null)}
+        round={activeRound}
+        hasBid={activeRoundId != null && biddedRoundIds.has(activeRoundId)}
+        onBidPlaced={handleBidPlaced}
+        onBidCancelled={handleBidCancelled}
+      />
     </section>
   )
 }

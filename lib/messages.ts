@@ -267,6 +267,12 @@ export const MESSAGES = {
       rewardSuffix: 'P를 받았습니다!',
       transferAfterName: '님이 회원님에게 ',
       transferSuffix: 'P를 보냈습니다.',
+      // 관리자 권한 경매 결과(ROLE_AUCTION_WON/LOST). 낙찰가를 실제로 지불/환불하므로
+      // 룰렛과 달리 장난스러운 톤 대신 TRANSFER와 같은 담담한 톤을 쓴다.
+      auctionWonPrefix: '경매에 낙찰되어 ',
+      auctionWonSuffix: 'P를 지불하고 관리자 권한을 획득했습니다.',
+      auctionLostPrefix: '경매에 낙첨되어 입찰하신 ',
+      auctionLostSuffix: 'P가 환불되었습니다.',
     },
     // 포인트 송금 모달 (TransferPointsModal).
     transfer: {
@@ -373,12 +379,14 @@ export const MESSAGES = {
     },
     users: {
       loadFailed: '회원 목록을 불러오지 못했습니다.',
-      gradeChangeConfirm: (nickname: string, label: string) => `${nickname}님의 등급을 '${label}'(으)로 변경할까요?`,
-      gradeChangeFailed: '등급 변경에 실패했습니다.',
       suspendConfirm: (nickname: string) =>
         `${nickname}님의 계정을 정지할까요?\n정지되면 해당 회원은 즉시 로그아웃되며 로그인할 수 없습니다.`,
       unsuspendConfirm: (nickname: string) => `${nickname}님의 계정 정지를 해제할까요?`,
       statusChangeFailed: '상태 변경에 실패했습니다.',
+      // ROOT의 즉시 관리자 권한 박탈(경매로 얻었든 수동 임명이든 즉시 USER로 되돌린다).
+      revokeAdminConfirm: (nickname: string) =>
+        `${nickname}님의 관리자 권한을 즉시 박탈할까요?\n이미 로그인된 세션에도 다음 요청부터 바로 반영됩니다.`,
+      revokeAdminFailed: '권한 박탈에 실패했습니다.',
       searchEmpty: (keyword: string) => `'${keyword}' 검색 결과가 없습니다.`,
       empty: '회원이 없습니다.',
       // ADMIN 계정으로 정지할 때 기한 선택 모달(SuspendUserModal) 전용 문구. ROOT만 무기한 정지 가능.
@@ -387,11 +395,7 @@ export const MESSAGES = {
         durationRequiredNotice: 'ADMIN 권한으로는 기한이 있는 정지만 가능합니다. 기한을 선택해주세요.',
         durationOptionalNotice: '기한을 정하지 않으면 무기한 정지됩니다.',
         presetLabel: '정지 기한',
-        preset1h: '1시간',
-        preset6h: '6시간',
-        preset24h: '24시간',
-        preset3d: '3일',
-        preset7d: '7일',
+        presetsLoadFailed: '정지 기한 목록을 불러오지 못했습니다.',
         indefinite: '무기한',
         confirm: '정지',
         confirming: '처리 중…',
@@ -408,6 +412,22 @@ export const MESSAGES = {
       deleteConfirm: (title: string) => `"${title}" 공지를 삭제할까요?\n삭제 후에는 복구할 수 없습니다.`,
       deleteFailed: '삭제에 실패했습니다.',
       empty: '등록된 공지가 없습니다.',
+    },
+    // 정지 기한 프리셋 관리 화면(/admin/settings/suspend-presets). ROOT 전용.
+    suspendPresets: {
+      title: '정지 기한 프리셋 설정',
+      description: 'ADMIN·ROOT가 유저 정지 시 고를 수 있는 기한 버튼 목록입니다.',
+      loadFailed: '프리셋 목록을 불러오지 못했습니다.',
+      empty: '등록된 프리셋이 없습니다.',
+      labelPlaceholder: '이름 (예: 1시간)',
+      minutesPlaceholder: '기한(분)',
+      addButton: '추가',
+      adding: '추가 중…',
+      addFailed: '프리셋 추가에 실패했습니다.',
+      deleteConfirm: (label: string) => `'${label}' 프리셋을 삭제할까요?`,
+      deleteFailed: '삭제에 실패했습니다.',
+      minutesColumn: '기한(분)',
+      orderColumn: '순서',
     },
     noticeForm: {
       titleRequired: '제목을 입력해주세요.',

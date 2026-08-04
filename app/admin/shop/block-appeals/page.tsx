@@ -22,6 +22,9 @@ export default function AdminBlockAppealsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [pendingId, setPendingId] = useState<number | null>(null)
+  // 처리완료 성공 시 잠깐 보여주는 안내 문구. 미처리 필터에서는 처리된 행이 목록에서 곧바로
+  // 사라져 "아무 반응 없음"으로 느껴질 수 있어, 액션이 실제로 먹혔음을 명확히 보여준다.
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
   const load = useCallback(() => {
     setLoading(true)
@@ -61,6 +64,8 @@ export default function AdminBlockAppealsPage() {
       } else {
         setAppeals(prev => prev.map(a => (a.id === appeal.id ? { ...a, handled: true } : a)))
       }
+      setSuccessMessage(`${appeal.senderNickname}님의 이의제기를 처리 완료했습니다.`)
+      setTimeout(() => setSuccessMessage(null), 2000)
     } catch (err) {
       alert(err instanceof ApiError ? err.message : '처리에 실패했습니다.')
     } finally {
@@ -89,6 +94,12 @@ export default function AdminBlockAppealsPage() {
           </button>
         </div>
       </div>
+
+      {successMessage && (
+        <p className="rounded-md bg-green-50 px-3 py-2 text-xs font-medium text-green-700 dark:bg-green-500/10 dark:text-green-400">
+          {successMessage}
+        </p>
+      )}
 
       {loading ? (
         <p className="py-12 text-center text-sm text-neutral-400">불러오는 중…</p>

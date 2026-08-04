@@ -4,14 +4,10 @@ import { useCallback, useEffect, useState } from 'react'
 import { adminApi } from '@/lib/api/admin'
 import { ApiError } from '@/lib/api/client'
 import { formatDate } from '@/lib/format'
-// 등급 메타(한글명·색상·순서)는 lib/grade.ts가 단일 출처. 마이페이지 등과 공유한다.
-// SHOGUN(쇼군)은 운영진 전용이라 백엔드가 role !== ADMIN 이면 거부하므로,
-// UI에서도 일반 회원에겐 해당 옵션을 비활성화해 "무조건 실패할 요청"을 원천 차단한다.
-import { GRADES, gradeMeta } from '@/lib/grade'
 import { MESSAGES } from '@/lib/messages'
 import { useAuth } from '@/lib/auth-context'
 import SuspendUserModal from '@/components/admin/SuspendUserModal'
-import type { AdminUser, UserGrade } from '@/types'
+import type { AdminUser } from '@/types'
 
 const PAGE_SIZE = 20
 
@@ -35,6 +31,8 @@ export default function AdminUsersPage() {
   // 지금 로그인한 계정이 ADMIN인지 — ROOT만 무기한 정지 가능하고 ADMIN은 항상 기한이 필요하다
   // (경매로 획득했는지 여부와 무관하게 ADMIN이면 전부 적용).
   const actingIsAdmin = actingUser?.role === 'ADMIN'
+  // ROOT만 다른 계정의 관리자 권한을 즉시 박탈할 수 있다.
+  const actingIsRoot = actingUser?.role === 'ROOT'
   // 정지 모달을 띄울 대상. null이면 닫힌 상태.
   const [suspendTarget, setSuspendTarget] = useState<AdminUser | null>(null)
 
@@ -61,28 +59,6 @@ export default function AdminUsersPage() {
     setKeyword(keywordInput)
   }
 
-  // 등급 변경. 성공하기 전까지는 로컬 상태를 바꾸지 않으므로(제어 select),
-  // 요청이 실패하면 select 값이 저절로 원래 등급으로 남아 별도 롤백이 필요 없다.
-  async function handleGradeChange(user: AdminUser, next: UserGrade) {
-    if (next === user.grade) return
-    const label = gradeMeta(next).label
-    if (!confirm(MESSAGES.admin.users.gradeChangeConfirm(user.nickname, label))) return
-
-    setPendingId(user.id)
-    try {
-      await adminApi.updateGrade(user.id, next)
-      setUsers(prev =>
-        prev.map(u =>
-          u.id === user.id ? { ...u, grade: next, displayGradeName: label } : u,
-        ),
-      )
-    } catch (err) {
-      alert(err instanceof ApiError ? err.message : MESSAGES.admin.users.gradeChangeFailed)
-    } finally {
-      setPendingId(null)
-    }
-  }
-
   // 정지 해제. 정지와 달리 기한 선택이 필요 없어 확인창만으로 충분하다.
   async function handleUnsuspend(user: AdminUser) {
     if (!confirm(MESSAGES.admin.users.unsuspendConfirm(user.nickname))) return
@@ -93,6 +69,21 @@ export default function AdminUsersPage() {
       setUsers(prev => prev.map(u => (u.id === user.id ? { ...u, status: 'ACTIVE' } : u)))
     } catch (err) {
       alert(err instanceof ApiError ? err.message : MESSAGES.admin.users.statusChangeFailed)
+    } finally {
+      setPendingId(null)
+    }
+  }
+
+  // 즉시 관리자 권한 박탈. ROOT 전용이며, 경매로 얻었든 수동 임명이었든 백엔드가 즉시 USER로 되돌린다.
+  async function handleRevokeAdmin(user: AdminUser) {
+    if (!confirm(MESSAGES.admin.users.revokeAdminConfirm(user.nickname))) return
+
+    setPendingId(user.id)
+    try {
+      await adminApi.revokeAdmin(user.id)
+      setUsers(prev => prev.map(u => (u.id === user.id ? { ...u, role: 'USER' } : u)))
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : MESSAGES.admin.users.revokeAdminFailed)
     } finally {
       setPendingId(null)
     }
@@ -147,7 +138,6 @@ export default function AdminUsersPage() {
             <thead>
               <tr className="border-b border-neutral-200 bg-neutral-50 text-left text-[11px] font-medium tracking-wide text-neutral-400 dark:border-neutral-800 dark:bg-neutral-800/50 dark:text-neutral-500">
                 <th className="whitespace-nowrap px-3 py-2 font-medium">회원</th>
-                <th className="whitespace-nowrap px-3 py-2 font-medium">등급</th>
                 <th className="whitespace-nowrap px-3 py-2 font-medium">역할</th>
                 <th className="whitespace-nowrap px-3 py-2 font-medium">상태</th>
                 <th className="hidden whitespace-nowrap px-3 py-2 font-medium sm:table-cell">가입일</th>
@@ -173,35 +163,6 @@ export default function AdminUsersPage() {
                           </span>
                         )}
                       </div>
-                    </td>
-
-                    {/* 등급: 탈퇴 계정은 뱃지만(변경 불가), 그 외에는 즉시 반영되는 select */}
-                    <td className="whitespace-nowrap px-3 py-2.5">
-                      {isDeleted ? (
-                        <span className={`inline-block rounded px-1.5 py-0.5 text-[11px] font-semibold ${gradeMeta(user.grade).badge}`}>
-                          {user.displayGradeName}
-                        </span>
-                      ) : (
-                        <select
-                          value={user.grade}
-                          disabled={busy}
-                          onChange={e => handleGradeChange(user, e.target.value as UserGrade)}
-                          aria-label={`${user.nickname} 등급`}
-                          className="rounded-md border border-neutral-300 bg-white px-2 py-1 text-[11px] text-neutral-800 outline-none focus:border-orange-400 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:focus:border-orange-500"
-                        >
-                          {GRADES.map(g => (
-                            <option
-                              key={g.value}
-                              value={g.value}
-                              // 쇼군은 운영진(ADMIN) 전용 — 일반 회원에겐 선택 자체를 막는다.
-                              // 단 이미 쇼군인 경우엔 현재 값 표시를 위해 비활성화하지 않는다.
-                              disabled={g.value === 'SHOGUN' && !isAdmin && user.grade !== 'SHOGUN'}
-                            >
-                              {g.label}
-                            </option>
-                          ))}
-                        </select>
-                      )}
                     </td>
 
                     {/* 역할 */}
@@ -242,9 +203,20 @@ export default function AdminUsersPage() {
                       {isDeleted ? (
                         <span className="text-xs text-neutral-300 dark:text-neutral-600">—</span>
                       ) : isAdmin ? (
-                        <span className="text-xs text-neutral-300 dark:text-neutral-600" title="관리자 계정은 정지할 수 없습니다.">
-                          —
-                        </span>
+                        actingIsRoot ? (
+                          <button
+                            type="button"
+                            onClick={() => handleRevokeAdmin(user)}
+                            disabled={busy}
+                            className="rounded border border-red-200 px-2 py-1 text-xs text-red-500 hover:bg-red-50 disabled:opacity-50 dark:border-red-500/30 dark:hover:bg-red-500/10"
+                          >
+                            {busy ? '처리 중…' : '권한 박탈'}
+                          </button>
+                        ) : (
+                          <span className="text-xs text-neutral-300 dark:text-neutral-600" title="관리자 계정은 정지할 수 없습니다.">
+                            —
+                          </span>
+                        )
                       ) : user.status === 'SUSPENDED' ? (
                         <button
                           type="button"

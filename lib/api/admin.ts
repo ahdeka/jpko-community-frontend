@@ -1,8 +1,8 @@
 import { apiClient } from './client'
 import {
-  PageResponse, AdminUser, UserStatus, UserGrade,
+  PageResponse, AdminUser, UserStatus,
   BlockAppeal, RolePurchaseAdmin, ShopItem, CreateShopItemBody, UpdateShopItemBody,
-  UpdateRoleAuctionRoundBody,
+  UpdateRoleAuctionRoundBody, SuspendDurationPreset, CreateSuspendDurationPresetBody,
 } from '@/types'
 
 // 관리자 전용 회원 관리 API.
@@ -37,12 +37,21 @@ export const adminApi = {
       ...(suspendedUntil && { suspendedUntil }),
     }),
 
-  // 등급 변경.
-  // 백엔드 제약:
-  //  - 탈퇴 계정 대상 불가(ALREADY_WITHDRAWN)
-  //  - SHOGUN은 role === 'ADMIN' 계정에만 부여 가능(SHOGUN_REQUIRES_ADMIN_ROLE)
-  updateGrade: (userId: number, grade: UserGrade) =>
-    apiClient.patch<void>(`/api/admin/users/${userId}/grade`, { grade }),
+  // ROOT 전용 즉시 권한 박탈. 대상이 ADMIN이 아니면 백엔드가 TARGET_NOT_ADMIN으로 거부한다.
+  // 경매로 얻은 권한이면 그 RolePurchase를 즉시 만료시키고, 수동 임명이었으면 USER로 되돌린다.
+  revokeAdmin: (userId: number) =>
+    apiClient.post<void>(`/api/admin/users/${userId}/revoke-admin`),
+
+  // 정지 기한 프리셋 목록 — 정지 모달(SuspendUserModal)을 여는 어떤 관리자든 조회 가능(hasAnyRole('ADMIN','ROOT')).
+  getSuspendPresets: () =>
+    apiClient.get<SuspendDurationPreset[]>('/api/admin/settings/suspend-presets'),
+
+  // 프리셋 구성(추가/삭제)은 ROOT 전용.
+  createSuspendPreset: (body: CreateSuspendDurationPresetBody) =>
+    apiClient.post<void>('/api/admin/settings/suspend-presets', body),
+
+  deleteSuspendPreset: (presetId: number) =>
+    apiClient.delete<void>(`/api/admin/settings/suspend-presets/${presetId}`),
 
   // 이하 전부 ROOT 전용(백엔드가 hasRole('ROOT')로 보호, ADMIN도 접근 불가) — 감시·관리 대상이
   // ADMIN 자신일 수 있어 동료 ADMIN에게는 노출/허용하지 않는다.

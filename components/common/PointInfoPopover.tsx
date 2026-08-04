@@ -3,8 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { MESSAGES } from '@/lib/messages'
 
-// 포인트 안내 팝오버. GradeInfoPopover와 동일한 열림/닫힘 규칙을 따른다 —
-// hover/탭/키보드 포커스로 열리고, 바깥 클릭·Esc·포커스 이탈·마우스 이탈로 닫힌다
+// 포인트 안내 팝오버. hover/탭/키보드 포커스로 열리고, 바깥 클릭·Esc·포커스 이탈·마우스 이탈로 닫힌다
 // (모바일 탭에서도 focus→click 순서로 바로 닫히지 않게 클릭은 "열기"로만 동작).
 export default function PointInfoPopover() {
   const [open, setOpen] = useState(false)
