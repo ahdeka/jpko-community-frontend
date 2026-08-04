@@ -189,7 +189,7 @@ export const MESSAGES = {
       lostSuffix: '날라감ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ',
       neutral: '쟌-넨',
     },
-    // 룰렛 승/패 알림(POINT_STOLEN/POINT_WON), 송금 알림(TRANSFER).
+    // 룰렛 승/패 알림(POINT_STOLEN/POINT_WON), 활동 리워드 알림(POST_REWARD 등), 송금 알림(TRANSFER).
     // lib/notification.ts(순수 텍스트)와 NotificationBell.tsx(강조 포함 JSX)가
     // 동일한 prefix/suffix를 조합해 쓴다.
     notification: {
@@ -197,6 +197,9 @@ export const MESSAGES = {
       stolenSuffix: ' 헌납. 이대로 끝?',
       wonAfterName: '님을 포인트 룰렛에서 개발라버리고 ',
       wonSuffix: '털음 ㅊㅋㅊㅋ!',
+      // POST_REWARD/COMMENT_REWARD/LIKE_REWARD 공용 suffix. 앞부분(어떤 글/댓글인지)은
+      // postTitle/commentContent 유무에 따라 문구가 갈려 lib/notification.ts·NotificationBell.tsx가 직접 조립한다.
+      rewardSuffix: 'P를 받았습니다!',
       transferAfterName: '님이 회원님에게 ',
       transferSuffix: 'P를 보냈습니다.',
     },

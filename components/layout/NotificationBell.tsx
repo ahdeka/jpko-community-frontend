@@ -125,6 +125,73 @@ function NotificationBody({ n, meta }: { n: Notification; meta: NotificationMeta
     )
   }
 
+  // 게시글 작성 포인트 지급: 시스템 알림이라 발신자를 밝히지 않는다(POINT_STOLEN/WON과 달리 상대가 없음).
+  // 어떤 글인지 제목으로 보여준다(CONTENT_REMOVED의 postTitle 유무 분기와 동일한 패턴).
+  if (n.type === 'POST_REWARD') {
+    const what = n.postTitle ? (
+      <>
+        게시글{' '}
+        <span className="font-semibold text-neutral-800 dark:text-neutral-100">
+          “{truncatePostTitle(n.postTitle)}”
+        </span>
+        {' '}작성으로{' '}
+      </>
+    ) : (
+      <>게시글 작성으로 </>
+    )
+    return (
+      <>
+        {what}
+        <span className={`font-semibold ${meta.accentText}`}>{(n.amount ?? 0).toLocaleString()}</span>
+        {MESSAGES.points.notification.rewardSuffix}
+      </>
+    )
+  }
+
+  // 댓글 작성 포인트 지급: POST_REWARD와 동일한 이유로 발신자를 밝히지 않는다. 어떤 댓글인지 내용으로 보여준다.
+  if (n.type === 'COMMENT_REWARD') {
+    const what = n.commentContent ? (
+      <>
+        댓글{' '}
+        <span className="font-semibold text-neutral-800 dark:text-neutral-100">
+          “{truncatePostTitle(n.commentContent)}”
+        </span>
+        으로{' '}
+      </>
+    ) : (
+      <>댓글 작성으로 </>
+    )
+    return (
+      <>
+        {what}
+        <span className={`font-semibold ${meta.accentText}`}>{(n.amount ?? 0).toLocaleString()}</span>
+        {MESSAGES.points.notification.rewardSuffix}
+      </>
+    )
+  }
+
+  // 좋아요 받아 포인트 지급: 마찬가지로 발신자를 밝히지 않는다(누가 눌렀는지는 LIKE 알림이 따로 알려준다).
+  if (n.type === 'LIKE_REWARD') {
+    const what = n.postTitle ? (
+      <>
+        게시글{' '}
+        <span className="font-semibold text-neutral-800 dark:text-neutral-100">
+          “{truncatePostTitle(n.postTitle)}”
+        </span>
+        이(가){' '}
+      </>
+    ) : (
+      <>게시글이 </>
+    )
+    return (
+      <>
+        {what}좋아요를 받아{' '}
+        <span className={`font-semibold ${meta.accentText}`}>{(n.amount ?? 0).toLocaleString()}</span>
+        {MESSAGES.points.notification.rewardSuffix}
+      </>
+    )
+  }
+
   // 다른 회원이 포인트를 직접 송금한 경우: 게시글/댓글과 무관하므로 별도 문구로 조립한다.
   if (n.type === 'TRANSFER') {
     const who = <span className="font-semibold text-neutral-900 dark:text-white">{notificationSenderLabel(n)}</span>

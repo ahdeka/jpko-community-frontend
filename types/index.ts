@@ -383,9 +383,12 @@ export interface TransferResult {
 //  POINT_STOLEN: 룰렛(베팅) 대결에서 패배해 포인트를 뺏김. postId/commentId가 항상 null이고
 //    amount(뺏긴 금액)가 채워진다. 발신자(상대)는 익명 처리되지 않는다(isAnonymous 항상 false).
 //  POINT_WON: 룰렛(베팅) 대결에서 승리해 포인트를 얻음. POINT_STOLEN과 postId/amount 규칙은 동일.
+//  POST_REWARD: 게시글 작성으로 포인트를 받음. postId/postTitle은 채워지고, sender는 시스템 지급이라 항상 null.
+//  COMMENT_REWARD: 댓글 작성으로 포인트를 받음. postId/commentId 둘 다 채워지고, sender는 항상 null.
+//  LIKE_REWARD: 내 게시글이 좋아요를 받아 포인트를 받음. postId가 채워지고, sender는 항상 null.
 //  TRANSFER: 다른 회원이 나에게 포인트를 송금함. postId/commentId 항상 null, amount(받은 금액,
 //    수수료 제외)가 채워진다. POINT_STOLEN/WON과 마찬가지로 isAnonymous 항상 false.
-export type NotificationType = 'COMMENT' | 'REPLY' | 'LIKE' | 'CONTENT_REMOVED' | 'POINT_STOLEN' | 'POINT_WON' | 'TRANSFER';
+export type NotificationType = 'COMMENT' | 'REPLY' | 'LIKE' | 'CONTENT_REMOVED' | 'POINT_STOLEN' | 'POINT_WON' | 'POST_REWARD' | 'COMMENT_REWARD' | 'LIKE_REWARD' | 'TRANSFER';
 
 // 알림 (백엔드 NotificationResponse record와 1:1)
 // ⚠️ 키 이름 주의: 백엔드 record의 boolean 컴포넌트는 "선언명 그대로" 직렬화된다.
@@ -402,6 +405,8 @@ export interface Notification {
   // 아직 배포 전이거나 값이 없으면 undefined/null일 수 있어, 렌더 시 "회원님의 게시글"로 폴백한다.
   postTitle?: string | null;
   commentId: number | null;   // 댓글/답글 알림이면 해당 댓글 id, 좋아요면 null
+  // COMMENT_REWARD처럼 어떤 댓글로 포인트를 받았는지 보여줘야 하는 타입 전용. 그 외 타입은 null.
+  commentContent: string | null;
   isRead: boolean;
   createdAt: string;
   amount: number | null;      // POINT_STOLEN/POINT_WON 전용, 오간 포인트 액수. 그 외 타입은 null.
