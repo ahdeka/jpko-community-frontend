@@ -237,6 +237,22 @@ export const MESSAGES = {
     },
   },
 
+  // 알림 벨 드롭다운(NotificationBell)과 알림 전체보기 페이지(app/notifications)의 UI 문구.
+  // 개별 알림 "본문" 문구는 lib/notification.ts / notificationVisuals.tsx가 조립하며,
+  // 여기에는 화면 골격(제목·버튼·빈 상태 등)만 둔다.
+  notifications: {
+    title: '알림',
+    viewAll: '알림 전체보기',
+    markAllRead: '모두 읽기',
+    deleteAll: '전체 삭제',
+    deleteAllConfirm: '모든 알림을 삭제하시겠습니까? 삭제한 알림은 되돌릴 수 없습니다.',
+    deleteOne: '알림 삭제',
+    unreadLabel: '읽지 않은 알림',
+    empty: '알림이 없습니다.',
+    loadFailed: '알림을 불러오지 못했습니다.',
+    loginGate: '로그인 후 알림을 확인할 수 있습니다.',
+  },
+
   points: {
     roulette: {
       unlockFailed: '들어올 땐 마음대로겠지만 나갈땐 아니란다',

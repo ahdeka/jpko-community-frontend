@@ -2,17 +2,15 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import type { Notification } from '@/types'
-import { notificationsApi } from '@/lib/api/notifications'
+import { notificationsApi, NOTIFICATIONS_CHANGED_EVENT } from '@/lib/api/notifications'
 import {
-  isRemovedComment,
   notificationHref,
   notificationMeta,
-  notificationSenderLabel,
   notificationText,
-  truncatePostTitle,
-  type NotificationMeta,
 } from '@/lib/notification'
+import { TypeIcon, NotificationBody } from '@/components/notifications/notificationVisuals'
 import { formatRelativeTime } from '@/lib/format'
 import { MESSAGES } from '@/lib/messages'
 
@@ -25,235 +23,12 @@ function BellIcon() {
   )
 }
 
-// 알림 종류별 좌측 아이콘. 색은 감싸는 원형(iconBg)이 입히므로 currentColor만 쓴다.
-function TypeIcon({ icon }: { icon: NotificationMeta['icon'] }) {
-  const common = { className: 'h-3.5 w-3.5', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
-  if (icon === 'reply') {
-    return (
-      <svg {...common}>
-        <polyline points="9 14 4 9 9 4" />
-        <path d="M20 20v-7a4 4 0 0 0-4-4H4" />
-      </svg>
-    )
-  }
-  if (icon === 'like') {
-    return (
-      <svg {...common}>
-        <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3z" />
-        <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
-      </svg>
-    )
-  }
-  // 강제 삭제: 휴지통
-  if (icon === 'removed') {
-    return (
-      <svg {...common}>
-        <polyline points="3 6 5 6 21 6" />
-        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-      </svg>
-    )
-  }
-  // 포인트 도난: 동전
-  if (icon === 'point') {
-    return (
-      <svg {...common}>
-        <circle cx="12" cy="12" r="9" />
-        <path d="M9.5 15.5a2.5 2.5 0 0 0 2.5 1.5c1.5 0 2.5-.9 2.5-2s-1-1.7-2.5-2-2.5-1-2.5-2 1-2 2.5-2a2.5 2.5 0 0 1 2.5 1.5" />
-        <path d="M12 7v1M12 16v1" />
-      </svg>
-    )
-  }
-  return (
-    <svg {...common}>
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-    </svg>
-  )
-}
-
-// 본문 문구를 강조와 함께 조립한다.
-//  - 발신자 이름: 굵게 + 진한 색으로 "누가"를 부각
-//  - 게시글 제목: 따옴표 + 중간 강조 (없으면 "회원님의 게시글"로 폴백)
-//  - 액션 키워드('댓글'/'답글'/'추천'): 타입 색으로 강조해 "무엇을"을 부각
-function NotificationBody({ n, meta }: { n: Notification; meta: NotificationMeta }) {
-  // 강제 삭제 알림은 문구 구조가 다르므로 먼저 처리한다.
-  //
-  // 발신자(관리자)를 일부러 밝히지 않는다 — 백엔드는 senderName에 관리자 닉네임을 실어 보내지만,
-  // 조치의 주체는 개인이 아니라 운영이고, 개인이 특정되면 항의·보복 대상이 될 수 있다.
-  // 그래서 senderName을 무시하고 "운영 정책에 따라"로 고정한다.
-  if (n.type === 'CONTENT_REMOVED') {
-    const removed = <span className={`font-semibold ${meta.accentText}`}>삭제</span>
-
-    if (isRemovedComment(n)) {
-      return <>운영 정책에 따라 회원님의 댓글이 {removed}되었습니다.</>
-    }
-    const what = n.postTitle ? (
-      <>
-        게시글{' '}
-        <span className="font-semibold text-neutral-800 dark:text-neutral-100">
-          “{truncatePostTitle(n.postTitle)}”
-        </span>
-        이(가){' '}
-      </>
-    ) : (
-      <>게시글이 </>
-    )
-    return <>운영 정책에 따라 회원님의 {what}{removed}되었습니다.</>
-  }
-
-  // 포인트 룰렛으로 뺏긴 경우: 게시글/댓글과 무관하므로 별도 문구로 조립한다.
-  // 상대는 익명 처리되지 않는다(백엔드가 isAnonymous를 항상 false로 보냄).
-  if (n.type === 'POINT_STOLEN') {
-    const who = <span className="font-semibold text-neutral-900 dark:text-white">{notificationSenderLabel(n)}</span>
-    return (
-      <>
-        {who}{MESSAGES.points.notification.stolenAfterName}
-        <span className={`font-semibold ${meta.accentText}`}>{(n.amount ?? 0).toLocaleString()}P</span>
-        {MESSAGES.points.notification.stolenSuffix}
-      </>
-    )
-  }
-
-  // 포인트 룰렛으로 얻은 경우: POINT_STOLEN과 대칭 문구.
-  if (n.type === 'POINT_WON') {
-    const who = <span className="font-semibold text-neutral-900 dark:text-white">{notificationSenderLabel(n)}</span>
-    return (
-      <>
-        {who}{MESSAGES.points.notification.wonAfterName}
-        <span className={`font-semibold ${meta.accentText}`}>{(n.amount ?? 0).toLocaleString()}P</span>
-        {MESSAGES.points.notification.wonSuffix}
-      </>
-    )
-  }
-
-  // 게시글 작성 포인트 지급: 시스템 알림이라 발신자를 밝히지 않는다(POINT_STOLEN/WON과 달리 상대가 없음).
-  // 어떤 글인지 제목으로 보여준다(CONTENT_REMOVED의 postTitle 유무 분기와 동일한 패턴).
-  if (n.type === 'POST_REWARD') {
-    const what = n.postTitle ? (
-      <>
-        게시글{' '}
-        <span className="font-semibold text-neutral-800 dark:text-neutral-100">
-          “{truncatePostTitle(n.postTitle)}”
-        </span>
-        {' '}작성으로{' '}
-      </>
-    ) : (
-      <>게시글 작성으로 </>
-    )
-    return (
-      <>
-        {what}
-        <span className={`font-semibold ${meta.accentText}`}>{(n.amount ?? 0).toLocaleString()}</span>
-        {MESSAGES.points.notification.rewardSuffix}
-      </>
-    )
-  }
-
-  // 댓글 작성 포인트 지급: POST_REWARD와 동일한 이유로 발신자를 밝히지 않는다. 어떤 댓글인지 내용으로 보여준다.
-  if (n.type === 'COMMENT_REWARD') {
-    const what = n.commentContent ? (
-      <>
-        댓글{' '}
-        <span className="font-semibold text-neutral-800 dark:text-neutral-100">
-          “{truncatePostTitle(n.commentContent)}”
-        </span>
-        으로{' '}
-      </>
-    ) : (
-      <>댓글 작성으로 </>
-    )
-    return (
-      <>
-        {what}
-        <span className={`font-semibold ${meta.accentText}`}>{(n.amount ?? 0).toLocaleString()}</span>
-        {MESSAGES.points.notification.rewardSuffix}
-      </>
-    )
-  }
-
-  // 좋아요 받아 포인트 지급: 마찬가지로 발신자를 밝히지 않는다(누가 눌렀는지는 LIKE 알림이 따로 알려준다).
-  if (n.type === 'LIKE_REWARD') {
-    const what = n.postTitle ? (
-      <>
-        게시글{' '}
-        <span className="font-semibold text-neutral-800 dark:text-neutral-100">
-          “{truncatePostTitle(n.postTitle)}”
-        </span>
-        이(가){' '}
-      </>
-    ) : (
-      <>게시글이 </>
-    )
-    return (
-      <>
-        {what}좋아요를 받아{' '}
-        <span className={`font-semibold ${meta.accentText}`}>{(n.amount ?? 0).toLocaleString()}</span>
-        {MESSAGES.points.notification.rewardSuffix}
-      </>
-    )
-  }
-
-  // 다른 회원이 포인트를 직접 송금한 경우: 게시글/댓글과 무관하므로 별도 문구로 조립한다.
-  if (n.type === 'TRANSFER') {
-    const who = <span className="font-semibold text-neutral-900 dark:text-white">{notificationSenderLabel(n)}</span>
-    return (
-      <>
-        {who}{MESSAGES.points.notification.transferAfterName}
-        <span className={`font-semibold ${meta.accentText}`}>{(n.amount ?? 0).toLocaleString()}P</span>
-        {MESSAGES.points.notification.transferSuffix}
-      </>
-    )
-  }
-
-  // 관리자 권한 경매 낙찰: 시스템 정산이라 발신자가 없다.
-  if (n.type === 'ROLE_AUCTION_WON') {
-    return (
-      <>
-        {MESSAGES.points.notification.auctionWonPrefix}
-        <span className={`font-semibold ${meta.accentText}`}>{(n.amount ?? 0).toLocaleString()}</span>
-        {MESSAGES.points.notification.auctionWonSuffix}
-      </>
-    )
-  }
-
-  // 관리자 권한 경매 낙첨: 마찬가지로 발신자가 없다.
-  if (n.type === 'ROLE_AUCTION_LOST') {
-    return (
-      <>
-        {MESSAGES.points.notification.auctionLostPrefix}
-        <span className={`font-semibold ${meta.accentText}`}>{(n.amount ?? 0).toLocaleString()}</span>
-        {MESSAGES.points.notification.auctionLostSuffix}
-      </>
-    )
-  }
-
-  const who = <span className="font-semibold text-neutral-900 dark:text-white">{notificationSenderLabel(n)}</span>
-  // 액션 키워드는 좌측 색상 아이콘이 이미 종류를 알려주므로 별도 색을 넣지 않고 본문과 같은 톤으로 둔다.
-  const keyword = meta.label
-
-  if (meta.target === 'comment') {
-    return <>{who}님이 회원님의 댓글에 {keyword}{meta.suffix}</>
-  }
-
-  const target = n.postTitle ? (
-    <>
-      회원님이 작성하신{' '}
-      <span className="font-semibold text-neutral-800 dark:text-neutral-100">
-        “{truncatePostTitle(n.postTitle)}”
-      </span>
-      에{' '}
-    </>
-  ) : (
-    <>회원님의 게시글에 </>
-  )
-
-  return <>{who}님이 {target}{keyword}{meta.suffix}</>
-}
-
 // 헤더 알림 벨. 이 컴포넌트는 "로그인 상태에서만" 렌더된다(Header가 user 있을 때만 마운트).
 // 따라서 로그아웃 = 언마운트이고, 아래 effect의 cleanup이 SSE 연결을 안전하게 닫는다.
 //
 // 데이터 모델: 백엔드 GET /api/notifications 는 "안 읽은 알림"만 내려준다.
 //   → 목록 length가 곧 안 읽은 개수(배지 숫자)다. 읽음 처리하면 목록에서 빠진다.
+//   (읽은 알림까지 포함한 전체 "내역"은 별도 페이지 /notifications 에서 GET /all 로 본다.)
 //
 // 실시간 갱신 전략(중요): SSE는 "새 알림이 생겼다"는 신호로만 쓰고, 표시 데이터는
 //   항상 REST(getUnread)를 다시 불러 채운다. push 이벤트에는 발신자 이름이 없고 id만 오는데,
@@ -310,6 +85,20 @@ export default function NotificationBell() {
     }
   }, [fetchUnread])
 
+  // 전체보기 페이지 등 다른 컴포넌트가 알림을 읽음/삭제하면(SSE로는 안 오는 변화) 이 이벤트가 발행된다.
+  // 벨은 안 읽은 목록을 통째로 다시 받아 배지 숫자를 다시 세므로, 읽음/삭제 어느 경우든 정확히 맞춰진다.
+  useEffect(() => {
+    let cancelled = false
+    const onChanged = () => {
+      fetchUnread().then(list => { if (!cancelled && list) setNotifications(list) })
+    }
+    window.addEventListener(NOTIFICATIONS_CHANGED_EVENT, onChanged)
+    return () => {
+      cancelled = true
+      window.removeEventListener(NOTIFICATIONS_CHANGED_EVENT, onChanged)
+    }
+  }, [fetchUnread])
+
   // 드롭다운이 열려 있을 때만 바깥 클릭 리스너를 달아 닫는다(UserMenu와 동일 패턴).
   useEffect(() => {
     if (!open) return
@@ -334,12 +123,12 @@ export default function NotificationBell() {
     if (href) router.push(href)
   }
 
-  // 모두 읽기: 백엔드에 일괄 처리 엔드포인트가 없어 건별 PATCH를 병렬 호출한다.
-  // 낙관적으로 먼저 비운 뒤 요청을 보낸다(일부 실패는 다음 재조회에서 자연히 되돌아온다).
+  // 모두 읽기: 백엔드 벌크 엔드포인트 한 번으로 처리한다(과거엔 건별 PATCH를 병렬 호출했다).
+  // 낙관적으로 먼저 비운 뒤 요청을 보낸다(실패는 다음 재조회에서 자연히 되돌아온다).
   function handleMarkAllRead() {
-    const targets = notifications
+    if (count === 0) return
     setNotifications([])
-    void Promise.allSettled(targets.map(n => notificationsApi.markAsRead(n.id)))
+    notificationsApi.markAllAsRead().catch(() => {})
   }
 
   return (
@@ -365,14 +154,14 @@ export default function NotificationBell() {
           className="absolute right-0 top-full z-20 mt-2 w-72 max-w-[calc(100vw-2rem)] overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-800"
         >
           <div className="flex items-center justify-between border-b border-neutral-200 px-3 py-2 dark:border-neutral-700">
-            <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">알림</p>
+            <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{MESSAGES.notifications.title}</p>
             {count > 0 && (
               <button
                 type="button"
                 onClick={handleMarkAllRead}
                 className="text-[11px] text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
               >
-                모두 읽기
+                {MESSAGES.notifications.markAllRead}
               </button>
             )}
           </div>
@@ -410,6 +199,15 @@ export default function NotificationBell() {
               })}
             </ul>
           )}
+
+          {/* 읽은 알림까지 포함한 전체 내역은 별도 페이지에서. 안 읽은 알림이 없어도 항상 노출한다. */}
+          <Link
+            href="/notifications"
+            onClick={() => setOpen(false)}
+            className="block border-t border-neutral-200 px-3 py-2 text-center text-[12px] font-medium text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-700/40 dark:hover:text-neutral-200"
+          >
+            {MESSAGES.notifications.viewAll}
+          </Link>
         </div>
       )}
     </div>
