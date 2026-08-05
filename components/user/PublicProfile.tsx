@@ -3,6 +3,7 @@ import type { PublicProfile as PublicProfileData, UserPost, PageResponse } from 
 import { formatDate, formatRelativeTime } from '@/lib/format'
 import { categoryShortLabel } from '@/lib/category'
 import AdminBadge from '@/components/common/AdminBadge'
+import RootBadge from '@/components/common/RootBadge'
 import Pagination from '@/components/common/Pagination'
 import ProfileReportButton from '@/components/user/ProfileReportButton'
 import TransferPointsButton from '@/components/user/TransferPointsButton'
@@ -69,7 +70,8 @@ export default function PublicProfile({ profile, postsPage, currentPage, nicknam
             <h1 className="truncate text-lg font-bold text-neutral-900 dark:text-neutral-100">
               {profile.nickname}
             </h1>
-            {profile.adminAuthor && <AdminBadge />}
+            {/* ROOT를 우선한다: 백엔드는 상호배타로 내려주지만 뱃지는 한 개만 노출. */}
+            {profile.rootAuthor ? <RootBadge /> : profile.adminAuthor && <AdminBadge />}
             {profile.suspended && (
               <span className="shrink-0 rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-600 dark:bg-red-500/20 dark:text-red-400">
                 이용 정지
@@ -95,7 +97,7 @@ export default function PublicProfile({ profile, postsPage, currentPage, nicknam
             flex-1인 가운데 영역이 이 버튼들을 헤더 우측 상단으로 밀어낸다. */}
         <div className="flex shrink-0 items-center gap-2">
           <TransferPointsButton targetUserId={profile.id} targetNickname={profile.nickname} />
-          <ActivityBlockButton targetUserId={profile.id} targetNickname={profile.nickname} adminAuthor={profile.adminAuthor} />
+          <ActivityBlockButton targetUserId={profile.id} targetNickname={profile.nickname} staffAuthor={profile.adminAuthor || profile.rootAuthor} />
           <ProfileReportButton targetUserId={profile.id} />
         </div>
       </section>

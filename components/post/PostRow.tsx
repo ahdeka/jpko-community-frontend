@@ -116,6 +116,7 @@ export default function PostRow({
         <AuthorName
           author={post.author}
           isAdmin={post.adminAuthor}
+          isRoot={post.rootAuthor}
           nickname={linkNickname}
           className={authorClass('shrink-0 text-xs text-neutral-500')}
         />
@@ -137,12 +138,12 @@ export default function PostRow({
             {/* 모바일 전용 메타: 좋아요(주황)·시간 + 작성자 (데스크탑은 컬럼으로 분리) */}
             <div className="mt-1 flex items-center gap-2 text-xs text-neutral-500 md:hidden">
               <LikeTimeMeta likeCount={post.likeCount} createdAt={post.createdAt} />
-              <AuthorName author={post.author} isAdmin={post.adminAuthor} className="ml-auto truncate pl-2" />
+              <AuthorName author={post.author} isAdmin={post.adminAuthor} isRoot={post.rootAuthor} className="ml-auto truncate pl-2" />
             </div>
           </div>
 
           {/* 데스크탑 전용 컬럼: 글쓴이 · 작성일 · 조회 · 추천 */}
-          <AuthorName author={post.author} isAdmin={post.adminAuthor} className="hidden md:block truncate text-center text-xs text-neutral-500" />
+          <AuthorName author={post.author} isAdmin={post.adminAuthor} isRoot={post.rootAuthor} className="hidden md:block truncate text-center text-xs text-neutral-500" />
           <span className="hidden md:block text-center text-xs text-neutral-400">{formatRelativeTime(post.createdAt)}</span>
           <span className="hidden md:block text-center text-xs text-neutral-500 tabular-nums">{post.viewCount}</span>
           <span className="hidden md:block text-center text-xs font-medium text-orange-400 tabular-nums">{post.likeCount}</span>
@@ -166,6 +167,7 @@ export default function PostRow({
       <AuthorName
         author={post.author}
         isAdmin={post.adminAuthor}
+        isRoot={post.rootAuthor}
         nickname={linkNickname}
         className={authorClass('shrink-0 text-xs text-neutral-500')}
       />

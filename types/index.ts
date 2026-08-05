@@ -74,6 +74,7 @@ export interface PublicProfile {
   grade: UserGrade;
   displayGradeName: string;   // 등급 한글 표기 (프론트 lib/grade.ts와 별개로 백엔드가 내려주는 표시명)
   adminAuthor: boolean;       // 운영진(ADMIN) 여부 — 닉네임 옆 "운영진" 뱃지 표시용
+  rootAuthor: boolean;        // 최고 관리자(ROOT) 여부 — 닉네임 옆 "운영자"(보라) 뱃지 표시용. adminAuthor와 상호배타
   suspended: boolean;         // 관리자에 의해 정지(SUSPENDED)된 계정인지
   bio: string | null;         // 자기소개(최대 200자). 없으면 null.
   createdAt: string;          // 가입일
@@ -125,6 +126,9 @@ export interface PostSummary {
   // 작성자가 운영진(ADMIN)인지 — 닉네임 옆 "운영진" 뱃지 표시용.
   // 백엔드는 익명 글이면 false로 내려준다(운영진이 익명으로 써도 신원 노출 방지).
   adminAuthor: boolean;
+  // 작성자가 최고 관리자(ROOT)인지 — 닉네임 옆 "운영자"(보라) 뱃지 표시용.
+  // adminAuthor와 상호배타적이며, 익명 글이면 마찬가지로 false.
+  rootAuthor: boolean;
   anonymous: boolean;
   viewCount: number;
   commentCount: number;
@@ -206,6 +210,8 @@ export interface Comment {
   author: string;
   // 작성자가 운영진(ADMIN)인지. 백엔드는 삭제·익명 댓글이면 false로 내려준다.
   adminAuthor: boolean;
+  // 작성자가 최고 관리자(ROOT)인지 — "운영자"(보라) 뱃지 표시용. adminAuthor와 상호배타.
+  rootAuthor: boolean;
   anonymous: boolean;
   isOwner: boolean;
   content: string;

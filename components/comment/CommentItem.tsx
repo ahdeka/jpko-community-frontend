@@ -91,6 +91,7 @@ export default function CommentItem({ comment, postId, isReply = false, rootId }
             <AuthorName
               author={comment.author}
               isAdmin={comment.adminAuthor}
+              isRoot={comment.rootAuthor}
               nickname={comment.anonymous ? undefined : comment.author}
               className="text-sm font-semibold text-gray-800 dark:text-neutral-100"
             />

@@ -28,6 +28,7 @@ export default function PostDetail({ post, listHref }: Props) {
             <AuthorName
               author={post.author}
               isAdmin={post.adminAuthor}
+              isRoot={post.rootAuthor}
               nickname={post.anonymous ? undefined : post.author}
             />
             <span>{formatDateTime(post.createdAt)}</span>
