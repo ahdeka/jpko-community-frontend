@@ -144,7 +144,7 @@ export default function AdminBlockAppealsPage() {
                           disabled={busy}
                           className="rounded border border-neutral-300 px-2 py-1 text-xs text-neutral-600 hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
                         >
-                          {busy ? '처리 중…' : '처리 완료'}
+                          {busy ? '처리 중…' : '차단 해제'}
                         </button>
                       )}
                     </td>
