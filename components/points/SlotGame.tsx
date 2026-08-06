@@ -311,7 +311,7 @@ export default function SlotGame() {
           >
             {result.win
               ? MESSAGES.points.slot.win(Math.abs(result.netAmount).toLocaleString())
-              : MESSAGES.points.slot.lose(Math.abs(result.netAmount).toLocaleString())}
+              : MESSAGES.points.slot.lose(Math.abs(result.betAmount).toLocaleString())}
           </p>
           <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
             수수료 {result.fee.toLocaleString()}P 차감 · 배율 {result.multiplier}x · 잔액{' '}
