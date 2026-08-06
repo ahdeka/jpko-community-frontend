@@ -267,9 +267,8 @@ export const MESSAGES = {
       randomOpponentHint: '다음 스핀은 랜덤 상대하고 ㄱㄱ',
     },
     pachinko: {
-      betRequired: '돈걸어',
-      betRange: (min: string, max: string) => `${min}P ~ ${max}P 사이로 베팅하셈`,
-      betUnitMismatch: (unit: string) => `${unit}P 단위로만 베팅하셈`,
+      ballCountRequired: '구슬 몇 개 쏠지 정해',
+      ballCountRange: (min: string, max: string) => `구슬은 ${min}개 ~ ${max}개 사이로만 쏠 수 있음`,
       playFailed: 'ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ구슬! 실패!',
       emailNotVerified: '이메일 인증부터 하고 오셈',
       win: (amount: string) => `대박! ${amount}P 벌음 ㅊㅋㅊㅋ`,
@@ -289,7 +288,7 @@ export const MESSAGES = {
       rouletteDescription:
         '원하는 만큼 직접 배팅해서 다른 회원과 겨루는 게임이에요. 이기면 상대의 포인트를 가져오고 지면 내 포인트를 잃으며, 판마다 배팅액의 일부가 수수료로 빠져나가요.',
       pachinkoDescription:
-        '구슬을 떨어뜨려 못 사이를 튕기다 바닥의 슬롯에 착지하는 게임이에요. 착지한 슬롯의 배율만큼 포인트를 받고, 판마다 배팅액의 일부가 수수료로 빠져나가요.',
+        '구슬을 개당 가격으로 사서 원하는 만큼 쏘는 게임이에요. 구슬마다 못 사이를 튕기다 바닥의 슬롯에 착지하고, 착지한 슬롯의 배율만큼 포인트를 받아요. 판마다 총 구슬 비용의 일부가 수수료로 빠져나가요.',
       slotDescription:
         '릴 3개를 돌려 셋이 모두 같은 그림이 나오면 배당을 받는 슬롯머신이에요. 판마다 배팅액의 일부가 수수료로 빠져나가요.',
     },

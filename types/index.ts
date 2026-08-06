@@ -386,25 +386,35 @@ export interface RouletteSpinResult {
   opponentLocked: boolean;
 }
 
-// 파칭코(플린코형 구슬 낙하) 설정. 못의 좌/우 확률은 의도적으로 노출하지 않는다.
+// 파칭코(플린코형 구슬 낙하) 설정. 구슬 1개당 가격(ballPrice)과 한 판에 쏠 수 있는 개수 범위.
+// 못의 좌/우 확률은 의도적으로 노출하지 않는다.
 export interface PachinkoConfig {
-  betUnit: number;
-  minBet: number;
-  maxBet: number;
+  ballPrice: number;
+  minBalls: number;
+  maxBalls: number;
   feeRate: number;
   rows: number;
   slotMultipliers: number[];
 }
 
-// 파칭코 한 판의 결과 (백엔드 PachinkoPlayResponse와 1:1)
-export interface PachinkoPlayResult {
-  betAmount: number;
-  fee: number;
+// 구슬 1개의 결과 (백엔드 PachinkoBallResult와 1:1)
+export interface PachinkoBallResult {
   bounces: boolean[];   // true = 오른쪽으로 튕김
   slotIndex: number;
   multiplier: number;
-  payout: number;
-  netAmount: number;    // payout - betAmount (음수면 순손실)
+  payout: number;       // round(ballPrice * multiplier)
+}
+
+// 파칭코 한 판의 결과 (백엔드 PachinkoPlayResponse와 1:1). 구슬 ballCount개를 각각 독립적으로 쏘고
+// 그 결과를 합산한다.
+export interface PachinkoPlayResult {
+  ballCount: number;
+  ballPrice: number;
+  totalCost: number;    // ballCount * ballPrice
+  fee: number;
+  balls: PachinkoBallResult[];   // 구슬 개수만큼, 쏜 순서 그대로
+  totalPayout: number;
+  netAmount: number;    // totalPayout - totalCost (음수면 순손실)
   win: boolean;
   balanceAfter: number;
 }
