@@ -266,14 +266,44 @@ export const MESSAGES = {
       lose: (nickname: string, amount: string) => `ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ${nickname}한테 ${amount}P 털렸누...  ㅠ`,
       randomOpponentHint: '다음 스핀은 랜덤 상대하고 ㄱㄱ',
     },
+    pachinko: {
+      betRequired: '돈걸어',
+      betRange: (min: string, max: string) => `${min}P ~ ${max}P 사이로 베팅하셈`,
+      betUnitMismatch: (unit: string) => `${unit}P 단위로만 베팅하셈`,
+      playFailed: 'ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ구슬! 실패!',
+      emailNotVerified: '이메일 인증부터 하고 오셈',
+      win: (amount: string) => `대박! ${amount}P 벌음 ㅊㅋㅊㅋ`,
+      lose: (amount: string) => `ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ${amount}P 날림... ㅠ`,
+    },
+    slot: {
+      betRequired: '돈걸어',
+      betRange: (min: string, max: string) => `${min}P ~ ${max}P 사이로 베팅하셈`,
+      betUnitMismatch: (unit: string) => `${unit}P 단위로만 베팅하셈`,
+      playFailed: 'ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ릴! 실패!',
+      emailNotVerified: '이메일 인증부터 하고 오셈',
+      win: (amount: string) => `트리플 매치! ${amount}P 벌음 ㅊㅋㅊㅋ`,
+      lose: (amount: string) => `ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ${amount}P 날림... ㅠ`,
+    },
     pointInfo: {
       checkinDescription: '매일 로그인할 때 하루 한 번, 포인트를 조금 얻거나 반대로 조금 잃어요.',
       rouletteDescription:
         '원하는 만큼 직접 배팅해서 다른 회원과 겨루는 게임이에요. 이기면 상대의 포인트를 가져오고 지면 내 포인트를 잃으며, 판마다 배팅액의 일부가 수수료로 빠져나가요.',
+      pachinkoDescription:
+        '구슬을 떨어뜨려 못 사이를 튕기다 바닥의 슬롯에 착지하는 게임이에요. 착지한 슬롯의 배율만큼 포인트를 받고, 판마다 배팅액의 일부가 수수료로 빠져나가요.',
+      slotDescription:
+        '릴 3개를 돌려 셋이 모두 같은 그림이 나오면 배당을 받는 슬롯머신이에요. 판마다 배팅액의 일부가 수수료로 빠져나가요.',
     },
     roulettePage: {
       loginGateSuffix: '후 룰렛을 이용할 수 있습니다.',
       description: '원하는 만큼 배팅ㄱㄱ 쫄?',
+    },
+    pachinkoPage: {
+      loginGateSuffix: '후 파칭코를 이용할 수 있습니다.',
+      description: '구슬 떨어뜨리고 배율 ㄱㄱ',
+    },
+    slotPage: {
+      loginGateSuffix: '후 슬롯머신을 이용할 수 있습니다.',
+      description: '트리플 매치 뜨면 대박',
     },
     checkin: {
       gainedPrefix: '오 ',

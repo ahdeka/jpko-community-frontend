@@ -71,6 +71,26 @@ export const TRANSACTION_TYPES: TransactionTypeMeta[] = [
     label: '경매 환불',
     badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
   },
+  {
+    value: 'PACHINKO_FEE',
+    label: '파칭코 수수료',
+    badge: 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400',
+  },
+  {
+    value: 'PACHINKO',
+    label: '파칭코',
+    badge: 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300',
+  },
+  {
+    value: 'SLOT_FEE',
+    label: '슬롯 수수료',
+    badge: 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400',
+  },
+  {
+    value: 'SLOT',
+    label: '슬롯머신',
+    badge: 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300',
+  },
 ]
 
 export const transactionTypeMeta = (type: TransactionType): TransactionTypeMeta =>
@@ -208,6 +228,48 @@ export function describeTransaction(tx: PointTransaction, myUserId: number): Tra
         signedAmountLabel: `+${tx.amount.toLocaleString()}P`,
         colorClass: 'text-emerald-600 dark:text-emerald-400',
         description: '권한 경매 입찰 환불',
+        counterpartLabel: null,
+      }
+    case 'PACHINKO':
+      return isRecipient
+        ? {
+            signedAmountLabel: `+${tx.amount.toLocaleString()}P`,
+            colorClass: 'text-emerald-600 dark:text-emerald-400',
+            description: '파칭코 당첨',
+            counterpartLabel: null,
+          }
+        : {
+            signedAmountLabel: `-${tx.amount.toLocaleString()}P`,
+            colorClass: 'text-red-600 dark:text-red-400',
+            description: '파칭코 손실',
+            counterpartLabel: null,
+          }
+    case 'PACHINKO_FEE':
+      return {
+        signedAmountLabel: `-${tx.amount.toLocaleString()}P`,
+        colorClass: 'text-red-600 dark:text-red-400',
+        description: '파칭코 수수료',
+        counterpartLabel: null,
+      }
+    case 'SLOT':
+      return isRecipient
+        ? {
+            signedAmountLabel: `+${tx.amount.toLocaleString()}P`,
+            colorClass: 'text-emerald-600 dark:text-emerald-400',
+            description: '슬롯 당첨',
+            counterpartLabel: null,
+          }
+        : {
+            signedAmountLabel: `-${tx.amount.toLocaleString()}P`,
+            colorClass: 'text-red-600 dark:text-red-400',
+            description: '슬롯 손실',
+            counterpartLabel: null,
+          }
+    case 'SLOT_FEE':
+      return {
+        signedAmountLabel: `-${tx.amount.toLocaleString()}P`,
+        colorClass: 'text-red-600 dark:text-red-400',
+        description: '슬롯 수수료',
         counterpartLabel: null,
       }
   }

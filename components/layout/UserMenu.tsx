@@ -98,6 +98,12 @@ export default function UserMenu({ user, onLogout }: Props) {
           <Link href="/roulette" role="menuitem" className={menuItem} onClick={() => setOpen(false)}>
             룰렛
           </Link>
+          <Link href="/pachinko" role="menuitem" className={menuItem} onClick={() => setOpen(false)}>
+            파칭코
+          </Link>
+          <Link href="/slot" role="menuitem" className={menuItem} onClick={() => setOpen(false)}>
+            슬롯
+          </Link>
           <Link href="/shop" role="menuitem" className={menuItem} onClick={() => setOpen(false)}>
             상점
           </Link>

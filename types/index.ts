@@ -323,9 +323,14 @@ export interface AdminReportDetail {
 //  BLOCK_UNBLOCK: 유저 → 시스템, 본인 차단을 포인트로 즉시 해제.
 //  BID_HOLD: 유저 → 시스템, 권한 경매 입찰 시 예탁(에스크로). 재입찰(인상) 시 차액만큼 추가로 발생.
 //  BID_REFUND: 시스템 → 유저, 낙찰 실패 또는 입찰 취소 시 예탁금 환불.
+//  PACHINKO_FEE: 유저 → 시스템, 파칭코 판당 수수료.
+//  PACHINKO: 유저 ↔ 시스템, 파칭코 결과 정산(순손익). 방향은 승/패에 따라 갈린다.
+//  SLOT_FEE: 유저 → 시스템, 슬롯머신 판당 수수료.
+//  SLOT: 유저 ↔ 시스템, 슬롯머신 결과 정산(순손익). 방향은 승/패에 따라 갈린다.
 export type TransactionType =
   | 'GRANT' | 'COLLECT' | 'ACCOUNT_OPENED' | 'CHECKIN' | 'ROULETTE' | 'ROULETTE_FEE' | 'TRANSFER' | 'TRANSFER_FEE'
-  | 'BLOCK_PURCHASE' | 'BLOCK_UNBLOCK' | 'BID_HOLD' | 'BID_REFUND';
+  | 'BLOCK_PURCHASE' | 'BLOCK_UNBLOCK' | 'BID_HOLD' | 'BID_REFUND'
+  | 'PACHINKO_FEE' | 'PACHINKO' | 'SLOT_FEE' | 'SLOT';
 
 // 포인트 잔액 (백엔드 PointResponse와 1:1)
 export interface PointBalance {
@@ -379,6 +384,51 @@ export interface RouletteSpinResult {
   opponentId: number;
   opponentNickname: string;
   opponentLocked: boolean;
+}
+
+// 파칭코(플린코형 구슬 낙하) 설정. 못의 좌/우 확률은 의도적으로 노출하지 않는다.
+export interface PachinkoConfig {
+  betUnit: number;
+  minBet: number;
+  maxBet: number;
+  feeRate: number;
+  rows: number;
+  slotMultipliers: number[];
+}
+
+// 파칭코 한 판의 결과 (백엔드 PachinkoPlayResponse와 1:1)
+export interface PachinkoPlayResult {
+  betAmount: number;
+  fee: number;
+  bounces: boolean[];   // true = 오른쪽으로 튕김
+  slotIndex: number;
+  multiplier: number;
+  payout: number;
+  netAmount: number;    // payout - betAmount (음수면 순손실)
+  win: boolean;
+  balanceAfter: number;
+}
+
+// 슬롯머신(3릴, 트리플 매치만 당첨) 설정. 심볼별 등장 확률(weight)은 의도적으로 노출하지 않는다.
+export interface SlotConfig {
+  betUnit: number;
+  minBet: number;
+  maxBet: number;
+  feeRate: number;
+  symbols: { name: string; multiplier: number }[];
+}
+
+// 슬롯머신 한 판의 결과 (백엔드 SlotPlayResponse와 1:1)
+export interface SlotPlayResult {
+  betAmount: number;
+  fee: number;
+  symbols: string[];   // 릴 3개에 나온 심볼 이름
+  tripleMatch: boolean;
+  multiplier: number;
+  payout: number;
+  netAmount: number;
+  win: boolean;
+  balanceAfter: number;
 }
 
 // 포인트 송금 요청 (백엔드 TransferRequest와 1:1)
