@@ -95,14 +95,9 @@ export default function UserMenu({ user, onLogout }: Props) {
           <Link href="/mypage" role="menuitem" className={menuItem} onClick={() => setOpen(false)}>
             마이페이지
           </Link>
-          <Link href="/roulette" role="menuitem" className={menuItem} onClick={() => setOpen(false)}>
-            룰렛
-          </Link>
-          <Link href="/pachinko" role="menuitem" className={menuItem} onClick={() => setOpen(false)}>
-            파칭코
-          </Link>
-          <Link href="/slot" role="menuitem" className={menuItem} onClick={() => setOpen(false)}>
-            슬롯
+          {/* 룰렛·파칭코·슬롯은 게임센터 허브(/game-center)로 통합. 메뉴에서는 진입점 하나만 노출한다. */}
+          <Link href="/game-center" role="menuitem" className={menuItem} onClick={() => setOpen(false)}>
+            게임센터
           </Link>
           <Link href="/shop" role="menuitem" className={menuItem} onClick={() => setOpen(false)}>
             상점

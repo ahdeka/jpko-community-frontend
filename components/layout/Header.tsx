@@ -89,35 +89,58 @@ export default function Header({ categories }: Props) {
           </nav>
         </div>
 
-        <nav className="flex items-center gap-4 text-sm overflow-x-auto py-3">
+        {/*
+          카테고리 라인. 왼쪽은 가로 스크롤되는 카테고리 목록, 오른쪽 끝에 "게임센터 입장" 진입점을 고정한다.
+          - 바깥 div가 정렬 기준(스크롤 X)이고, 안쪽 nav만 overflow-x-auto로 스크롤한다.
+            (게임센터 링크까지 스크롤 컨테이너에 넣으면 카테고리가 많을 때 링크가 화면 밖으로 밀려나 안 보임)
+          - flex-1 + min-w-0: 카테고리 nav가 남은 폭을 차지하되, min-w-0이 있어야 자식이 넘칠 때 실제로 스크롤된다.
+        */}
+        <div className="flex items-center gap-3">
+          <nav className="flex flex-1 items-center gap-4 overflow-x-auto py-3 text-sm min-w-0">
+            <Link
+              href="/posts"
+              className={
+                pathname === '/posts'
+                  ? 'font-semibold text-neutral-900 dark:text-white whitespace-nowrap'
+                  : 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-200 whitespace-nowrap'
+              }
+            >
+              전체
+            </Link>
+            {categories.map(category => {
+              const href = `/posts/category/${category.slug}`
+              const active = pathname === href
+              return (
+                <Link
+                  key={category.id}
+                  href={href}
+                  className={
+                    active
+                      ? 'font-semibold text-neutral-900 dark:text-white whitespace-nowrap'
+                      : 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-200 whitespace-nowrap'
+                  }
+                >
+                  {category.name}
+                </Link>
+              )
+            })}
+          </nav>
+          {/*
+            게임센터 진입점. 카테고리 링크와 동일한 텍스트 스타일을 쓰되, shrink-0으로 스크롤에 눌리지 않고
+            항상 우측에 노출된다. 게임센터 하위(룰렛/파칭코/슬롯) 어디에 있든 활성 강조가 유지되도록 startsWith로 판정한다.
+          */}
           <Link
-            href="/posts"
+            href="/game-center"
+            aria-current={pathname.startsWith('/game-center') ? 'page' : undefined}
             className={
-              pathname === '/posts'
-                ? 'font-semibold text-neutral-900 dark:text-white whitespace-nowrap'
-                : 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-200 whitespace-nowrap'
+              pathname.startsWith('/game-center')
+                ? 'mr-2 shrink-0 whitespace-nowrap text-sm font-semibold text-neutral-900 dark:text-white'
+                : 'mr-2 shrink-0 whitespace-nowrap text-sm text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-200'
             }
           >
-            전체
+            게임센터
           </Link>
-          {categories.map(category => {
-            const href = `/posts/category/${category.slug}`
-            const active = pathname === href
-            return (
-              <Link
-                key={category.id}
-                href={href}
-                className={
-                  active
-                    ? 'font-semibold text-neutral-900 dark:text-white whitespace-nowrap'
-                    : 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-200 whitespace-nowrap'
-                }
-              >
-                {category.name}
-              </Link>
-            )
-          })}
-        </nav>
+        </div>
       </div>
     </header>
   )

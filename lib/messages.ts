@@ -292,6 +292,12 @@ export const MESSAGES = {
       slotDescription:
         '릴 3개를 돌려 셋이 모두 같은 그림이 나오면 배당을 받는 슬롯머신이에요. 판마다 배팅액의 일부가 수수료로 빠져나가요.',
     },
+    gameCenter: {
+      // 게임센터 허브(룰렛·파칭코·슬롯 공통) 로그인 게이트/헤더 문구.
+      title: '게임센터',
+      subtitle: '포인트를 걸고 미니게임으로 즐겨보세요.',
+      loginGateSuffix: '후 게임센터를 이용할 수 있습니다.',
+    },
     roulettePage: {
       loginGateSuffix: '후 룰렛을 이용할 수 있습니다.',
       description: '원하는 만큼 배팅ㄱㄱ 쫄?',
