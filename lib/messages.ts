@@ -265,6 +265,14 @@ export const MESSAGES = {
       win: (nickname: string, amount: string) => `${nickname}한테서 ${amount}P 털음 ㅊㅋㅊㅋ`,
       lose: (nickname: string, amount: string) => `ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ${nickname}한테 ${amount}P 털렸누...  ㅠ`,
       randomOpponentHint: '다음 스핀은 랜덤 상대하고 ㄱㄱ',
+      consentRequired: '동의부터 하고 오셈',
+    },
+    rouletteConsent: {
+      title: '룰렛 하기 전에 읽어',
+      body: '룰렛은 진짜 다른 회원 포인트 걸고 뺏고 뺏기는 게임임. 지면 그만큼 내 포인트 훅 날아가고, 상대로도 랜덤하게 뽑힐 수 있음. 동의하면 다신 안 물어봄.',
+      agree: '동의함',
+      cancel: '다음에 할게',
+      agreeFailed: '동의 처리 실패함 다시 시도해',
     },
     pachinko: {
       ballCountRequired: '구슬 몇 개 쏠지 정해',

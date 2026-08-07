@@ -366,6 +366,7 @@ export interface RouletteConfig {
   minBet: number;
   maxBet: number;
   feeRate: number;
+  agreed: boolean;
 }
 
 // 현재 고정된 룰렛 상대. 고정된 상대가 없으면 data 자체가 없다(undefined).

@@ -7,6 +7,7 @@ import { authApi } from '@/lib/api/auth'
 import { ApiError } from '@/lib/api/client'
 import { useAuth } from '@/lib/auth-context'
 import { MESSAGES } from '@/lib/messages'
+import RouletteConsentModal from './RouletteConsentModal'
 import type { RouletteConfig, RouletteOpponent, RouletteSpinResult } from '@/types'
 
 // 휠 세그먼트 구성. 12시 방향(0deg)부터 시계방향으로 승/패가 번갈아 나온다.
@@ -63,6 +64,10 @@ export default function RouletteGame() {
   const [result, setResult] = useState<RouletteSpinResult | null>(null)
   const [lockPending, setLockPending] = useState(false)
 
+  // 룰렛 참여 동의 여부. 계정에 영구히 남는 값이라 한 번 동의하면 다시 물어보지 않는다.
+  const [agreed, setAgreed] = useState(false)
+  const [consentOpen, setConsentOpen] = useState(false)
+
   // 이메일 미인증으로 스핀이 막힌 경우에만 에러 문구 아래 "인증 메일 보내기" 액션을 같이 보여준다.
   const [emailGateHit, setEmailGateHit] = useState(false)
   const [verifySending, setVerifySending] = useState(false)
@@ -88,6 +93,8 @@ export default function RouletteGame() {
         if (cancelled || !res.data) return
         setConfig(res.data)
         setBetAmount(String(res.data.minBet))
+        setAgreed(res.data.agreed)
+        if (!res.data.agreed) setConsentOpen(true)
       })
       .catch(() => {})
 
@@ -195,6 +202,12 @@ export default function RouletteGame() {
       return
     }
 
+    if (!agreed) {
+      setError(MESSAGES.points.roulette.consentRequired)
+      setConsentOpen(true)
+      return
+    }
+
     const amount = Number(betAmount)
     if (!Number.isFinite(amount) || amount <= 0) {
       setError(MESSAGES.points.roulette.betRequired)
@@ -223,6 +236,10 @@ export default function RouletteGame() {
       revealTimeoutRef.current = setTimeout(revealPendingResult, 2800)
     } catch (e) {
       setSpinning(false)
+      if (e instanceof ApiError && e.code === 'ROULETTE_CONSENT_REQUIRED') {
+        setAgreed(false)
+        setConsentOpen(true)
+      }
       setError(e instanceof ApiError ? e.message : MESSAGES.points.roulette.spinFailed)
     }
   }
@@ -395,6 +412,16 @@ export default function RouletteGame() {
           )}
         </div>
       )}
+
+      <RouletteConsentModal
+        open={consentOpen}
+        onAgree={() => {
+          setAgreed(true)
+          setConsentOpen(false)
+          setError('')
+        }}
+        onClose={() => setConsentOpen(false)}
+      />
     </div>
   )
 }

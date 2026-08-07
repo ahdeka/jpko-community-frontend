@@ -24,4 +24,8 @@ export const rouletteApi = {
   // 고정을 해제한다(다음 스핀부터 다시 랜덤 상대).
   unlockOpponent: () =>
     apiClient.delete<void>('/api/roulette/opponent'),
+
+  // 룰렛 참여 동의. 한 번 동의하면 계정에 계속 남아 다시 물어보지 않는다.
+  agree: () =>
+    apiClient.post<void>('/api/roulette/consent'),
 }
