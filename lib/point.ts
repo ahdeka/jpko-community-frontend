@@ -96,6 +96,11 @@ export const TRANSACTION_TYPES: TransactionTypeMeta[] = [
     label: '슬롯머신',
     badge: 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300',
   },
+  {
+    value: 'SHIELD_PURCHASE',
+    label: '방어권 구매',
+    badge: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300',
+  },
 ]
 
 export const transactionTypeMeta = (type: TransactionType): TransactionTypeMeta =>
@@ -282,6 +287,13 @@ export function describeTransaction(tx: PointTransaction, myUserId: number): Tra
         signedAmountLabel: `-${tx.amount.toLocaleString()}P`,
         colorClass: 'text-red-600 dark:text-red-400',
         description: '슬롯 수수료',
+        counterpartLabel: null,
+      }
+    case 'SHIELD_PURCHASE':
+      return {
+        signedAmountLabel: `-${tx.amount.toLocaleString()}P`,
+        colorClass: 'text-red-600 dark:text-red-400',
+        description: '룰렛 방어권 구매',
         counterpartLabel: null,
       }
   }

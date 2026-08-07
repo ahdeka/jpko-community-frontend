@@ -594,6 +594,17 @@ export const MESSAGES = {
       cancelSuccess: '입찰을 취소했습니다.',
       myStatusActive: (targetRole: string, expiresAt: string) => `현재 ${targetRole} 권한 보유 중 · ${expiresAt}까지`,
     },
+    // 룰렛 방어권 섹션(RouletteShieldSection).
+    shield: {
+      loadFailed: '방어권 상품을 불러오지 못했습니다.',
+      empty: '판매 중인 방어권이 없습니다.',
+      hint: '구매하면 즉시 룰렛 대결 동의가 취소되어, 기간 동안 룰렛 대결 상대로 뽑히거나 스핀할 수 없습니다.',
+      durationSuffix: '시간 동안 보호',
+      buy: '구매하기',
+      buying: '구매 중…',
+      buySuccess: '방어권을 구매했습니다.',
+      myStatusActive: (expiresAt: string) => `방어권 적용 중 · ${expiresAt}까지`,
+    },
     // 백엔드 ErrorCode 이름 → 한글 메시지 (상점 전반에서 공용으로 사용).
     errorCodeMessages: {
       ACTIVITY_BLOCKED: '활동이 제한된 상태입니다.',

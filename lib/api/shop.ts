@@ -4,8 +4,10 @@ import type {
   BlockStatus,
   PlaceBidBody,
   PurchaseBlockBody,
+  PurchaseShieldBody,
   RoleAuctionRound,
   RolePurchaseStatus,
+  RouletteShieldStatus,
   ShopItem,
 } from '@/types'
 
@@ -47,4 +49,12 @@ export const shopApi = {
   // 내 권한 경매 낙찰(보유) 현황. 관리자 정지 화면에서 "경매로 얻은 ADMIN인지" 판단할 때도 재사용한다.
   getMyRoleStatus: () =>
     apiClient.get<RolePurchaseStatus>('/api/shop/role-auctions/me'),
+
+  // 룰렛 방어권 구매. 대상 유저 없이 본인에게 즉시 적용되어 룰렛 동의가 취소된다.
+  purchaseShield: (body: PurchaseShieldBody) =>
+    apiClient.post<void>('/api/shop/shields', body),
+
+  // 내 방어권 보유 현황.
+  getMyShieldStatus: () =>
+    apiClient.get<RouletteShieldStatus>('/api/shop/shields/me'),
 }
