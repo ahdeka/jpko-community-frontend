@@ -76,7 +76,7 @@ export default function AdminShopItemsPage() {
   function validateCreateForm(): string | null {
     if (!form.name.trim()) return '상품명을 입력해주세요.'
 
-    if (form.type === 'BLOCK') {
+    if (form.type === 'BLOCK' || form.type === 'SHIELD') {
       if (!form.price || form.price <= 0) return '가격(P)을 입력해주세요.'
       if (!form.durationMinutes || form.durationMinutes <= 0) return '지속 시간(분)을 입력해주세요.'
     } else {
@@ -125,7 +125,7 @@ export default function AdminShopItemsPage() {
   function startEdit(item: ShopItem) {
     setEditingId(item.id)
     setEditForm(
-      item.type === 'BLOCK'
+      item.type === 'BLOCK' || item.type === 'SHIELD'
         ? { price: item.price ?? undefined, durationMinutes: item.durationMinutes ?? undefined }
         : {
             quantity: item.quantity ?? undefined,
@@ -205,6 +205,7 @@ export default function AdminShopItemsPage() {
             className="rounded border border-neutral-300 bg-white px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-900"
           >
             <option value="BLOCK">차단권 (BLOCK)</option>
+            <option value="SHIELD">방어권 (SHIELD)</option>
             <option value="ROLE_AUCTION">권한 경매 (ROLE_AUCTION)</option>
           </select>
           <input
@@ -216,7 +217,7 @@ export default function AdminShopItemsPage() {
           />
         </div>
 
-        {form.type === 'BLOCK' ? (
+        {form.type === 'BLOCK' || form.type === 'SHIELD' ? (
           <div className="flex flex-wrap gap-3">
             <input
               type="number"
@@ -322,7 +323,7 @@ export default function AdminShopItemsPage() {
                     <td className="whitespace-nowrap px-3 py-2.5 font-medium text-neutral-900 dark:text-neutral-100">{item.name}</td>
                     <td className="px-3 py-2.5 text-neutral-600 dark:text-neutral-300">
                       {editing ? (
-                        item.type === 'BLOCK' ? (
+                        item.type === 'BLOCK' || item.type === 'SHIELD' ? (
                           <div className="flex gap-2">
                             <input
                               type="number"
@@ -365,7 +366,7 @@ export default function AdminShopItemsPage() {
                             />
                           </div>
                         )
-                      ) : item.type === 'BLOCK' ? (
+                      ) : item.type === 'BLOCK' || item.type === 'SHIELD' ? (
                         <span>{item.price?.toLocaleString()}P · {item.durationMinutes}분</span>
                       ) : (
                         <span>{item.targetRole} · {item.quantity}명 · 최저 {item.minPrice?.toLocaleString()}P · {item.durationDays}일 · {item.cadenceDays}일 주기</span>

@@ -330,7 +330,7 @@ export interface AdminReportDetail {
 export type TransactionType =
   | 'GRANT' | 'COLLECT' | 'ACCOUNT_OPENED' | 'CHECKIN' | 'ROULETTE' | 'ROULETTE_FEE' | 'TRANSFER' | 'TRANSFER_FEE'
   | 'BLOCK_PURCHASE' | 'BLOCK_UNBLOCK' | 'BID_HOLD' | 'BID_REFUND'
-  | 'PACHINKO_FEE' | 'PACHINKO' | 'SLOT_FEE' | 'SLOT' | 'JMT';
+  | 'PACHINKO_FEE' | 'PACHINKO' | 'SLOT_FEE' | 'SLOT' | 'JMT' | 'SHIELD_PURCHASE';
 
 // 포인트 잔액 (백엔드 PointResponse와 1:1)
 export interface PointBalance {
@@ -505,7 +505,8 @@ export interface Notification {
 // 상점 상품 종류 — 백엔드 ShopItemType enum과 1:1.
 //  BLOCK: 정가 판매되는 임시 활동 차단권 (price/durationMinutes 사용)
 //  ROLE_AUCTION: 주기적으로 경매가 열리는 UserRole 판매 설정 (targetRole~cadenceDays 사용)
-export type ShopItemType = 'BLOCK' | 'ROLE_AUCTION';
+//  SHIELD: 정가 판매되는 룰렛 방어권 (price/durationMinutes 사용, BLOCK과 동일한 필드)
+export type ShopItemType = 'BLOCK' | 'ROLE_AUCTION' | 'SHIELD';
 
 // 상점 상품 (백엔드 ShopItemResponse와 1:1)
 // type에 따라 사용되는 필드가 다르다 — BLOCK은 price/durationMinutes만, ROLE_AUCTION은 나머지만 채워진다.
@@ -527,6 +528,19 @@ export interface ShopItem {
 export interface PurchaseBlockBody {
   targetUserId: number;
   itemId: number;
+}
+
+// 룰렛 방어권 구매 요청 (백엔드 PurchaseShieldRequest와 1:1). 대상 유저 없이 본인에게 적용된다.
+export interface PurchaseShieldBody {
+  itemId: number;
+}
+
+// 내 방어권 보유 현황 (백엔드 RouletteShieldStatusResponse와 1:1)
+// active=false면 나머지 필드는 내려오지 않는다.
+export interface RouletteShieldStatus {
+  active: boolean;
+  itemName?: string;
+  expiresAt?: string;
 }
 
 // 내 차단 상태 (백엔드 BlockStatusResponse와 1:1)

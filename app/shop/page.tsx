@@ -7,6 +7,7 @@ import { shopApi } from '@/lib/api/shop'
 import { ApiError } from '@/lib/api/client'
 import { MESSAGES } from '@/lib/messages'
 import RoleAuctionSection from '@/components/shop/RoleAuctionSection'
+import RouletteShieldSection from '@/components/shop/RouletteShieldSection'
 import type { ShopItem } from '@/types'
 
 const T = MESSAGES.shop.catalog
@@ -63,6 +64,8 @@ export default function ShopPage() {
           </div>
         ))}
       </section>
+
+      <RouletteShieldSection />
 
       <RoleAuctionSection />
     </div>
