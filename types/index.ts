@@ -330,7 +330,7 @@ export interface AdminReportDetail {
 export type TransactionType =
   | 'GRANT' | 'COLLECT' | 'ACCOUNT_OPENED' | 'CHECKIN' | 'ROULETTE' | 'ROULETTE_FEE' | 'TRANSFER' | 'TRANSFER_FEE'
   | 'BLOCK_PURCHASE' | 'BLOCK_UNBLOCK' | 'BID_HOLD' | 'BID_REFUND'
-  | 'PACHINKO_FEE' | 'PACHINKO' | 'SLOT_FEE' | 'SLOT';
+  | 'PACHINKO_FEE' | 'PACHINKO' | 'SLOT_FEE' | 'SLOT' | 'JMT';
 
 // 포인트 잔액 (백엔드 PointResponse와 1:1)
 export interface PointBalance {

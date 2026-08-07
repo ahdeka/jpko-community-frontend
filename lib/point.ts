@@ -42,6 +42,11 @@ export const TRANSACTION_TYPES: TransactionTypeMeta[] = [
     badge: 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400',
   },
   {
+    value: 'JMT',
+    label: '상납존맛탱탱구리',
+    badge: 'bg-blue-100 text-blue-500 dark:bg-blue-800 dark:text-blue-400',
+  },
+  {
     value: 'TRANSFER',
     label: '송금',
     badge: 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300',
@@ -165,6 +170,13 @@ export function describeTransaction(tx: PointTransaction, myUserId: number): Tra
         signedAmountLabel: `-${tx.amount.toLocaleString()}P`,
         colorClass: 'text-red-600 dark:text-red-400',
         description: '룰렛 수수료',
+        counterpartLabel: null,
+      }
+    case 'JMT':
+      return {
+        signedAmountLabel: `${tx.amount.toLocaleString()}P`,
+        colorClass: 'text-emerald-600 dark:text-emerald-400',
+        description: '상납금ㅋㅋ',
         counterpartLabel: null,
       }
     case 'ACCOUNT_OPENED':
