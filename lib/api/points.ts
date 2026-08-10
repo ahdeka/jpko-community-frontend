@@ -1,6 +1,29 @@
 import { apiClient } from './client'
 import type { MyRanking, PageResponse, PointBalance, PointTransaction, TopRanking, TransferRequestBody, TransferResult } from '@/types'
 
+// 포인트 잔액이 방금 바뀌었음을 브라우저 전역에 알리는 이벤트 이름.
+// 헤더(UserMenu)처럼 잔액을 상시 표시하는 컴포넌트가 이 이벤트를 구독해, 새로고침 없이
+// 즉시 최신 잔액으로 동기화한다. (client.ts의 auth:* 이벤트들과 동일한 window 이벤트 패턴)
+export const POINT_BALANCE_CHANGED_EVENT = 'points:balance-changed'
+
+export interface PointBalanceChangedDetail {
+  // 변동 후 확정 잔액. 서버 응답에 balanceAfter가 있는 경우(게임)만 채운다 → 구독자가
+  // 추가 조회 없이 그 값을 즉시 반영한다. 알 수 없으면(송금 등) 생략하고, 구독자가
+  // getBalance()로 다시 조회한다.
+  balance?: number
+}
+
+// 포인트 변동을 전역에 알린다. 브라우저에서만 동작한다(SSR에서는 no-op).
+// balance를 넘기면 구독자가 그대로 반영하고, 생략하면 구독자가 서버에서 재조회한다.
+export function notifyPointBalanceChanged(balance?: number) {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(
+    new CustomEvent<PointBalanceChangedDetail>(POINT_BALANCE_CHANGED_EVENT, {
+      detail: { balance },
+    }),
+  )
+}
+
 // 포인트 관련 API. 조회는 로그인 필수이며, apiClient가 credentials:'include'로
 // 호출하므로 쿠키가 자동 전송된다.
 export const pointsApi = {

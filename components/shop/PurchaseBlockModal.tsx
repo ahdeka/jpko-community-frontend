@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { shopApi } from '@/lib/api/shop'
+import { notifyPointBalanceChanged } from '@/lib/api/points'
 import { ApiError } from '@/lib/api/client'
 import { MESSAGES } from '@/lib/messages'
 import type { ShopItem } from '@/types'
@@ -74,6 +75,8 @@ export default function PurchaseBlockModal({ open, onClose, targetUserId, target
     setLoading(true)
     try {
       await shopApi.purchaseBlock({ targetUserId, itemId: selectedItemId })
+      // 차단권 사용은 포인트를 소모하므로 헤더 잔액을 재조회하게 알린다.
+      notifyPointBalanceChanged()
       setDone(true)
     } catch (err) {
       const code = err instanceof ApiError ? err.code : undefined

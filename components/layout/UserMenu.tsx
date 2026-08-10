@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useCallback, useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import type { User } from '@/types'
-import { pointsApi } from '@/lib/api/points'
+import { pointsApi, POINT_BALANCE_CHANGED_EVENT, type PointBalanceChangedDetail } from '@/lib/api/points'
 import { isStaff } from '@/lib/role'
 
 interface Props {
@@ -26,18 +26,56 @@ function UserIcon() {
 export default function UserMenu({ user, onLogout }: Props) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
-  // 잔액은 /api/auth/me에 포함되지 않으므로 이 컴포넌트가 마운트 시 직접 조회한다.
+  // 잔액은 /api/auth/me에 포함되지 않으므로 이 컴포넌트가 직접 조회한다.
+  // 마운트 시 1회 조회하고, 이후 포인트 변동 이벤트(송금·게임)를 구독해 새로고침 없이 갱신한다.
   const [balance, setBalance] = useState<number | null>(null)
+
+  // 언마운트 이후 도착하는 응답이 setState를 호출하지 않도록 하는 살아있음 플래그.
+  const mountedRef = useRef(true)
+  // 마지막으로 시작한 조회의 순번. 잔액이 짧은 간격으로 연달아 바뀌면 getBalance() 응답이
+  // 시작 순서와 다르게 도착할 수 있는데, 항상 "가장 최근에 시작한 조회"의 결과만 반영해
+  // 낡은 응답이 최신 잔액을 덮어쓰는 것을 막는다.
+  const fetchSeqRef = useRef(0)
 
   const isAdmin = isStaff(user.role)
 
-  useEffect(() => {
-    let cancelled = false
+  const refreshBalance = useCallback(() => {
+    const seq = ++fetchSeqRef.current
     pointsApi.getBalance()
-      .then(res => { if (!cancelled) setBalance(res.data?.balance ?? null) })
-      .catch(() => { if (!cancelled) setBalance(null) })
-    return () => { cancelled = true }
+      .then(res => {
+        // 이 조회가 시작된 뒤 더 최근 조회(또는 이벤트가 실어준 확정값)가 있었다면 이 응답은 낡은 것 → 버린다.
+        if (!mountedRef.current || seq !== fetchSeqRef.current) return
+        setBalance(res.data?.balance ?? null)
+      })
+      .catch(() => {
+        // 일시적 조회 실패로 잔액이 사라져 보이지 않도록, 기존 표시값을 그대로 유지한다.
+        // (첫 조회 실패라면 초기값 null이 유지되어 잔액 줄이 숨겨질 뿐 오작동은 없다.)
+      })
   }, [])
+
+  useEffect(() => {
+    mountedRef.current = true
+    refreshBalance()
+    return () => { mountedRef.current = false }
+  }, [refreshBalance])
+
+  // 포인트 변동 이벤트 구독. detail.balance가 실려 오면(게임) 추가 조회 없이 즉시 반영하고,
+  // 없으면(송금 등) 서버에서 다시 조회한다. 언마운트 시 리스너를 해제해 누수를 막는다.
+  useEffect(() => {
+    function onBalanceChanged(e: Event) {
+      const detail = (e as CustomEvent<PointBalanceChangedDetail>).detail
+      if (typeof detail?.balance === 'number') {
+        // 이벤트가 확정 잔액을 실어줬으면 이것이 최신이다. 순번을 올려, 뒤늦게 도착할 수 있는
+        // 진행 중 getBalance() 응답이 이 값을 덮어쓰지 못하게 한다.
+        fetchSeqRef.current++
+        setBalance(detail.balance)
+      } else {
+        refreshBalance()
+      }
+    }
+    window.addEventListener(POINT_BALANCE_CHANGED_EVENT, onBalanceChanged)
+    return () => window.removeEventListener(POINT_BALANCE_CHANGED_EVENT, onBalanceChanged)
+  }, [refreshBalance])
 
   // 메뉴가 열려 있을 때만 바깥 클릭 리스너를 달아 닫는다.
   useEffect(() => {

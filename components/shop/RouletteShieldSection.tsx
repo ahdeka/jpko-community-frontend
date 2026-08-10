@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { shopApi } from '@/lib/api/shop'
+import { notifyPointBalanceChanged } from '@/lib/api/points'
 import { ApiError } from '@/lib/api/client'
 import { formatDateTime } from '@/lib/format'
 import { MESSAGES } from '@/lib/messages'
@@ -35,6 +36,8 @@ export default function RouletteShieldSection() {
     setBuyingId(item.id)
     try {
       await shopApi.purchaseShield({ itemId: item.id })
+      // 방어권 구매는 포인트를 소모하므로 헤더 잔액을 재조회하게 알린다.
+      notifyPointBalanceChanged()
       load()
     } catch (e) {
       setBuyError(e instanceof ApiError ? e.message : T.loadFailed)

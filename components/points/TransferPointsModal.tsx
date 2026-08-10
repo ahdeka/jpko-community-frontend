@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '@/lib/auth-context'
-import { pointsApi } from '@/lib/api/points'
+import { pointsApi, notifyPointBalanceChanged } from '@/lib/api/points'
 import { usersApi } from '@/lib/api/users'
 import { ApiError } from '@/lib/api/client'
 import { MESSAGES } from '@/lib/messages'
@@ -213,6 +213,8 @@ export default function TransferPointsModal({ open, onClose, onSuccess, fixedRec
       }
 
       setResult({ recipientNickname, transfer: data.transfer ?? null, fee: data.fee ?? null })
+      // 송금 응답에는 발신자의 변동 후 잔액(balanceAfter)이 없으므로, 값 없이 알려 헤더가 재조회하게 한다.
+      notifyPointBalanceChanged()
       onSuccess?.()
     } catch (err) {
       setError(err instanceof ApiError ? err.message : T.genericFailed)

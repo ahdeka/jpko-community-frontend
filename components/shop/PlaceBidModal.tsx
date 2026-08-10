@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { shopApi } from '@/lib/api/shop'
+import { notifyPointBalanceChanged } from '@/lib/api/points'
 import { ApiError } from '@/lib/api/client'
 import { formatDateTime } from '@/lib/format'
 import { roleLabel } from '@/lib/shop'
@@ -79,6 +80,8 @@ export default function PlaceBidModal({ open, onClose, round, hasBid, onBidPlace
     setLoading(true)
     try {
       await shopApi.placeBid(round!.id, { amount: parsed })
+      // 입찰은 포인트를 예탁(차감)하므로 헤더 잔액을 재조회하게 알린다(응답에 잔액이 없어 값은 생략).
+      notifyPointBalanceChanged()
       onBidPlaced()
       setDone('bid')
     } catch (e) {
@@ -93,6 +96,8 @@ export default function PlaceBidModal({ open, onClose, round, hasBid, onBidPlace
     setLoading(true)
     try {
       await shopApi.cancelBid(round!.id)
+      // 입찰 취소는 예탁 포인트가 환불되므로 헤더 잔액을 재조회하게 알린다.
+      notifyPointBalanceChanged()
       onBidCancelled()
       setDone('cancel')
     } catch (e) {

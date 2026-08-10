@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { pointsApi } from '@/lib/api/points'
+import { pointsApi, notifyPointBalanceChanged } from '@/lib/api/points'
 import { slotApi } from '@/lib/api/slot'
 import { authApi } from '@/lib/api/auth'
 import { ApiError } from '@/lib/api/client'
@@ -102,6 +102,8 @@ export default function SlotGame() {
 
     setResult(data)
     setBalance(data.balanceAfter)
+    // 헤더 등 다른 곳의 잔액 표시도 새로고침 없이 즉시 맞춘다.
+    notifyPointBalanceChanged(data.balanceAfter)
     setPlaying(false)
   }
 

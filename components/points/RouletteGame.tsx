@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { pointsApi } from '@/lib/api/points'
+import { pointsApi, notifyPointBalanceChanged } from '@/lib/api/points'
 import { rouletteApi } from '@/lib/api/roulette'
 import { authApi } from '@/lib/api/auth'
 import { ApiError } from '@/lib/api/client'
@@ -158,6 +158,8 @@ export default function RouletteGame() {
 
     setResult(data)
     setBalance(data.balanceAfter)
+    // 헤더 등 다른 곳의 잔액 표시도 새로고침 없이 즉시 맞춘다.
+    notifyPointBalanceChanged(data.balanceAfter)
     // 고정된 상대와 겨뤘다면 위쪽 상대 섹션도 최신 상태로 맞춘다(변동은 없지만 일관성 유지).
     if (data.opponentLocked) {
       setOpponent({ opponentId: data.opponentId, opponentNickname: data.opponentNickname })
