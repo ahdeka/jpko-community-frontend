@@ -237,6 +237,17 @@ export const MESSAGES = {
     },
   },
 
+  // 포인트 랭킹 — 메인 페이지 상위 랭킹 섹션과 마이페이지 랭킹 탭 양쪽에서 쓰는 문구.
+  ranking: {
+    loadFailed: '랭킹을 불러오지 못했습니다.',
+    empty: '아직 랭킹이 없습니다.',
+    // 내가 아직 랭킹 대상이 아닐 때(myRank=null). 상위 랭킹은 그대로 보여준다.
+    notRanked: '아직 랭킹에 들지 않았습니다. 활동해서 포인트를 모아보세요!',
+    totalCount: (total: number) => `전체 ${total.toLocaleString()}명`,
+    myRankSummary: (rank: number, total: number) =>
+      `전체 ${total.toLocaleString()}명 중 ${rank.toLocaleString()}위`,
+  },
+
   // 알림 벨 드롭다운(NotificationBell)과 알림 전체보기 페이지(app/notifications)의 UI 문구.
   // 개별 알림 "본문" 문구는 lib/notification.ts / notificationVisuals.tsx가 조립하며,
   // 여기에는 화면 골격(제목·버튼·빈 상태 등)만 둔다.

@@ -1,5 +1,5 @@
 import { apiClient } from './client'
-import type { PageResponse, PointBalance, PointTransaction, TransferRequestBody, TransferResult } from '@/types'
+import type { MyRanking, PageResponse, PointBalance, PointTransaction, TopRanking, TransferRequestBody, TransferResult } from '@/types'
 
 // 포인트 관련 API. 조회는 로그인 필수이며, apiClient가 credentials:'include'로
 // 호출하므로 쿠키가 자동 전송된다.
@@ -19,4 +19,17 @@ export const pointsApi = {
   // 성공('ACCEPTED')/실패('NOT_ACCEPTABLE')를 판단해야 한다(HTTP status 기반 판단 불가).
   transfer: (body: TransferRequestBody) =>
     apiClient.post<TransferResult>('/api/points/transfer', body),
+}
+
+// 포인트 랭킹 API.
+export const rankingApi = {
+  // 상위 랭킹(top-size명). 비로그인 포함 누구나 조회 가능(백엔드 SecurityConfig permitAll).
+  // 메인 페이지 서버 컴포넌트에서 호출한다(인증 헤더 불필요).
+  getTop: (options?: RequestInit) =>
+    apiClient.get<TopRanking>('/api/points/ranking/top', options),
+
+  // 내 순위 + 주변(위/아래 k명) + 상위 top-size명. 인증 필수.
+  // 브라우저에서 호출하면 apiClient가 credentials:'include'로 쿠키를 자동 전송한다.
+  getMine: () =>
+    apiClient.get<MyRanking>('/api/points/ranking/me'),
 }

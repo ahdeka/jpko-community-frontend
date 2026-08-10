@@ -98,7 +98,10 @@
       "Bash(curl -s -b ./u3.jar \"http://localhost:8080/api/notifications?page=0&size=10\" -w \"\\\\nHTTP %{http_code}\\\\n\")",
       "Bash(curl -s -b ./a.jar -X PATCH http://localhost:8080/api/admin/users/4/status -H \"Content-Type: application/json\" -d '{\"status\":\"ACTIVE\"}' -w \"\\\\nHTTP %{http_code}\\\\n\")",
       "Bash(curl -s -X POST http://localhost:8080/api/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"user3@test.com\",\"password\":\"test1234\"}' -o /dev/null -w \"HTTP %{http_code}\\\\n\")",
-      "Bash(node -e \"console.log\\(require\\('./node_modules/next/package.json'\\).version\\)\")"
+      "Bash(node -e \"console.log\\(require\\('./node_modules/next/package.json'\\).version\\)\")",
+      "Bash(echo \"---EXIT:$?---\")",
+      "PowerShell(& \"c:\\\\Users\\\\3031426\\\\Desktop\\\\Github\\\\jpko-community\\\\gradlew.bat\" -p \"c:\\\\Users\\\\3031426\\\\Desktop\\\\Github\\\\jpko-community\" compileJava --console=plain -q 2>&1)",
+      "PowerShell($env:JAVA_HOME='C:\\\\Users\\\\3031426\\\\.jdks\\\\graalvm-ce-21.0.2'; & \"c:\\\\Users\\\\3031426\\\\Desktop\\\\Github\\\\jpko-community\\\\gradlew.bat\" -p \"c:\\\\Users\\\\3031426\\\\Desktop\\\\Github\\\\jpko-community\" compileJava --console=plain \"-Dorg.gradle.java.home=C:\\\\Users\\\\3031426\\\\.jdks\\\\graalvm-ce-21.0.2\" | Select-Object -Last 30)"
     ],
     "additionalDirectories": [
       "\\tmp"

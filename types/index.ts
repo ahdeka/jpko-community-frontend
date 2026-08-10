@@ -338,6 +338,40 @@ export interface PointBalance {
   balance: number;
 }
 
+// ========== 포인트 랭킹 ==========
+
+// 랭킹 한 줄 (백엔드 RankingEntryResponse와 1:1).
+// rank는 백엔드가 이미 계산해서 내려준다(동점은 정렬 tie-break으로 유니크하게 갈린다 —
+// 공동 순위는 없다). 프론트는 이 값을 그대로 표시만 하고 순위를 다시 매기지 않는다.
+export interface RankingEntry {
+  rank: number;
+  userId: number;
+  nickname: string;
+  balance: number;
+}
+
+// 상위 랭킹 (백엔드 TopRankingResponse와 1:1). GET /api/points/ranking/top.
+// 비로그인 포함 누구나 조회 가능하며, entries는 상위 top-size(현재 5)명, rank 오름차순.
+// 아직 랭킹 대상이 아무도 없으면 빈 배열일 수 있다.
+export interface TopRanking {
+  entries: RankingEntry[];
+}
+
+// 내 순위 + 주변 (백엔드 MyRankingResponse와 1:1). GET /api/points/ranking/me (인증 필수).
+//  - myRank      : 내 순위. 내가 랭킹 대상이 아니면 null(이때 neighbors는 빈 배열).
+//  - myUserId    : 본인 식별용. top/neighbors 어디서든 userId === myUserId로 "나"를 강조한다.
+//  - totalRanked : 전체 랭킹 인원수("전체 N명 중 R위" 표기용).
+//  - topEntries  : 상위 top-size명 (top 엔드포인트와 동일). 마이페이지 통합 뷰 상단 블록.
+//  - neighbors   : 내 위 k명 + 나 + 아래 k명 (rank 오름차순 연속). myRank=null이면 빈 배열.
+// ⚠️ 내가 상위권이면 topEntries와 neighbors가 겹친다 → lib/ranking.ts에서 userId 기준으로 합친다.
+export interface MyRanking {
+  myRank: number | null;
+  myUserId: number | null;
+  totalRanked: number;
+  topEntries: RankingEntry[];
+  neighbors: RankingEntry[];
+}
+
 // 포인트 거래 내역 (백엔드 TransactionResponse와 1:1)
 // senderId/recipientId가 null이면 시스템 계좌를 뜻한다(GRANT는 sender=null, COLLECT는 recipient=null).
 export interface PointTransaction {

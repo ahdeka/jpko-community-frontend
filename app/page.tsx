@@ -4,6 +4,7 @@ import { noticesApi } from '@/lib/api/notices'
 import RecentPostsSection from '@/components/post/RecentPostsSection'
 import CategorySection from '@/components/post/CategorySection'
 import WeeklyPopularSection from '@/components/home/WeeklyPopularSection'
+import PointRankingSection from '@/components/home/PointRankingSection'
 import NoticeSection from '@/components/home/NoticeSection'
 import FeaturedNoticeBar from '@/components/home/FeaturedNoticeBar'
 import type { Category, NoticeSummary, PostSummary } from '@/types'
@@ -58,6 +59,7 @@ export default async function Home() {
         </div>
         <aside className="flex flex-col gap-6">
           <WeeklyPopularSection />
+          <PointRankingSection />
           <NoticeSection />
         </aside>
       </div>
