@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import type { Comment } from '@/types'
 import CommentForm from './CommentForm'
 import ReportModal from '@/components/common/ReportModal'
-import { commentsApi } from '@/lib/api/comments'
+import { commentsApi, type CommentTarget } from '@/lib/api/comments'
 import { ApiError } from '@/lib/api/client'
 import { useAuth } from '@/lib/auth-context'
 import { MESSAGES } from '@/lib/messages'
@@ -13,7 +13,8 @@ import AuthorName from '@/components/common/AuthorName'
 
 interface Props {
   comment: Comment
-  postId: number
+  // 이 댓글이 속한 대상(게시글/공지). 답글 폼·재귀 렌더에 그대로 넘겨준다.
+  target: CommentTarget
   isReply?: boolean
   // 답글일 때 저장 대상이 되는 최상위(루트) 댓글 id.
   // 백엔드가 2뎁스(부모-자식)만 지원하므로, 답글의 답글도 parentId는 항상 루트 댓글이어야 한다.
@@ -54,7 +55,7 @@ function formatRelativeTime(dateString: string): string {
   return new Date(dateString).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })
 }
 
-export default function CommentItem({ comment, postId, isReply = false, rootId }: Props) {
+export default function CommentItem({ comment, target, isReply = false, rootId }: Props) {
   // 답글 저장 시 부모 id: 최상위 댓글이면 자기 자신, 답글이면 루트 댓글 id.
   const replyParentId = isReply ? rootId : comment.id
   const router = useRouter()
@@ -142,7 +143,7 @@ export default function CommentItem({ comment, postId, isReply = false, rootId }
             )}
             {showReplyForm && (
               <CommentForm
-                postId={postId}
+                target={target}
                 parentId={replyParentId}
                 mention={comment.author}
                 onCancel={() => setShowReplyForm(false)}
@@ -155,7 +156,7 @@ export default function CommentItem({ comment, postId, isReply = false, rootId }
       {comment.replies.length > 0 && (
         <ul className="mt-3 space-y-3">
           {comment.replies.map(reply => (
-            <CommentItem key={reply.id} comment={reply} postId={postId} isReply rootId={comment.id} />
+            <CommentItem key={reply.id} comment={reply} target={target} isReply rootId={comment.id} />
           ))}
         </ul>
       )}

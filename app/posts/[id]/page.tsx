@@ -132,7 +132,7 @@ export default async function PostPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ from?: string; p?: string; slug?: string; keyword?: string; st?: string }>
+  searchParams: Promise<{ from?: string; p?: string; slug?: string; keyword?: string; st?: string; cpage?: string }>
 }) {
   const { id } = await params
   const sp = await searchParams
@@ -140,10 +140,13 @@ export default async function PostPage({
   const headers = await authHeaders()
   const ctx = parseListContext(sp)
 
+  // 댓글 페이지(0-based). 음수·NaN은 0으로 막는다.
+  const commentPage = Math.max(0, Number(sp.cpage) || 0)
+
   // 게시글·댓글·카테고리를 병렬 조회. (카테고리는 하단 목록의 id/slug 해석에 쓰임)
   const [postRes, commentsRes, categoriesRes] = await Promise.allSettled([
     getPost(postId), // generateMetadata와 공유되는 캐시 조회 (조회수 1회만 증가)
-    commentsApi.getByPostId(postId, { headers }),
+    commentsApi.getByTarget({ type: 'POST', id: postId }, commentPage, { headers }),
     categoriesApi.getAll(),
   ])
 
@@ -154,10 +157,27 @@ export default async function PostPage({
   }
 
   const post = postRes.value.data!
-  const comments =
-    commentsRes.status === 'fulfilled' ? (commentsRes.value.data ?? []) : []
+  // 댓글은 부가 영역이라 실패해도 본문에 영향 주지 않도록 안전하게 기본값으로 떨어뜨린다.
+  // 응답: { comments: Page<Comment>, totalCommentCount }. 헤더 개수는 totalCommentCount(대댓글 포함,
+  // 삭제 제외), 페이지 경계·마지막 페이지 계산은 comments.totalElements(최상위·삭제 포함)를 쓴다.
+  const commentsData = commentsRes.status === 'fulfilled' ? commentsRes.value.data : undefined
+  const commentPageData = commentsData?.comments
+  const comments = commentPageData?.content ?? []
+  const commentPageNumber = commentPageData?.number ?? commentPage
+  const commentTotalPages = commentPageData?.totalPages ?? 0
+  const commentTopLevelTotal = commentPageData?.totalElements ?? 0
+  const commentTotal = commentsData?.totalCommentCount ?? 0
   const categories =
     categoriesRes.status === 'fulfilled' ? (categoriesRes.value.data ?? []) : []
+
+  // 페이지네이션에서 유지해야 할 상세 URL의 기존 컨텍스트 쿼리(목록 복원용).
+  // 댓글 페이지를 넘겨도 "보던 목록"·"목록으로"가 그대로 유지되게 한다.
+  const preservedParams: Record<string, string> = {}
+  if (sp.from) preservedParams.from = sp.from
+  if (sp.p) preservedParams.p = sp.p
+  if (sp.slug) preservedParams.slug = sp.slug
+  if (sp.keyword) preservedParams.keyword = sp.keyword
+  if (sp.st) preservedParams.st = sp.st
 
   // 하단 목록은 부가 기능이므로 실패해도 본문에 영향 주지 않게 catch로 감싼다.
   const siblingList = await loadSiblingList(ctx, post, categories).catch(() => null)
@@ -175,7 +195,16 @@ export default async function PostPage({
           이름은 백엔드 PostController의 `viewedPost_{id}`와 정확히 일치시켜야 한다. */}
       <ViewMarker name={`viewedPost_${postId}`} />
       <PostDetail post={post} listHref={listHref} />
-      <CommentList postId={postId} comments={comments} />
+      <CommentList
+        target={{ type: 'POST', id: postId }}
+        comments={comments}
+        page={commentPageNumber}
+        totalPages={commentTotalPages}
+        totalCount={commentTotal}
+        topLevelTotal={commentTopLevelTotal}
+        basePath={`/posts/${postId}`}
+        preservedParams={preservedParams}
+      />
 
       {/* 상세 하단에 "보던 목록"(없으면 글의 카테고리 목록)을 끼워 넣는다 */}
       {siblingList && siblingList.posts.length > 0 && (

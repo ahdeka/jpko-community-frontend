@@ -4,21 +4,26 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
-import { commentsApi } from '@/lib/api/comments'
+import { commentsApi, type CommentTarget } from '@/lib/api/comments'
 import { ApiError } from '@/lib/api/client'
 import { MESSAGES } from '@/lib/messages'
 
 interface Props {
-  postId: number
+  // 이 폼이 댓글을 달 대상(게시글/공지). 작성 요청 경로를 결정한다.
+  target: CommentTarget
   parentId?: number
   // 답글 대상 작성자명. 넘어오면 입력창에 '@닉네임 '을 미리 채워준다.
   // 백엔드 변경 없이 멘션을 본문 텍스트에 그대로 실어 보내기 위한 방식이며,
   // 사용자가 원치 않으면 직접 지울 수 있으므로 멘션을 강제하지 않는다.
   mention?: string
+  // 최상위 댓글 등록 후 이동할 마지막 페이지 URL(#comments 포함).
+  // 새 댓글은 오름차순 목록의 끝에 붙으므로, 다른 페이지를 보고 있어도 방금 쓴 댓글을 보게 한다.
+  // 답글 폼에는 넘기지 않는다(답글은 부모가 있는 현재 페이지에 그대로 붙어 새로고침만 하면 된다).
+  lastPageHref?: string
   onCancel?: () => void
 }
 
-export default function CommentForm({ postId, parentId, mention, onCancel }: Props) {
+export default function CommentForm({ target, parentId, mention, lastPageHref, onCancel }: Props) {
   const router = useRouter()
   const { user, isLoading } = useAuth()
   // 폼은 '답글' 버튼을 누를 때마다 새로 마운트되므로, 초기값으로 prefill하면 충분하다.
@@ -53,7 +58,7 @@ export default function CommentForm({ postId, parentId, mention, onCancel }: Pro
     setLoading(true)
 
     try {
-      await commentsApi.create(postId, {
+      await commentsApi.create(target, {
         content: content.trim(),
         anonymous,
         ...(parentId !== undefined && { parentId }),
@@ -61,6 +66,12 @@ export default function CommentForm({ postId, parentId, mention, onCancel }: Pro
       setContent('')
       setAnonymous(false)
       onCancel?.()
+      // 최상위 댓글은 마지막 페이지로 이동해 방금 쓴 댓글을 보여준다.
+      // (이미 그 페이지면 push가 no-op이라도 이어지는 refresh가 목록을 새로 받아온다.)
+      // 답글은 현재 페이지에 그대로 붙으므로 새로고침만 한다.
+      if (!isReply && lastPageHref) {
+        router.push(lastPageHref)
+      }
       router.refresh()
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) {

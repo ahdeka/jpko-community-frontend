@@ -1,26 +1,50 @@
 import type { Comment } from '@/types'
+import { type CommentTarget, COMMENT_PAGE_SIZE } from '@/lib/api/comments'
 import CommentItem from './CommentItem'
 import CommentForm from './CommentForm'
+import Pagination from '@/components/common/Pagination'
 
 interface Props {
-  postId: number
+  // 댓글 대상(게시글 POST / 공지 NOTICE). 하위 아이템·폼까지 그대로 전달돼
+  // 작성/조회 요청이 올바른 엔드포인트로 향하게 한다.
+  target: CommentTarget
+  // 현재 페이지의 최상위 댓글들. 각 항목이 자기 대댓글(replies)을 그대로 품고 있다.
   comments: Comment[]
+  // 현재 댓글 페이지(0-based)와 전체 페이지 수 — Pagination이 그대로 사용한다.
+  page: number
+  totalPages: number
+  // 헤더 "댓글 N개"에 표시할 총개수 — 대댓글 포함, 삭제 제외(백엔드 totalCommentCount).
+  totalCount: number
+  // 최상위 댓글 총수(삭제 포함, 페이징 기준 = comments.totalElements).
+  // 새 최상위 댓글이 붙을 "마지막 페이지"를 계산하는 데 쓴다. 헤더 개수(totalCount)와 의미가 다르다.
+  topLevelTotal: number
+  // 페이지네이션 링크 기준 경로(/posts/{id} 또는 /notices/{id}).
+  basePath: string
+  // 페이지 이동 시 유지할 기존 쿼리(상세의 목록 컨텍스트 from/p/slug/... 등).
+  preservedParams?: Record<string, string>
 }
 
-// 부모 댓글 개수만이 아니라 대댓글까지 모두 합산한다.
-// 백엔드 목록 집계(COUNT(c), 대댓글 포함)와 숫자를 일치시키기 위함이며,
-// 삭제된 댓글도 백엔드 집계에 포함되므로 여기서도 deleted 여부와 무관하게 센다.
-function countComments(comments: Comment[]): number {
-  return comments.reduce((sum, c) => sum + 1 + countComments(c.replies), 0)
+// 댓글 페이지 이동 URL을 Pagination과 동일한 규칙(cpage 파라미터 + #comments 앵커)으로 만든다.
+// 등록 직후 '마지막 페이지로 이동'에도 같은 형식을 써서 페이지네이션 링크와 어긋나지 않게 한다.
+function commentPageHref(basePath: string, page: number, preserved?: Record<string, string>): string {
+  const params = new URLSearchParams(preserved)
+  params.set('cpage', String(page))
+  return `${basePath}?${params.toString()}#comments`
 }
 
-export default function CommentList({ postId, comments }: Props) {
-  const totalCount = countComments(comments)
+export default function CommentList({ target, comments, page, totalPages, totalCount, topLevelTotal, basePath, preservedParams }: Props) {
+  // 새 최상위 댓글은 오름차순 목록의 맨 끝(= 마지막 페이지)에 붙는다.
+  // 등록 직후 그 페이지로 이동시켜 사용자가 방금 쓴 댓글을 바로 확인하게 한다.
+  // 페이징은 "최상위 댓글(삭제 포함)" 기준이므로 topLevelTotal로 계산해야 페이지 경계가 맞는다.
+  // 삽입 후 총 개수는 topLevelTotal+1이지만, 0-based 마지막 페이지 인덱스는 floor(topLevelTotal / SIZE)로
+  // 동일하게 떨어진다(예: 20개 꽉 찬 0페이지 → 21번째는 1페이지, floor(20/20)=1).
+  const lastPageHref = commentPageHref(basePath, Math.floor(topLevelTotal / COMMENT_PAGE_SIZE), preservedParams)
 
   return (
-    // id="comments": 신고 목록 등에서 "댓글" 대상을 클릭했을 때 원문 글의 댓글 영역으로
-    // 바로 스크롤시키기 위한 앵커. lib/report.ts의 reportTargetHref가 이 값을 사용한다.
-    <div id="comments" className="mt-10">
+    // id="comments": 신고 목록 등에서 "댓글" 대상을 클릭했을 때, 그리고 페이지 이동(#comments)
+    // 시 이 영역으로 스크롤시키기 위한 앵커. lib/report.ts의 reportTargetHref도 이 값을 사용한다.
+    // scroll-mt: 상단 고정 헤더에 가리지 않도록 앵커 스크롤에 여백을 준다.
+    <div id="comments" className="mt-10 scroll-mt-20">
       {/* 말풍선 아이콘 + 개수로 '여기서부터 댓글 영역'임을 한눈에 인지시킨다. */}
       <h2 className="mb-5 flex items-center gap-2 text-base font-bold">
         <svg className="h-5 w-5 text-gray-500 dark:text-neutral-400" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -31,11 +55,21 @@ export default function CommentList({ postId, comments }: Props) {
       {comments.length > 0 && (
         <ul className="mb-6 space-y-3">
           {comments.map(comment => (
-            <CommentItem key={comment.id} comment={comment} postId={postId} />
+            <CommentItem key={comment.id} comment={comment} target={target} />
           ))}
         </ul>
       )}
-      <CommentForm postId={postId} />
+      {/* 게시글 목록과 동일한 페이지네이션 UI. 상세 URL과 섞이지 않도록 cpage 키를 쓰고,
+          이동 후 댓글 영역으로 스크롤되도록 #comments 앵커를 붙인다. */}
+      <Pagination
+        currentPage={page}
+        totalPages={totalPages}
+        basePath={basePath}
+        searchParams={preservedParams}
+        pageParam="cpage"
+        hash="comments"
+      />
+      <CommentForm target={target} lastPageHref={lastPageHref} />
     </div>
   )
 }

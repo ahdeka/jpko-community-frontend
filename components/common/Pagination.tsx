@@ -7,9 +7,15 @@ interface Props {
   totalPages: number
   basePath: string
   searchParams?: Record<string, string>
+  // 페이지 번호를 담을 쿼리 키. 기본은 'page'(게시글 목록용).
+  // 상세 페이지의 댓글 목록은 상세 자체의 쿼리와 섞이지 않도록 'cpage'를 쓴다.
+  pageParam?: string
+  // 이동 후 스크롤을 맞출 앵커 id(예: 'comments'). 지정하면 링크에 '#id'를 붙여
+  // 페이지 전환 후 해당 영역으로 스크롤되게 한다. 목록 페이지에선 쓰지 않는다.
+  hash?: string
 }
 
-export default function Pagination({ currentPage, totalPages, basePath, searchParams }: Props) {
+export default function Pagination({ currentPage, totalPages, basePath, searchParams, pageParam = 'page', hash }: Props) {
   if (totalPages <= 1) return null
 
   const windowStart = Math.floor(currentPage / PAGE_WINDOW) * PAGE_WINDOW
@@ -18,8 +24,8 @@ export default function Pagination({ currentPage, totalPages, basePath, searchPa
 
   const hrefFor = (page: number) => {
     const params = new URLSearchParams(searchParams)
-    params.set('page', String(page))
-    return `${basePath}?${params.toString()}`
+    params.set(pageParam, String(page))
+    return `${basePath}?${params.toString()}${hash ? `#${hash}` : ''}`
   }
 
   return (

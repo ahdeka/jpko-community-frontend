@@ -204,6 +204,16 @@ export interface PostDetail extends PostSummary {
   dislikeCount: number;
 }
 
+// 댓글 목록 응답 (백엔드 CommentPageResponse)
+export interface CommentPage {
+  // 최상위 댓글 페이지. 각 항목이 자기 대댓글(replies)을 품고 있고,
+  // totalElements/number/totalPages는 "최상위 댓글" 기준(삭제된 것 포함)이다.
+  comments: PageResponse<Comment>;
+  // 헤더 "댓글 N개"용 총개수 — 대댓글 포함, 삭제된 댓글 제외.
+  // 위 comments.totalElements(최상위·삭제 포함)와 의미가 다르므로 혼동 주의.
+  totalCommentCount: number;
+}
+
 // 댓글
 export interface Comment {
   id: number;
