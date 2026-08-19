@@ -39,6 +39,10 @@ export const commentsApi = {
     content: string
     anonymous: boolean
     parentId?: number   // 대댓글이면 부모 댓글 ID, 일반 댓글이면 생략
+    // 첨부 이미지가 있을 때만 담는 temp S3 URL(=/api/images/upload 응답 url 원본).
+    // 백엔드가 이 URL을 temp/ → comments/ 로 이동시켜 저장하며, temp 경로가 아니거나
+    // 우리 버킷 소속이 아니면 INVALID_INPUT으로 거부한다. 첨부가 없으면 필드를 생략한다.
+    imageUrl?: string
   }) => apiClient.post<Comment>(commentsPath(target), body),
 
   // 댓글 삭제 — 대상 종류와 무관하게 댓글 id 기준(백엔드 /api/comments/{id})

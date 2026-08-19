@@ -421,7 +421,17 @@ export const MESSAGES = {
   comment: {
     form: {
       contentRequired: '내용을 입력해주세요.',
+      // 이미지 첨부를 허용하면서부터는 "본문 없이 이미지만" 댓글도 유효하므로,
+      // 둘 다 비었을 때만 이 문구로 막는다(백엔드 saveComment 규칙과 일치).
+      emptyContent: '내용을 입력해주세요.',
       loginGateSuffix: '후 댓글을 작성할 수 있습니다.',
+      // 이미지 첨부(단일) 관련. 확장자·용량 기준은 게시글 에디터와 동일(백엔드 S3ImageUploader 기준).
+      imageUnsupportedFormat: '지원하지 않는 형식입니다. (jpg, jpeg, png, gif, webp)',
+      imageTooLarge: (ext: string, maxMb: number, sizeMb: string) =>
+        `${ext.toUpperCase()} 파일은 ${maxMb}MB 이하여야 합니다. (현재 약 ${sizeMb}MB)`,
+      imageUploadFailed: '이미지 업로드에 실패했습니다.',
+      // 업로드가 끝나기 전(imageUrl 미확정)에 등록을 누른 경우.
+      imageUploading: '이미지 업로드가 끝난 뒤 등록해주세요.',
     },
     deleteConfirm: '댓글을 삭제하시겠습니까?',
     deletedPlaceholder: '삭제된 댓글입니다.',

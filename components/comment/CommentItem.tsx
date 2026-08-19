@@ -100,9 +100,33 @@ export default function CommentItem({ comment, target, isReply = false, rootId }
           </div>
           {/* 본문 영역 */}
           <div className="bg-white px-3 py-2.5 dark:bg-neutral-900">
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-800 dark:text-neutral-200">
-              {renderCommentBody(comment.content, isReply)}
-            </p>
+            {/* 본문 텍스트는 이미지만 있는 댓글이면 빈 문자열이라 렌더하지 않는다(빈 <p> 여백 방지). */}
+            {comment.content && (
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-800 dark:text-neutral-200">
+                {renderCommentBody(comment.content, isReply)}
+              </p>
+            )}
+            {/*
+              첨부 이미지: 스크린샷처럼 작게 고정 표시하고, 클릭하면 원본을 새 탭으로 연다.
+              삭제된 댓글은 이 분기(comment.deleted=false) 자체에 안 들어오고 imageUrl도 null이라 별도 가드 불필요.
+              next/image 미설정이라 일반 img를 쓴다. rel로 탭나빙 참조를 끊어 보안상 안전하게 연다.
+            */}
+            {comment.imageUrl && (
+              <a
+                href={comment.imageUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={comment.content ? 'mt-2 inline-block' : 'inline-block'}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={comment.imageUrl}
+                  alt="첨부 이미지"
+                  loading="lazy"
+                  className="max-h-40 w-auto rounded border border-gray-200 dark:border-neutral-700"
+                />
+              </a>
+            )}
             {/*
               비로그인 사용자에게는 액션 영역 전체를 숨긴다. 답글을 달려면 어차피
               로그인이 필요하므로, 버튼만 보여주고 눌렀을 때 빈 폼이 토글되는 혼란을 막는다.

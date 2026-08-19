@@ -225,6 +225,8 @@ export interface Comment {
   anonymous: boolean;
   isOwner: boolean;
   content: string;
+  // 첨부 이미지 URL(단일). 첨부가 없거나 삭제된 댓글이면 백엔드가 null로 내린다.
+  imageUrl: string | null;
   deleted: boolean;
   createdAt: string;
   replies: Comment[];
