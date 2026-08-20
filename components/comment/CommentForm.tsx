@@ -54,6 +54,17 @@ export default function CommentForm({ target, parentId, mention, lastPageHref, o
   // 폼(컨테이너) 안에 포커스가 있는지. 익명 체크·등록 버튼을 평소엔 숨기고 포커스 시에만 펼치기 위함.
   const [focused, setFocused] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // 카드의 빈 영역(헤더·푸터 여백 등)을 클릭해도 입력창이 활성화되도록 textarea로 포커스를 넘긴다.
+  // 버튼·입력요소·textarea 자체 클릭은 제외해야 한다 — 특히 textarea를 제외하지 않으면
+  // preventDefault가 클릭 위치 커서 지정을 막아 기존 텍스트 중간을 못 짚게 된다.
+  function focusInputOnDeadZone(e: React.MouseEvent<HTMLDivElement>) {
+    const target = e.target as HTMLElement
+    if (target.closest('button, input, a, textarea, label')) return
+    e.preventDefault() // mousedown 기본 포커스 이동을 막고 우리가 직접 textarea에 포커스
+    textareaRef.current?.focus()
+  }
 
   const isReply = parentId !== undefined
 
@@ -175,6 +186,7 @@ export default function CommentForm({ target, parentId, mention, lastPageHref, o
       <div
         onFocus={() => setFocused(true)}
         onBlur={handleContainerBlur}
+        onMouseDown={focusInputOnDeadZone}
         className="overflow-hidden rounded-lg border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus-within:border-blue-400 dark:focus-within:border-blue-500"
       >
         {/* 헤더 바: 왼쪽에 작성자 닉네임, 오른쪽에 이미지 첨부 버튼. 첨부 버튼은 접힌 상태에서도 노출한다.
@@ -198,8 +210,14 @@ export default function CommentForm({ target, parentId, mention, lastPageHref, o
         </div>
 
         <textarea
+          ref={textareaRef}
           value={content}
-          onChange={e => setContent(e.target.value)}
+          // 입력을 시작하면 이전 안내(예: "내용을 입력해주세요.")를 즉시 지운다 —
+          // 사용자가 조치를 취하는 중에 문구가 남아 있으면 헷갈리기 때문.
+          onChange={e => {
+            setContent(e.target.value)
+            if (error) setError('')
+          }}
           onPaste={handlePaste}
           placeholder={isReply ? '답글을 입력하세요.' : '댓글을 입력하세요. (이미지는 붙여넣기 또는 이미지 버튼)'}
           rows={isReply ? 2 : 3}
@@ -237,15 +255,30 @@ export default function CommentForm({ target, parentId, mention, lastPageHref, o
             스크롤이 흔들리므로, 높이는 고정하고 표시 여부만 토글한다.
             invisible이면 버튼·체크박스가 포커스/클릭 대상에서도 빠져 접힌 상태에서 오작동하지 않는다. */}
         <div className={`flex items-center justify-between border-t border-gray-100 dark:border-neutral-800 px-3 py-2 ${expanded ? '' : 'invisible'}`}>
-          <label className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-neutral-400 cursor-pointer select-none">
+          {/*
+            익명 토글: label 대신 넉넉한 패딩의 버튼으로 만들어 체크박스·글씨 어디를 눌러도 토글되게 한다.
+            onMouseDown preventDefault는 이 클릭이 textarea의 포커스(커서)를 빼앗지 않게 막는다
+            — 안 그러면 익명을 누를 때마다 입력 커서가 풀려 다시 클릭해야 한다. (mousedown만 막고 click은 그대로 발생)
+            내부 checkbox는 시각 표시용이라 readOnly·pointer-events-none로 두고, 버튼이 role/aria-checked로 상태를 알린다.
+          */}
+          <button
+            type="button"
+            role="checkbox"
+            aria-checked={anonymous}
+            onMouseDown={e => e.preventDefault()}
+            onClick={() => setAnonymous(v => !v)}
+            className="-ml-2 flex items-center gap-1.5 rounded px-2 py-1.5 text-xs text-gray-500 dark:text-neutral-400 cursor-pointer select-none hover:bg-gray-100 dark:hover:bg-neutral-800"
+          >
             <input
               type="checkbox"
               checked={anonymous}
-              onChange={e => setAnonymous(e.target.checked)}
-              className="w-3 h-3"
+              readOnly
+              tabIndex={-1}
+              aria-hidden="true"
+              className="w-3.5 h-3.5 pointer-events-none"
             />
             익명
-          </label>
+          </button>
           <div className="flex gap-2">
             {onCancel && (
               <button
