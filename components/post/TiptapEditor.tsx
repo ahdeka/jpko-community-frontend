@@ -5,20 +5,25 @@ import { useEditor, EditorContent, type Editor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
 import { Placeholder } from '@tiptap/extensions'
+import { Video } from './VideoNode'
 import { imagesApi } from '@/lib/api/images'
 import { ApiError } from '@/lib/api/client'
 import { MESSAGES } from '@/lib/messages'
 
-// 백엔드와 동일한 제약 (S3ImageUploader / PostCreateRequest 기준)
+// 백엔드와 동일한 제약 (S3ImageUploader / ImageService 기준)
 export const MAX_CONTENT_LENGTH = 20000 // content HTML 최대 길이
-export const MAX_IMAGES = 5 // 게시글당 이미지 수
+export const MAX_IMAGES = 10 // 게시글당 이미지 수 (백엔드 ImageService.MAX_IMAGES_PER_CONTENT)
+export const MAX_VIDEOS = 2 // 게시글당 동영상 수 (백엔드 ImageService.MAX_VIDEOS_PER_CONTENT)
+
 // 용량 제한은 확장자별로 다르다 (백엔드 S3ImageUploader의 MAX_FILE_SIZE_BY_EXTENSION와 동일 기준).
 // gif는 애니메이션이라 같은 화면 크기여도 프레임 수만큼 커지므로 예외적으로 10MB까지 허용한다.
 const DEFAULT_MAX_IMAGE_SIZE = 5 * 1024 * 1024 // 5MB
 const MAX_IMAGE_SIZE_BY_EXT: Record<string, number> = {
   gif: 10 * 1024 * 1024, // 10MB
 }
-const ALLOWED_EXT = ['jpg', 'jpeg', 'png', 'gif', 'webp']
+const MAX_VIDEO_SIZE = 30 * 1024 * 1024 // 30MB (백엔드 mp4/mov 상한과 동일)
+const IMAGE_EXT = ['jpg', 'jpeg', 'png', 'gif', 'webp']
+const VIDEO_EXT = ['mp4', 'mov']
 
 // 바이트 → 사람이 읽는 MB. 제한값이 항상 1MB 배수라 소수점은 버린다.
 function toMb(bytes: number): number {
@@ -38,10 +43,13 @@ interface Props {
   onUploadingChange?: (uploading: boolean) => void
 }
 
-// FileList에서 이미지 파일만 골라 배열로 (붙여넣기/드롭 공용)
-function imageFilesFrom(list: FileList | null | undefined): File[] {
+// FileList에서 미디어(이미지/동영상) 파일만 골라 배열로 (붙여넣기/드롭 공용)
+// MIME 타입 기준 1차 필터. 세부 확장자·용량 검증은 uploadOne에서 다시 한다.
+function mediaFilesFrom(list: FileList | null | undefined): File[] {
   if (!list) return []
-  return Array.from(list).filter(f => f.type.startsWith('image/'))
+  return Array.from(list).filter(
+    f => f.type.startsWith('image/') || f.type.startsWith('video/')
+  )
 }
 
 // 링크 입력값을 안전한 URL로 정규화. 허용 안 되면 null.
@@ -57,11 +65,11 @@ function normalizeLinkUrl(input: string): string | null {
   return `https://${url}`
 }
 
-// 현재 문서에 들어있는 이미지 노드 수 (백엔드 5장 제한과 맞추기 위함)
-function countImages(editor: Editor): number {
+// 현재 문서에 들어있는 특정 노드(image/video) 수. 백엔드 개수 제한과 맞추기 위함.
+function countNodes(editor: Editor, typeName: string): number {
   let count = 0
   editor.state.doc.descendants(node => {
-    if (node.type.name === 'image') count++
+    if (node.type.name === typeName) count++
   })
   return count
 }
@@ -88,7 +96,7 @@ export default function TiptapEditor({
   // 붙여넣기/드롭 핸들러는 editor 생성 시점(마운트 전)에 한 번 등록되므로,
   // 그 시점의 editor는 아직 null이다. 최신 클로저(유효한 editor 참조)를 항상
   // 호출하기 위해 ref로 우회한다. ref 값은 렌더마다 아래에서 갱신된다.
-  const handleImageFilesRef = useRef<(files: File[]) => void>(() => {})
+  const handleMediaFilesRef = useRef<(files: File[]) => void>(() => {})
 
   const editor = useEditor({
     extensions: [
@@ -102,6 +110,9 @@ export default function TiptapEditor({
         },
       }),
       Image.configure({ inline: false, allowBase64: false }),
+      // 동영상 노드(커스텀). <video controls>를 렌더/직렬화한다. 저장 시 백엔드 Jsoup이
+      // video/source 태그를 허용하므로 본문에 그대로 살아남는다.
+      Video,
       // 빈 본문일 때 첫 문단에 안내 문구를 얹는다. 문구 자체는 실제 문서 내용이 아니라
       // data-placeholder 속성 + CSS ::before로만 그려지므로 저장되는 content를 오염시키지 않는다.
       Placeholder.configure({ placeholder }),
@@ -118,28 +129,28 @@ export default function TiptapEditor({
         class:
           'post-content min-h-60 px-3 py-2 outline-none',
       },
-      // 클립보드/드래그로 들어온 이미지 파일을 가로채 S3 업로드 후 삽입한다.
+      // 클립보드/드래그로 들어온 미디어(이미지/동영상) 파일을 가로채 S3 업로드 후 삽입한다.
       // (allowBase64:false라 기본 붙여넣기로는 이미지가 들어가지 않는다)
       handlePaste: (_view, event) => {
-        const files = imageFilesFrom(event.clipboardData?.files)
+        const files = mediaFilesFrom(event.clipboardData?.files)
         if (files.length === 0) return false
         event.preventDefault()
-        handleImageFilesRef.current(files)
+        handleMediaFilesRef.current(files)
         return true
       },
       handleDrop: (_view, event) => {
-        const files = imageFilesFrom((event as DragEvent).dataTransfer?.files)
+        const files = mediaFilesFrom((event as DragEvent).dataTransfer?.files)
         if (files.length === 0) return false
         event.preventDefault()
-        handleImageFilesRef.current(files)
+        handleMediaFilesRef.current(files)
         return true
       },
     },
     onUpdate: ({ editor }) => onChange(editor.getHTML()),
   })
 
-  // 파일 1장 검증 + 업로드 + 삽입. 잠금(uploading) 토글은 호출자가 담당한다.
-  // (여러 장을 순차 업로드할 때 장 사이에서 잠금이 잠깐 풀리면 그 틈에 제출이 가능해진다)
+  // 파일 1개 검증 + 업로드 + 삽입. 잠금(uploading) 토글은 호출자가 담당한다.
+  // (여러 개를 순차 업로드할 때 사이에서 잠금이 잠깐 풀리면 그 틈에 제출이 가능해진다)
   async function uploadOne(file: File | null) {
     if (!editor || !file) return
 
@@ -147,44 +158,62 @@ export default function TiptapEditor({
       ? file.name.slice(file.name.lastIndexOf('.') + 1).toLowerCase()
       : ''
 
-    // 클라이언트 1차 검증 — 백엔드와 동일 기준으로 미리 걸러 불필요한 업로드 방지
-    if (!ALLOWED_EXT.includes(ext)) {
+    // 클라이언트 1차 검증 — 백엔드와 동일 기준으로 미리 걸러 불필요한 업로드 방지.
+    // 확장자로 이미지/동영상을 먼저 가른다(둘 다 아니면 거부). 순서상 여기서 ext가
+    // 허용 목록 안의 값으로 확정돼야 이후 용량/개수 제한을 어느 기준으로 적용할지 명확해진다.
+    const isImage = IMAGE_EXT.includes(ext)
+    const isVideo = VIDEO_EXT.includes(ext)
+    if (!isImage && !isVideo) {
       setUploadError(MESSAGES.post.editor.unsupportedFormat)
       return
     }
-    // 확장자 검사를 먼저 통과했으므로 ext는 허용 목록 안의 값이 확정된 상태다.
-    // (반대 순서면 알 수 없는 확장자에 대해 어떤 제한을 적용할지 모호해진다)
-    const maxSize = MAX_IMAGE_SIZE_BY_EXT[ext] ?? DEFAULT_MAX_IMAGE_SIZE
+
+    // 용량 제한: 동영상은 30MB 고정, 이미지는 확장자별(gif만 10MB, 그 외 5MB).
+    const maxSize = isVideo ? MAX_VIDEO_SIZE : (MAX_IMAGE_SIZE_BY_EXT[ext] ?? DEFAULT_MAX_IMAGE_SIZE)
     if (file.size > maxSize) {
       setUploadError(
         MESSAGES.post.editor.fileTooLarge(ext, toMb(maxSize), (file.size / 1024 / 1024).toFixed(1))
       )
       return
     }
-    if (countImages(editor) >= MAX_IMAGES) {
+
+    // 개수 제한은 이미지/동영상을 각각 센다(백엔드도 <img>/<video>를 따로 검증).
+    // 직전 삽입까지 반영된 문서를 보고 세야 순차 업로드에서 제한을 정확히 지킨다.
+    if (isImage && countNodes(editor, 'image') >= MAX_IMAGES) {
       setUploadError(MESSAGES.post.editor.tooManyImages(MAX_IMAGES))
+      return
+    }
+    if (isVideo && countNodes(editor, 'video') >= MAX_VIDEOS) {
+      setUploadError(MESSAGES.post.editor.tooManyVideos(MAX_VIDEOS))
       return
     }
 
     setUploadError(null)
     try {
-      const res = await imagesApi.upload(file)
+      // 동영상은 서버 재인코딩까지 끝난 뒤 응답이 오므로 더 긴 타임아웃을 쓴다(images.ts 참고).
+      const res = await imagesApi.upload(file, { isVideo })
       const url = res.data?.url
-      if (!url) throw new Error('이미지 URL이 응답에 없습니다.')
-      // temp S3 URL을 본문에 인라인 삽입. 저장 시 백엔드가 posts/{id}로 이동시킨다.
-      editor.chain().focus().setImage({ src: url }).run()
+      if (!url) throw new Error('업로드 응답에 URL이 없습니다.')
+      // temp S3 URL을 본문에 삽입. 저장 시 백엔드가 posts/{id}로 이동시킨다.
+      if (isVideo) {
+        editor.chain().focus().setVideo({ src: url }).run()
+      } else {
+        editor.chain().focus().setImage({ src: url }).run()
+      }
     } catch (e) {
-      setUploadError(
-        e instanceof ApiError ? e.message : MESSAGES.post.editor.uploadFailed
-      )
+      // ApiError면 백엔드 문구(용량 초과·형식 오류·변환 혼잡 503 등)를 그대로 노출한다.
+      const fallback = isVideo
+        ? MESSAGES.post.editor.videoUploadFailed
+        : MESSAGES.post.editor.uploadFailed
+      setUploadError(e instanceof ApiError ? e.message : fallback)
     }
   }
 
-  // 붙여넣기/드롭/파일선택으로 들어온 이미지들을 순차 업로드한다.
-  // 순차로 처리해야 uploadOne 내부의 이미지 수 검사가 직전 삽입까지 반영된 문서를
-  // 보고 5장 제한을 정확히 지킨다(병렬이면 카운트 경쟁으로 제한을 넘길 수 있다).
-  // 전체 구간을 uploading으로 감싸 마지막 1장이 삽입될 때까지 제출을 막는다.
-  async function handleImageFiles(files: File[]) {
+  // 붙여넣기/드롭/파일선택으로 들어온 미디어(이미지/동영상)를 순차 업로드한다.
+  // 순차로 처리해야 uploadOne 내부의 개수 검사가 직전 삽입까지 반영된 문서를 보고
+  // 제한을 정확히 지킨다(병렬이면 카운트 경쟁으로 제한을 넘길 수 있다).
+  // 전체 구간을 uploading으로 감싸 마지막 1개가 삽입될 때까지 제출을 막는다.
+  async function handleMediaFiles(files: File[]) {
     if (files.length === 0) return
     markUploading(true)
     try {
@@ -200,7 +229,7 @@ export default function TiptapEditor({
   // 붙여넣기/드롭 핸들러가 최신 클로저(유효한 editor 참조)를 쓰도록 렌더 후 ref 갱신.
   // 렌더 본문에서 ref.current를 직접 쓰지 않도록 effect로 분리한다.
   useEffect(() => {
-    handleImageFilesRef.current = handleImageFiles
+    handleMediaFilesRef.current = handleMediaFiles
   })
 
   // immediatelyRender:false 이므로 클라이언트 마운트 전까지 editor가 null일 수 있음
@@ -217,20 +246,20 @@ export default function TiptapEditor({
       <Toolbar
         editor={editor}
         uploading={uploading}
-        onPickImage={() => fileInputRef.current?.click()}
+        onPickMedia={() => fileInputRef.current?.click()}
       />
       <EditorContent editor={editor} />
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/png,image/gif,image/webp"
+        accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/quicktime"
         className="hidden"
         onChange={e => {
           // File 객체를 먼저 확보한 뒤 input을 비운다.
           // (먼저 value를 비우면 e.target.files가 비워져 파일을 잃는다)
           const file = e.target.files?.[0] ?? null
           e.target.value = '' // 같은 파일 재선택도 onChange가 다시 뜨도록 초기화
-          if (file) handleImageFiles([file])
+          if (file) handleMediaFiles([file])
         }}
       />
       {uploadError && (
@@ -268,11 +297,11 @@ function setLink(editor: Editor) {
 function Toolbar({
   editor,
   uploading,
-  onPickImage,
+  onPickMedia,
 }: {
   editor: Editor
   uploading: boolean
-  onPickImage: () => void
+  onPickMedia: () => void
 }) {
   return (
     <div className="flex flex-wrap items-center gap-1 border-b border-neutral-200 dark:border-neutral-800 px-2 py-1.5">
@@ -324,8 +353,8 @@ function Toolbar({
         ― 구분선
       </Btn>
       <Divider />
-      <Btn active={false} disabled={uploading} onClick={onPickImage}>
-        {uploading ? '업로드 중…' : '🖼 이미지'}
+      <Btn active={false} disabled={uploading} onClick={onPickMedia}>
+        {uploading ? '업로드 중…' : '🖼 이미지·동영상'}
       </Btn>
     </div>
   )

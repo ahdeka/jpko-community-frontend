@@ -184,6 +184,17 @@
   border-radius: 0.375rem;
   margin: 0.5rem 0;
 }
+/* 동영상. 이미지와 동일하게 본문 폭을 넘지 않게 하고 높이를 제한한다.
+   백엔드가 720p로 재인코딩하므로 대개 세로가 크지 않지만, 세로 영상(9:16)은 높이가 커질 수 있어
+   max-height로 한 번 더 가둔다. 에디터 입력 영역과 상세 본문에 동일 적용. */
+.post-content video {
+  display: block;
+  max-width: 100%;
+  max-height: 480px;
+  border-radius: 0.375rem;
+  margin: 0.5rem 0;
+  background: #000; /* 로딩/포스터 없는 구간에 검은 바탕 */
+}
 /* Tiptap 빈 에디터에 placeholder 느낌을 위해 최소 높이만 확보 */
 .post-content:focus {
   outline: none;

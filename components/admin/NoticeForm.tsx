@@ -54,7 +54,8 @@ export default function NoticeForm({
     featured !== initialFeatured
   useUnsavedChanges(isDirty && !submitted)
 
-  const hasImage = /<img\b/i.test(content)
+  // 미디어(이미지/동영상)만 있고 텍스트가 없어도 유효한 본문으로 인정
+  const hasMedia = /<(img|video)\b/i.test(content)
   const plainText = stripTags(content)
   const contentLength = content.length
   const overLimit = contentLength > MAX_CONTENT_LENGTH
@@ -63,7 +64,7 @@ export default function NoticeForm({
     const errs: Record<string, string> = {}
     if (!title.trim()) errs.title = MESSAGES.admin.noticeForm.titleRequired
     else if (title.length > 100) errs.title = MESSAGES.admin.noticeForm.titleTooLong
-    if (!plainText && !hasImage) errs.content = MESSAGES.admin.noticeForm.contentRequired
+    if (!plainText && !hasMedia) errs.content = MESSAGES.admin.noticeForm.contentRequired
     else if (overLimit) errs.content = MESSAGES.admin.noticeForm.contentTooLong(MAX_CONTENT_LENGTH.toLocaleString())
     return errs
   }
@@ -167,7 +168,7 @@ export default function NoticeForm({
           className="rounded bg-orange-500 px-6 py-2 text-sm font-medium text-white hover:bg-orange-600 disabled:opacity-50"
         >
           {imageUploading
-            ? '이미지 업로드 중…'
+            ? '업로드 중…'
             : loading
               ? '저장 중…'
               : mode === 'edit' ? '수정' : '등록'}

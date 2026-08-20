@@ -68,8 +68,8 @@ export default function PostForm({
     )
   }
 
-  // 이미지만 있고 텍스트가 없어도 유효한 본문으로 인정 (백엔드 @NotBlank는 HTML 기준)
-  const hasImage = /<img\b/i.test(content)
+  // 미디어(이미지/동영상)만 있고 텍스트가 없어도 유효한 본문으로 인정 (백엔드 @NotBlank는 HTML 기준)
+  const hasMedia = /<(img|video)\b/i.test(content)
   const plainText = stripTags(content)
   const contentLength = content.length // 백엔드 @Size가 검사하는 HTML 길이
   const overLimit = contentLength > MAX_CONTENT_LENGTH
@@ -79,7 +79,7 @@ export default function PostForm({
     if (!categoryId) errs.category = MESSAGES.post.form.categoryRequired
     if (!title.trim()) errs.title = MESSAGES.post.form.titleRequired
     else if (title.length > 100) errs.title = MESSAGES.post.form.titleTooLong
-    if (!plainText && !hasImage) errs.content = MESSAGES.post.form.contentRequired
+    if (!plainText && !hasMedia) errs.content = MESSAGES.post.form.contentRequired
     else if (overLimit) errs.content = MESSAGES.post.form.contentTooLong(MAX_CONTENT_LENGTH.toLocaleString())
     return errs
   }
@@ -197,7 +197,7 @@ export default function PostForm({
           className="px-6 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50"
         >
           {imageUploading
-            ? '이미지 업로드 중…'
+            ? '업로드 중…'
             : loading
               ? '저장 중...'
               : mode === 'edit' ? '수정' : '등록'}

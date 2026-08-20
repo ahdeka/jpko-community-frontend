@@ -396,16 +396,20 @@ export const MESSAGES = {
       titleTooLong: '제목은 100자 이하여야 합니다.',
       contentRequired: '내용을 입력해주세요.',
       contentTooLong: (max: string) => `본문은 ${max}자 이하여야 합니다.`,
-      imageUploading: '이미지 업로드가 끝난 뒤 저장해주세요.',
+      // 이미지·동영상 공용. 업로드가 끝나야 본문에 <img>/<video>가 삽입되므로 그 전 저장을 막는다.
+      imageUploading: '파일 업로드가 끝난 뒤 저장해주세요.',
       loginGateSuffix: '후 글을 작성할 수 있습니다.',
     },
     deleteConfirm: '게시글을 삭제하시겠습니까?',
     editor: {
-      unsupportedFormat: '지원하지 않는 형식입니다. (jpg, jpeg, png, gif, webp)',
+      unsupportedFormat: '지원하지 않는 형식입니다. (이미지: jpg, jpeg, png, gif, webp / 동영상: mp4, mov)',
       fileTooLarge: (ext: string, maxMb: number, sizeMb: string) =>
         `${ext.toUpperCase()} 파일은 ${maxMb}MB 이하여야 합니다. (현재 약 ${sizeMb}MB)`,
       tooManyImages: (max: number) => `이미지는 최대 ${max}장까지 첨부할 수 있습니다.`,
+      tooManyVideos: (max: number) => `동영상은 최대 ${max}개까지 첨부할 수 있습니다.`,
       uploadFailed: '이미지 업로드에 실패했습니다.',
+      // 동영상은 업로드 후 서버에서 재인코딩(ffmpeg)까지 마친 뒤 응답이 오므로 실패 문구를 분리한다.
+      videoUploadFailed: '동영상 업로드에 실패했습니다. 잠시 후 다시 시도해주세요.',
       linkPrompt: '링크 URL을 입력하세요 (비우면 링크 해제)',
       invalidLink: '사용할 수 없는 링크입니다. http/https 주소를 입력해주세요.',
     },
@@ -533,7 +537,8 @@ export const MESSAGES = {
       titleTooLong: '제목은 100자 이하여야 합니다.',
       contentRequired: '내용을 입력해주세요.',
       contentTooLong: (max: string) => `본문은 ${max}자 이하여야 합니다.`,
-      imageUploading: '이미지 업로드가 끝난 뒤 저장해주세요.',
+      // 이미지·동영상 공용.
+      imageUploading: '파일 업로드가 끝난 뒤 저장해주세요.',
       forbidden: '관리자 권한이 없습니다.',
     },
     reports: {
