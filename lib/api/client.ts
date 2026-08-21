@@ -75,6 +75,50 @@ function refreshAccessToken(): Promise<RefreshResult> {
   return refreshPromise
 }
 
+// 실패 응답(4xx/5xx)을 우리 앱의 ApiError로 변환해 던진다. fetch 경로(request)와
+// XHR 경로(uploadWithProgress)가 동일한 규칙을 쓰도록 한 곳으로 모았다.
+//  - bodyText: 응답 본문 원문. 우리 API면 { message, code } JSON이지만, 413은 nginx가
+//    백엔드에 닿기 전에 끊어 HTML을 주므로 파싱이 실패한다 → 그 경우 용량 초과 문구로 보정한다.
+//  - endpoint: 정지/차단 전역 이벤트를 auth 플로우에서는 쏘지 않기 위해(isAuthFlow) 필요.
+// 반환 타입 never: 이 함수는 항상 throw하므로, 호출부 이후 코드는 도달하지 않는다.
+function throwApiError(status: number, bodyText: string | null, endpoint: string): never {
+  let message: string =
+    status === 413 ? MESSAGES.common.fileTooLarge : MESSAGES.common.requestFailed
+  let code: string | undefined
+
+  if (bodyText) {
+    try {
+      const errData = JSON.parse(bodyText) as { message?: string; code?: string }
+      message = errData.message ?? message
+      code = errData.code
+    } catch {
+      // JSON이 아니면(예: nginx 413 HTML) 위에서 정한 기본 메시지를 그대로 쓴다.
+    }
+  }
+
+  // 정지 계정 전역 감지 (refresh로 풀 수 없으므로 401 재시도 흐름과 분리).
+  if (
+    status === 403 &&
+    code === 'SUSPENDED_ACCOUNT' &&
+    typeof window !== 'undefined' &&
+    !isAuthFlow(endpoint)
+  ) {
+    window.dispatchEvent(new Event(ACCOUNT_SUSPENDED_EVENT))
+  }
+
+  // 임시 활동 차단 전역 감지.
+  if (
+    status === 403 &&
+    code === 'ACTIVITY_BLOCKED' &&
+    typeof window !== 'undefined' &&
+    !isAuthFlow(endpoint)
+  ) {
+    window.dispatchEvent(new Event(ACTIVITY_BLOCKED_EVENT))
+  }
+
+  throw new ApiError(message, status, code)
+}
+
 async function request<T>(
   endpoint: string,
   options?: RequestInit,
@@ -125,47 +169,10 @@ async function request<T>(
       // 어느 경우든 아래로 떨어져 원래의 401 에러를 그대로 던지므로, 호출부의 개별 처리도 그대로 동작한다.
     }
 
-    // 기본 메시지. 413은 nginx(client_max_body_size)가 백엔드에 닿기 전에 끊은 것이라
-    // 응답 본문이 우리 API의 JSON이 아니라 nginx의 HTML이다. 아래 json() 파싱이 실패해
-    // "요청에 실패했습니다."로 뭉뚱그려지면 용량 문제라는 걸 알 수 없으므로 여기서 구분해준다.
-    let message: string =
-      response.status === 413
-        ? MESSAGES.common.fileTooLarge
-        : MESSAGES.common.requestFailed
-    let code: string | undefined
-
-    try {
-      const errData: ApiResponse<T> = await response.json()
-      message = errData.message ?? message
-      code = errData.code
-    } catch {}
-
-    // 정지 계정 전역 감지. refresh로 풀 수 있는 문제가 아니므로(재발급해도 다시 403) 위 401 재시도 흐름과 분리한다.
-    // login은 이제 SUSPENDED_ACCOUNT를 던지지 않으므로(정지된 계정도 로그인은 된다) 실질적으로
-    // /api/auth/me 등 로그인 이후 요청에서만 감지된다. isAuthFlow 제외는 다른 두 이벤트와의 일관성 목적.
-    // (/api/auth/me는 isAuthFlow에서 빠져 있어, 정지 상태로 새로고침해도 여기서 잡힌다.)
-    if (
-      response.status === 403 &&
-      code === 'SUSPENDED_ACCOUNT' &&
-      typeof window !== 'undefined' &&
-      !isAuthFlow(endpoint)
-    ) {
-      window.dispatchEvent(new Event(ACCOUNT_SUSPENDED_EVENT))
-    }
-
-    // 임시 활동 차단 전역 감지. 백엔드가 허용한 경로(차단 상태 조회/해제/이의제기, 로그아웃) 자체가
-    // 이 조건에 걸릴 일은 없지만(그 경로들은 애초에 403을 안 준다), 혹시 모를 경쟁 상황을 대비해
-    // isAuthFlow와 같은 정신으로 auth 플로우는 제외한다.
-    if (
-      response.status === 403 &&
-      code === 'ACTIVITY_BLOCKED' &&
-      typeof window !== 'undefined' &&
-      !isAuthFlow(endpoint)
-    ) {
-      window.dispatchEvent(new Event(ACTIVITY_BLOCKED_EVENT))
-    }
-
-    throw new ApiError(message, response.status, code)
+    // 응답 본문을 원문으로 읽어(한 번만 읽을 수 있으므로 text로) 공용 처리기에 넘긴다.
+    // 정지/차단 전역 이벤트 발행과 413 보정, ApiError 변환을 throwApiError가 일괄 담당한다.
+    const bodyText = await response.text().catch(() => null)
+    throwApiError(response.status, bodyText, endpoint)
   }
 
   return response.json()
@@ -205,4 +212,96 @@ export const apiClient = {
       method: 'DELETE',
       body: body !== undefined ? JSON.stringify(body) : undefined,
     }),
+}
+
+// 업로드 진행률(%)이 필요한 multipart POST 전용. 일반 요청은 apiClient.post를 쓰면 되지만,
+// fetch는 요청 body의 업로드 진행률을 표준으로 제공하지 않으므로(브라우저 한계) 이 경로만
+// XMLHttpRequest로 처리한다. 인증/에러 규칙은 request()와 동일하게 맞춘다:
+//  - withCredentials로 쿠키(accessToken) 동봉
+//  - 401이면 refresh 1회 후 정확히 한 번 재시도(그 재시도도 401이면 그대로 에러)
+//  - 실패 응답은 throwApiError로 변환(413 보정 · 정지/차단 전역 이벤트 포함)
+// onProgress는 "브라우저 → 서버 전송" 구간(0~100%)만 알린다. 100% 도달 후 서버가 동영상을
+// 재인코딩하는 시간은 XHR이 알 수 없으므로, 호출부가 100% 시점에 "압축 중" 표시로 전환한다.
+export function uploadWithProgress<T>(
+  endpoint: string,
+  formData: FormData,
+  opts: {
+    onProgress?: (percent: number) => void
+    timeoutMs?: number
+    // 내부 전용. refresh 후 재시도할 때 false로 넘겨 "재시도는 정확히 1회"를 보장한다.
+    retry?: boolean
+  } = {},
+): Promise<ApiResponse<T>> {
+  if (!BASE_URL) {
+    return Promise.reject(new Error(MESSAGES.common.apiUrlMissing))
+  }
+
+  const { onProgress, timeoutMs = 10_000, retry = true } = opts
+
+  return new Promise<ApiResponse<T>>((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', `${BASE_URL}${endpoint}`)
+    // 쿠키 기반 인증. FormData를 보내므로 Content-Type은 브라우저가 boundary와 함께
+    // 자동으로 설정한다(직접 지정하면 boundary가 빠져 서버가 파싱하지 못한다).
+    xhr.withCredentials = true
+    xhr.timeout = timeoutMs
+
+    if (onProgress) {
+      xhr.upload.onprogress = (e: ProgressEvent) => {
+        // total을 알 수 있을 때만 %를 계산한다(청크 인코딩 등으로 미상일 수 있음).
+        if (e.lengthComputable && e.total > 0) {
+          onProgress(Math.min(100, Math.round((e.loaded / e.total) * 100)))
+        }
+      }
+    }
+
+    xhr.onload = () => {
+      const status = xhr.status
+
+      if (status >= 200 && status < 300) {
+        try {
+          resolve(JSON.parse(xhr.responseText) as ApiResponse<T>)
+        } catch {
+          // 2xx인데 본문이 JSON이 아닌 경우(거의 없음) — 요청 실패로 취급한다.
+          reject(new ApiError(MESSAGES.common.requestFailed, status))
+        }
+        return
+      }
+
+      // accessToken 만료(401): 브라우저에서 1회에 한해 refresh 후 같은 업로드를 재시도한다.
+      if (status === 401 && retry && typeof window !== 'undefined' && !isAuthFlow(endpoint)) {
+        refreshAccessToken().then((result) => {
+          if (result === 'refreshed') {
+            // 재발급 성공 → 동일 FormData로 딱 한 번 재시도(XHR send는 FormData를 소비하지 않는다).
+            uploadWithProgress<T>(endpoint, formData, { ...opts, retry: false }).then(resolve, reject)
+            return
+          }
+          if (result === 'unauthorized') {
+            window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT))
+          }
+          // 'unauthorized'/'error' 모두 아래와 동일하게 원래 401 에러를 던진다.
+          try {
+            throwApiError(status, xhr.responseText, endpoint)
+          } catch (err) {
+            reject(err)
+          }
+        })
+        return
+      }
+
+      // 그 외 실패는 공용 처리기로 변환(413 보정 · 정지/차단 이벤트 · ApiError).
+      try {
+        throwApiError(status, xhr.responseText, endpoint)
+      } catch (err) {
+        reject(err)
+      }
+    }
+
+    // 네트워크 단절/타임아웃은 ApiError가 아닌 일반 Error로 던져, 호출부가 상황에 맞는
+    // 폴백 문구(예: "동영상 업로드에 실패했습니다")를 쓰도록 한다(기존 fetch 타임아웃과 동일한 취급).
+    xhr.onerror = () => reject(new Error('network error'))
+    xhr.ontimeout = () => reject(new Error('timeout'))
+
+    xhr.send(formData)
+  })
 }

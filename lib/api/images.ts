@@ -1,4 +1,4 @@
-import { apiClient } from './client'
+import { uploadWithProgress } from './client'
 
 // 백엔드 ImageUploadResponse: { url: string }
 // url은 S3 temp 경로의 이미지 URL. 게시글 저장 시 백엔드가
@@ -24,12 +24,18 @@ const VIDEO_UPLOAD_TIMEOUT_MS = 180_000
 export const imagesApi = {
   // 에디터에서 미디어(이미지/동영상) 즉시 업로드 (multipart/form-data, 필드명 "image")
   // isVideo=true면 서버 측 재인코딩 지연을 고려해 더 긴 타임아웃을 적용한다.
-  upload: (file: File, opts?: { isVideo?: boolean }) => {
+  // onProgress: "브라우저 → 서버 전송" 진행률(0~100%). 전송 완료 후 서버 재인코딩 시간은
+  //   여기에 포함되지 않으므로(측정 불가), 호출부가 100% 시점에 "압축 중" 표시로 전환한다.
+  upload: (
+    file: File,
+    opts?: { isVideo?: boolean; onProgress?: (percent: number) => void },
+  ) => {
     const form = new FormData()
     form.append('image', file)
     const timeoutMs = opts?.isVideo ? VIDEO_UPLOAD_TIMEOUT_MS : IMAGE_UPLOAD_TIMEOUT_MS
-    return apiClient.post<ImageUploadResponse>('/api/images/upload', form, {
-      signal: AbortSignal.timeout(timeoutMs),
+    return uploadWithProgress<ImageUploadResponse>('/api/images/upload', form, {
+      onProgress: opts?.onProgress,
+      timeoutMs,
     })
   },
 }
