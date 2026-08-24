@@ -24,6 +24,9 @@ const MAX_IMAGE_SIZE_BY_EXT: Record<string, number> = {
 const MAX_VIDEO_SIZE = 30 * 1024 * 1024 // 30MB (백엔드 mp4/mov 상한과 동일)
 const IMAGE_EXT = ['jpg', 'jpeg', 'png', 'gif', 'webp']
 const VIDEO_EXT = ['mp4', 'mov']
+// 서버가 업로드 후 webp로 재압축하는 이미지 확장자(백엔드 JpgToWebpConverter/Gif2WebpConverter 기준).
+// png·webp는 변환 없이 그대로 저장되므로 "압축 중" 표시 대상이 아니다. 동영상(mp4/mov)은 항상 압축된다.
+const COMPRESSED_IMAGE_EXT = ['jpg', 'jpeg', 'gif']
 
 // 바이트 → 사람이 읽는 MB. 제한값이 항상 1MB 배수라 소수점은 버린다.
 function toMb(bytes: number): number {
@@ -84,10 +87,12 @@ export default function TiptapEditor({
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
   // 업로드 진행 표시용. percent는 "브라우저 → 서버 전송" 구간(0~100)이고,
-  // phase가 'encoding'이면 전송은 끝났고 서버가 동영상을 재인코딩(압축)하는 중이다
+  // phase가 'sending'이 아니면 전송은 끝났고 서버가 파일을 재압축하는 중이다.
+  // 압축 대상은 종류에 따라 문구가 다르므로(이미지/동영상) phase에 종류를 함께 담는다
   // (이 구간은 시간을 알 수 없어 %가 아니라 안내 문구만 보여준다).
   const [uploadPercent, setUploadPercent] = useState(0)
-  const [uploadPhase, setUploadPhase] = useState<'sending' | 'encoding'>('sending')
+  const [uploadPhase, setUploadPhase] =
+    useState<'sending' | 'compressing-image' | 'compressing-video'>('sending')
 
   // 내부 상태와 부모 콜백을 한 번에 갱신한다.
   // effect로 부모에 알리면(set-state-in-effect) 렌더가 한 번 더 돌아 상태가 어긋나는 구간이
@@ -198,16 +203,21 @@ export default function TiptapEditor({
     // 직전 파일의 100%/압축중 표시가 잠깐 남지 않도록 매 파일 시작 시 리셋한다.
     setUploadPhase('sending')
     setUploadPercent(0)
+    // 서버가 이 파일을 재압축하는지 여부. 동영상은 항상, 이미지는 jpg/jpeg/gif만(png/webp는 그대로).
+    // 전송 100% 도달 시 이 값이 true면 "압축 중" 문구로 전환한다.
+    const willCompress = isVideo || COMPRESSED_IMAGE_EXT.includes(ext)
     try {
       // 동영상은 서버 재인코딩까지 끝난 뒤 응답이 오므로 더 긴 타임아웃을 쓴다(images.ts 참고).
       const res = await imagesApi.upload(file, {
         isVideo,
         onProgress: (percent) => {
           setUploadPercent(percent)
-          // 동영상은 전송이 끝나는(100%) 순간 서버 재인코딩이 시작된다 —
-          // "압축 중"으로 문구를 바꿔 100%에서 멈춘 것처럼 보이지 않게 한다.
-          // (이미지는 인코딩이 없으므로 전환하지 않고 곧바로 완료로 이어진다)
-          if (percent >= 100 && isVideo) setUploadPhase('encoding')
+          // 전송이 끝나는(100%) 순간, 서버가 재압축하는 파일이면 "압축 중"으로 문구를 바꿔
+          // 100%에서 멈춘 것처럼 보이지 않게 한다. 종류(이미지/동영상)에 따라 문구가 다르다.
+          // png/webp처럼 변환이 없는 파일은 전환하지 않고 곧바로 완료로 이어진다.
+          if (percent >= 100 && willCompress) {
+            setUploadPhase(isVideo ? 'compressing-video' : 'compressing-image')
+          }
         },
       })
       const url = res.data?.url
@@ -282,11 +292,14 @@ export default function TiptapEditor({
       />
       {uploading && (
         <div className="px-3 py-2 border-t border-neutral-200 dark:border-neutral-800">
-          {uploadPhase === 'encoding' ? (
-            // 서버 재인코딩(압축) 구간: 진행률을 알 수 없으므로 안내 문구 + 불확정 스피너만.
+          {uploadPhase !== 'sending' ? (
+            // 서버 재압축 구간: 진행률을 알 수 없으므로 안내 문구 + 불확정 스피너만.
+            // 종류(이미지/동영상)에 따라 문구가 다르다.
             <p className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
               <span className="inline-block w-3 h-3 rounded-full border-2 border-neutral-300 dark:border-neutral-600 border-t-blue-500 animate-spin" />
-              {MESSAGES.post.editor.encoding}
+              {uploadPhase === 'compressing-video'
+                ? MESSAGES.post.editor.compressingVideo
+                : MESSAGES.post.editor.compressingImage}
             </p>
           ) : (
             // 전송 구간: 실제 진행률(%)을 막대와 숫자로 보여준다.

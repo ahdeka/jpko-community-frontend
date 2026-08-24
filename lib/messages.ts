@@ -412,9 +412,12 @@ export const MESSAGES = {
       videoUploadFailed: '동영상 업로드에 실패했습니다. 잠시 후 다시 시도해주세요.',
       // 업로드 진행 표시. 전송(브라우저→서버) 구간은 %로 보여줄 수 있다(XHR upload progress).
       uploadingProgress: (percent: number) => `업로드 중… ${percent}%`,
-      // 전송이 끝난 뒤 서버가 ffmpeg로 재인코딩하는 구간. 소요 시간을 예측할 수 없어 %가 아니라
+      // 전송이 끝난 뒤 서버가 파일을 재압축하는 구간. 소요 시간을 예측할 수 없어 %가 아니라
       // 대기 안내만 보여준다(전송 100%에서 멈춘 것처럼 오해하지 않도록 문구를 전환한다).
-      encoding: '동영상을 압축하고 있어요. 잠시만 기다려주세요…',
+      // 백엔드 변환기 기준으로 표시 대상이 갈린다: 동영상(mp4/mov→ffmpeg), 이미지(jpg/jpeg/gif→webp).
+      // png/webp는 변환 없이 그대로 저장되므로 이 표시를 띄우지 않는다.
+      compressingVideo: '동영상을 압축하고 있어요. 잠시만 기다려주세요…',
+      compressingImage: '이미지를 압축하고 있어요. 잠시만 기다려주세요…',
       linkPrompt: '링크 URL을 입력하세요 (비우면 링크 해제)',
       invalidLink: '사용할 수 없는 링크입니다. http/https 주소를 입력해주세요.',
     },
