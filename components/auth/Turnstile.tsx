@@ -43,8 +43,13 @@ declare global {
 // 우리가 원하는 시점/컨테이너에 window.turnstile.render()로 직접 렌더할 수 있다.
 const SCRIPT_SRC = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'
 
-// 빌드 타임에 인라인되는 공개 site key. 없으면 위젯을 렌더할 수 없다(= 가입 불가, fail-closed).
+// 빌드 타임에 인라인되는 공개 site key. 없으면 위젯을 렌더할 수 없다(= 가입/로그인 불가, fail-closed).
 const SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
+
+// site key가 없을 때 위젯 대신 노출할 기본 안내(회원가입 화면 기준).
+// 다른 화면(로그인 등)은 fallbackMessage prop으로 덮어쓴다.
+const DEFAULT_FALLBACK_MESSAGE =
+  '보안 문자 설정이 누락되어 회원가입을 진행할 수 없습니다. 관리자에게 문의해주세요.'
 
 // 부모가 ref로 호출할 수 있는 명령형 메서드.
 export interface TurnstileHandle {
@@ -60,6 +65,9 @@ interface TurnstileProps {
   // 위젯 오류 시. 부모는 token을 비우고 필요하면 안내를 노출한다.
   onError?: () => void
   className?: string
+  // site key 누락 시 보여줄 안내 문구. 화면마다 문구가 달라야 해서 주입받는다
+  // (미지정이면 회원가입 기준 기본 문구를 쓴다 — 기존 호출부 무변경).
+  fallbackMessage?: string
 }
 
 // 현재 문서 테마를 읽는다. 이 앱은 <html data-theme="light|dark">(수동 토글) 전략이라
@@ -86,7 +94,7 @@ function currentTheme(): 'light' | 'dark' {
  *    렌더 이펙트가 재실행(위젯 재생성)되지 않도록 한다.
  */
 const Turnstile = forwardRef<TurnstileHandle, TurnstileProps>(function Turnstile(
-  { onVerify, onExpire, onError, className },
+  { onVerify, onExpire, onError, className, fallbackMessage = DEFAULT_FALLBACK_MESSAGE },
   ref,
 ) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -163,11 +171,7 @@ const Turnstile = forwardRef<TurnstileHandle, TurnstileProps>(function Turnstile
 
   // site key가 없으면(환경변수 누락) 위젯을 띄울 수 없다. 조용히 실패하면 원인 파악이 어려우므로 안내한다.
   if (!SITE_KEY) {
-    return (
-      <p className="text-xs text-red-500">
-        보안 문자 설정이 누락되어 회원가입을 진행할 수 없습니다. 관리자에게 문의해주세요.
-      </p>
-    )
+    return <p className="text-xs text-red-500">{fallbackMessage}</p>
   }
 
   return (

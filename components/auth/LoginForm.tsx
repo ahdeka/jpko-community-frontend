@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { authApi } from '@/lib/api/auth'
@@ -9,11 +9,14 @@ import { useAuth } from '@/lib/auth-context'
 import { useRedirectIfAuthenticated } from '@/lib/use-auth-guard'
 import { MESSAGES } from '@/lib/messages'
 import RedirectingOverlay from './RedirectingOverlay'
+import Turnstile, { type TurnstileHandle } from './Turnstile'
 
 interface FieldErrors {
   // 로그인 식별자(아이디 또는 이메일) 입력 칸의 에러.
   loginId?: string
   password?: string
+  // 위젯이 아직 토큰을 내주지 않았거나(로딩 중) 챌린지가 끝나지 않은 상태로 제출한 경우.
+  turnstile?: string
 }
 
 const inputClass =
@@ -27,6 +30,11 @@ export default function LoginForm() {
   // 아이디 또는 이메일 둘 다 받는 로그인 식별자.
   const [loginId, setLoginId] = useState('')
   const [password, setPassword] = useState('')
+  // Cloudflare Turnstile 통과 시 발급되는 1회용 토큰. 백엔드 LoginRequest의 @NotBlank를 미러링한다.
+  // 만료(약 300초)·오류 시에는 빈 문자열로 되돌려, 무효한 토큰으로 제출하는 일이 없게 한다.
+  const [turnstileToken, setTurnstileToken] = useState('')
+  // 제출 실패 후 위젯에 새 챌린지를 다시 돌리기 위한 명령형 핸들.
+  const turnstileRef = useRef<TurnstileHandle>(null)
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [apiError, setApiError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -35,7 +43,24 @@ export default function LoginForm() {
     const errs: FieldErrors = {}
     if (!loginId.trim()) errs.loginId = MESSAGES.auth.login.identifierRequired
     if (!password) errs.password = MESSAGES.auth.login.passwordRequired
+    // 토큰이 없으면 서버는 어차피 400(INVALID_INPUT)을 준다. 왕복하기 전에 여기서 막고 이유를 알린다.
+    if (!turnstileToken) errs.turnstile = MESSAGES.auth.login.turnstileRequired
     return errs
+  }
+
+  // 위젯이 챌린지를 통과해 새 토큰을 줬을 때. 토큰을 보관하고, 남아 있던 안내 문구를 지운다.
+  // (제출이 토큰보다 빨랐던 경우 — 위젯은 보통 1초 안팎이라 흔하다 — 문구가 계속 남는 걸 막는다.)
+  function handleVerify(token: string) {
+    setTurnstileToken(token)
+    setFieldErrors(prev => (prev.turnstile ? { ...prev, turnstile: undefined } : prev))
+  }
+
+  // 보관 중이던 토큰을 버리고 위젯에 새 챌린지를 돌린다.
+  // 순서가 중요하다: state를 먼저 비워야, 새 토큰이 도착하기 전에 다시 제출되더라도
+  // validate()가 소진된 토큰을 통과시키지 않는다.
+  function resetTurnstile() {
+    setTurnstileToken('')
+    turnstileRef.current?.reset()
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -55,7 +80,11 @@ export default function LoginForm() {
       // 저장된 값과 확실히 매칭되도록 전송값도 동일하게 맞춘다(대소문자·공백 차이로 인한 실패 방지).
       // 정지(SUSPENDED)된 계정도 여기서 막히지 않는다 — 로그인은 되고, fetchUser() 이후 AuthProvider가
       // 전역 SuspendedScreen으로 전환한다(정지된 계정도 출첵은 처리되고, 그 화면에서 포인트로 즉시 해제할 수 있다).
-      const res = await authApi.login({ loginId: loginId.trim().toLowerCase(), password })
+      const res = await authApi.login({
+        loginId: loginId.trim().toLowerCase(),
+        password,
+        turnstileToken,
+      })
       await fetchUser()
       if (res.data?.checkIn) notifyCheckInResult(res.data.checkIn)
       // 아직 계정 전환(온보딩)이 필요한 기존 유저는 홈이 아니라 온보딩 화면으로 보낸다.
@@ -63,12 +92,30 @@ export default function LoginForm() {
       // replace로 이동해 히스토리에 로그인 페이지를 남기지 않는다.
       router.replace(res.data?.needsOnboarding ? '/onboarding' : '/')
     } catch (e) {
+      // ⚠️ 실패 원인과 무관하게 항상 위젯을 리셋한다.
+      //    Turnstile 토큰은 1회용(siteverify 1회 호출로 소진)이고, 백엔드는 비밀번호 검증보다
+      //    *먼저* 캡차를 검증한다. 즉 비밀번호를 틀린 요청에서도 토큰은 이미 소진된 상태다.
+      //    리셋하지 않으면 두 번째 시도부터 WRONG_PASSWORD가 아니라 CAPTCHA_FAILED로 계속 실패한다.
+      //    (회원가입과 달리 로그인은 재시도가 일상이라, 이걸 빠뜨리면 사실상 로그인이 1회용이 된다.)
+      resetTurnstile()
+
       if (e instanceof ApiError) {
         if (e.code === 'WRONG_PASSWORD' || e.code === 'USER_NOT_FOUND') {
           setApiError(MESSAGES.auth.login.invalidCredentials)
+        } else if (e.code === 'CAPTCHA_FAILED') {
+          // 토큰 소진·만료·위조, 또는 Cloudflare 응답 실패(백엔드가 fail-closed로 처리).
+          // 위젯은 방금 리셋했으므로 새 토큰이 도착하면 그대로 다시 제출하면 된다.
+          setApiError(MESSAGES.auth.login.captchaFailed)
         } else {
+          // INVALID_INPUT(Bean Validation 실패) 포함. 백엔드가 걸린 필드의 메시지를 그대로 실어주므로
+          // 여기서 일반 문구로 덮어쓰지 않는 편이 더 구체적이다.
           setApiError(e.message)
         }
+      } else {
+        // ApiError가 아닌 예외(네트워크 단절, 파싱 실패 등).
+        // else가 없던 기존 코드에서는 아무 안내도 뜨지 않고 버튼만 원복돼,
+        // 유저에게는 "눌렀는데 아무 일도 안 일어남"으로 보였다.
+        setApiError(MESSAGES.auth.login.networkError)
       }
     } finally {
       setLoading(false)
@@ -113,6 +160,21 @@ export default function LoginForm() {
         />
         {fieldErrors.password && (
           <p className="text-xs text-red-500 mt-1">{fieldErrors.password}</p>
+        )}
+      </div>
+
+      {/* 봇 방지(Cloudflare Turnstile). 통과 시 토큰을 저장하고, 만료/오류 시 비운다.
+          site key가 없으면 위젯 대신 안내 문구가 렌더된다(fail-closed — 로그인 불가). */}
+      <div>
+        <Turnstile
+          ref={turnstileRef}
+          onVerify={handleVerify}
+          onExpire={() => setTurnstileToken('')}
+          onError={() => setTurnstileToken('')}
+          fallbackMessage={MESSAGES.auth.login.turnstileMisconfigured}
+        />
+        {fieldErrors.turnstile && (
+          <p className="text-xs text-red-500 mt-1">{fieldErrors.turnstile}</p>
         )}
       </div>
 

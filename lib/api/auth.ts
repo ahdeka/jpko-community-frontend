@@ -46,9 +46,16 @@ export const authApi = {
   // 로그인 식별자는 아이디 또는 이메일 둘 다 허용한다(백엔드가 loginId → email 순으로 조회).
   // 응답 body에는 출첵 결과(checkIn)와 계정 전환 필요 여부(needsOnboarding)가 함께 담겨 온다.
   // 실제 인증 상태는 이 body가 아니라 /api/auth/me(fetchUser)로 확정한다.
+  //
+  // turnstileToken: Cloudflare Turnstile 1회용 토큰. 백엔드 LoginRequest의 @NotBlank를 미러링한다.
+  // 백엔드는 비밀번호 검증보다 *먼저* 이 토큰을 siteverify로 검증하므로, 비밀번호를 틀린 요청에서도
+  // 토큰은 이미 소진된다 → 실패 시 호출부가 반드시 위젯을 리셋해 새 토큰을 받아야 한다.
+  // 실패 code: WRONG_PASSWORD, USER_NOT_FOUND, CAPTCHA_FAILED(토큰 소진·만료·위조),
+  //           INVALID_INPUT(토큰이 비어 Bean Validation에서 걸린 경우).
   login: (body: {
     loginId: string
     password: string
+    turnstileToken: string
   }) => apiClient.post<LoginResponse>('/api/auth/login', body),
 
   me: () =>

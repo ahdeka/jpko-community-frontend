@@ -33,6 +33,14 @@ export const MESSAGES = {
       identifierRequired: '아이디 또는 이메일을 입력해주세요.',
       passwordRequired: '비밀번호를 입력해주세요.',
       invalidCredentials: '아이디(또는 이메일) 또는 비밀번호가 올바르지 않습니다.',
+      // Turnstile 위젯이 아직 토큰을 안 준 상태로 제출한 경우(로딩 중이거나 챌린지 미완료).
+      turnstileRequired: '보안 문자 인증을 완료해주세요.',
+      // 백엔드 CAPTCHA_FAILED — 토큰 소진(1회용)·만료·위조. 위젯은 이미 리셋된 뒤라 재시도하면 된다.
+      captchaFailed: '보안 문자 인증에 실패했습니다. 다시 시도해주세요.',
+      // NEXT_PUBLIC_TURNSTILE_SITE_KEY 누락 — 위젯을 못 띄우므로 로그인 자체가 불가(fail-closed).
+      turnstileMisconfigured: '보안 문자 설정이 누락되어 로그인을 진행할 수 없습니다. 관리자에게 문의해주세요.',
+      // ApiError가 아닌 예외(네트워크 단절, Turnstile 스크립트 로드 실패 등).
+      networkError: '로그인 중 오류가 발생했습니다. 네트워크 상태를 확인한 뒤 다시 시도해주세요.',
     },
     // 신규 가입 1단계: 이메일 입력 → 인증 메일 발송.
     signupInit: {
