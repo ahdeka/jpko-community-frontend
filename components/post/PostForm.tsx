@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { postsApi } from '@/lib/api/posts'
+import { notifyPointBalanceChanged } from '@/lib/api/points'
 import { ApiError } from '@/lib/api/client'
 import { useUnsavedChanges } from '@/lib/use-unsaved-changes'
 import { MESSAGES } from '@/lib/messages'
@@ -108,10 +109,19 @@ export default function PostForm({
         title: title.trim(),
         content,
       }
-      const res =
-        mode === 'edit' && postId != null
-          ? await postsApi.update(postId, body)
-          : await postsApi.create({ ...body, anonymous })
+      const isEdit = mode === 'edit' && postId != null
+      const res = isEdit
+        ? await postsApi.update(postId, body)
+        : await postsApi.create({ ...body, anonymous })
+
+      // 새 글 작성에만 활동 보상(GRANT)이 붙는다 — 수정에는 지급이 없으므로 알리지 않는다.
+      // 응답에 잔액이 없어 인자 없이 부르고, 구독자(UserMenu)가 /api/points로 다시 조회한다.
+      // 지급은 게시글 저장과 같은 트랜잭션에서 커밋된 뒤 응답이 오므로, 이 시점의 재조회는 항상 반영된 값을 본다.
+      // 실제로 지급이 있었는지는 프론트가 알 수 없지만(이메일 미인증·일일 상한 소진이면 지급 없음)
+      // 그 경우 재조회가 같은 값을 다시 받아올 뿐이라 무해하다.
+      if (!isEdit) {
+        notifyPointBalanceChanged()
+      }
 
       const id = res.data?.id ?? postId
       setSubmitted(true) // 이탈 경고 해제 후 이동

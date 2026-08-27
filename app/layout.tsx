@@ -45,6 +45,15 @@ export const metadata: Metadata = {
   robots: INDEXING_ENABLED
     ? { index: true, follow: true }
     : { index: false, follow: false },
+  // 검색엔진 사이트 소유확인 토큰.
+  // verification.other는 키를 meta name으로 그대로 쓰므로
+  // <meta name="naver-site-verification" content="..."> 가 모든 페이지 <head>에 렌더된다.
+  // 네이버는 HTML 파일 방식(public/naver...html)도 함께 두어 이중으로 대비한다.
+  verification: {
+    other: {
+      'naver-site-verification': '346693e372af463e0e73cf3b3cd1067ece082a76',
+    },
+  },
 }
 
 export default async function RootLayout({

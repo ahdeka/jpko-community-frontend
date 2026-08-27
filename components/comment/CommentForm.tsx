@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { commentsApi, type CommentTarget } from '@/lib/api/comments'
 import { imagesApi } from '@/lib/api/images'
+import { notifyPointBalanceChanged } from '@/lib/api/points'
 import { ApiError } from '@/lib/api/client'
 import { MESSAGES } from '@/lib/messages'
 
@@ -159,6 +160,16 @@ export default function CommentForm({ target, parentId, mention, lastPageHref, o
         ...(parentId !== undefined && { parentId }),
         ...(imageUrl && { imageUrl }),
       })
+      // 게시글 댓글에만 활동 보상(GRANT)이 붙는다 — 백엔드가 공지(NOTICE) 댓글은 알림도 지급도
+      // 건너뛰므로(CommentService.createComment의 type == POST 분기) 여기서도 알리지 않는다.
+      // 응답에 잔액이 없어 인자 없이 부르고, 구독자(UserMenu)가 /api/points로 다시 조회한다.
+      // 지급은 댓글 저장과 같은 트랜잭션에서 커밋된 뒤 응답이 오므로 이 재조회는 항상 반영된 값을 본다.
+      // 게시글 댓글이어도 지급이 없는 경우(내 글에 내가 댓글·이메일 미인증·일일 상한 소진)가 있지만,
+      // 그때는 같은 값을 다시 받아올 뿐이라 무해하다.
+      if (target.type === 'POST') {
+        notifyPointBalanceChanged()
+      }
+
       setContent('')
       setAnonymous(false)
       setImageUrl(null)

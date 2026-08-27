@@ -41,10 +41,12 @@ export const TRANSACTION_TYPES: TransactionTypeMeta[] = [
     label: '룰렛 수수료',
     badge: 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400',
   },
+  // 폐지된 유형. 백엔드가 더 이상 발생시키지 않지만 과거 원장 행이 남아 있어 계속 조회된다.
+  // 뱃지는 다른 폐지·중립 항목과 같은 회색 계열로 둔다.
   {
     value: 'JMT',
-    label: '상납존맛탱탱구리',
-    badge: 'bg-blue-100 text-blue-500 dark:bg-blue-800 dark:text-blue-400',
+    label: '정산',
+    badge: 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400',
   },
   {
     value: 'TRANSFER',
@@ -156,11 +158,15 @@ export function describeTransaction(tx: PointTransaction, myUserId: number): Tra
             description: '출첵 차감',
             counterpartLabel: null,
           }
+    // 현재 GRANT를 만드는 백엔드 경로는 활동 보상(게시글·댓글 작성, 내 글이 받은 좋아요) 하나뿐이라
+    // 그렇게 표기한다. 어떤 활동이었는지는 백엔드가 Transaction.message에만 담고 TransactionResponse로는
+    // 내려주지 않아(= 프론트에 도달하지 않아) 여기서 더 쪼갤 수 없다. 세분화하려면 응답에 message가 필요하다.
+    // 일일 상한에 걸려 일부만 지급된 경우에도 amount는 "실제 지급된 액수"라 그대로 보여주면 된다.
     case 'GRANT':
       return {
         signedAmountLabel: `+${tx.amount.toLocaleString()}P`,
         colorClass: 'text-emerald-600 dark:text-emerald-400',
-        description: '지급받음',
+        description: '활동 보상',
         counterpartLabel: null,
       }
     case 'COLLECT':
@@ -177,11 +183,16 @@ export function describeTransaction(tx: PointTransaction, myUserId: number): Tra
         description: '룰렛 수수료',
         counterpartLabel: null,
       }
+    // 폐지된 유형. 과거 룰렛 수수료 정산 과정에서 시스템 → 유저로 지급되던 기록이라 방향은 항상
+    // 수령(+) 한 가지뿐이다. 백엔드가 더 이상 이 타입을 만들지 않지만 기존 원장 행은 남아 있어
+    // 내역에 계속 섞여 나오므로 이 case를 지우면 안 된다 — 지우면 switch가 이 값에서 아무것도
+    // 반환하지 않아 describeTransaction이 undefined를 돌려주고, 호출부의 display.* 접근에서
+    // 런타임 크래시가 난다(TS는 union에 남아 있는 한 이 누락을 컴파일 시점에 잡아준다).
     case 'JMT':
       return {
-        signedAmountLabel: `${tx.amount.toLocaleString()}P`,
+        signedAmountLabel: `+${tx.amount.toLocaleString()}P`,
         colorClass: 'text-emerald-600 dark:text-emerald-400',
-        description: '상납금ㅋㅋ',
+        description: '지난 정산 지급',
         counterpartLabel: null,
       }
     case 'ACCOUNT_OPENED':

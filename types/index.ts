@@ -322,7 +322,10 @@ export interface AdminReportDetail {
 // ========== 포인트 ==========
 
 // 포인트 거래 유형 — 백엔드 TransactionType enum과 1:1.
-//  GRANT: 시스템 → 유저 지급 (현재는 어떤 API도 직접 발생시키지 않음, 향후 활동 보상 등)
+//  GRANT: 시스템 → 유저 지급. 현재 유일한 발생원은 활동 보상(게시글·댓글 작성, 내 글이 받은 좋아요)이다.
+//    백엔드에 일일 상한이 있어, 그날 활동 보상 누적이 상한에 닿으면 남은 만큼만 지급되고(부분 지급)
+//    상한을 다 채운 뒤에는 거래 자체가 생기지 않는다(원장에도 알림에도 남지 않음). 상한은 KST 자정에 초기화된다.
+//    amount는 언제나 "실제 지급된 액수"이므로 프론트가 별도로 보정할 것은 없다.
 //  COLLECT: 유저 → 시스템 회수 (현재 어떤 API도 발생시키지 않음, 향후 관리자 차감용)
 //  ACCOUNT_OPENED: 포인트 계좌가 최초 생성될 때 남는 감사 로그. amount는 항상 0.
 //  CHECKIN: 시스템 ↔ 유저, 매일 로그인 시 자동 출첵. amount는 플러스(지급)·마이너스(차감) 둘 다 가능.
@@ -339,6 +342,10 @@ export interface AdminReportDetail {
 //  PACHINKO: 유저 ↔ 시스템, 파칭코 결과 정산(순손익). 방향은 승/패에 따라 갈린다.
 //  SLOT_FEE: 유저 → 시스템, 슬롯머신 판당 수수료.
 //  SLOT: 유저 ↔ 시스템, 슬롯머신 결과 정산(순손익). 방향은 승/패에 따라 갈린다.
+//  SHIELD_PURCHASE: 유저 → 시스템, 룰렛 방어권 구매.
+//  JMT: 폐지된 유형(시스템 → 유저). 백엔드가 더 이상 발생시키지 않지만 과거 원장 행이 남아 있어
+//    내역 조회에 계속 섞여 나온다. 백엔드에서 데이터 정리 + enum 제거가 끝나기 전까지는
+//    이 union에서 빼면 안 된다(lib/point.ts describeTransaction의 case 주석 참고).
 export type TransactionType =
   | 'GRANT' | 'COLLECT' | 'ACCOUNT_OPENED' | 'CHECKIN' | 'ROULETTE' | 'ROULETTE_FEE' | 'TRANSFER' | 'TRANSFER_FEE'
   | 'BLOCK_PURCHASE' | 'BLOCK_UNBLOCK' | 'BID_HOLD' | 'BID_REFUND'

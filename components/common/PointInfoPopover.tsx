@@ -54,7 +54,16 @@ export default function PointInfoPopover() {
           role="tooltip"
           className="absolute right-0 top-full z-50 mt-2 w-64 rounded-lg border border-neutral-200 bg-white p-3 text-left shadow-lg dark:border-neutral-700 dark:bg-neutral-900"
         >
+          {/* 활동 보상을 맨 위에 둔다 - 일상적으로 가장 자주 포인트가 들어오는 경로이자,
+              일일 상한에 걸리면 아무 안내 없이 조용히 지급이 멈추는 유일한 항목이라
+              "왜 포인트가 안 들어오지?"에 대한 답이 여기 먼저 보여야 한다. */}
           <p className="text-[11px] font-semibold text-neutral-400 dark:text-neutral-500">
+            활동 보상
+          </p>
+          <p className="mt-1 text-[11px] leading-snug text-neutral-600 dark:text-neutral-300">
+            {MESSAGES.points.pointInfo.activityRewardDescription}
+          </p>
+          <p className="mt-2 text-[11px] font-semibold text-neutral-400 dark:text-neutral-500">
             출첵
           </p>
           <p className="mt-1 text-[11px] leading-snug text-neutral-600 dark:text-neutral-300">
