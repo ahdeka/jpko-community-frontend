@@ -15,6 +15,45 @@
   color-scheme: dark;
 }
 
+/* 클릭 가능한 컨트롤의 마우스 커서.
+   브라우저 UA 기본값은 <button>에 cursor: default(화살표)를 준다 — 네이티브 데스크톱 앱
+   관례를 따른 것이라 손가락 커서가 뜨지 않는다. Tailwind v3까지는 preflight가
+   button, [role="button"]에 cursor: pointer를 넣어 이를 덮어줬지만, v4에서 "브라우저 기본에
+   맞춘다"며 그 규칙을 삭제했다. 그래서 v4에서는 이렇게 직접 되살려야 한다.
+
+   @layer base 안에 두는 것이 중요하다. Tailwind v4의 레이어 순서는
+   theme -> base -> components -> utilities 라서, base에 있으면 특정 요소에
+   cursor-wait / cursor-default 같은 유틸리티를 붙였을 때 그쪽이 이긴다.
+   레이어 밖(unlayered)에 쓰면 오히려 유틸리티를 이겨버려 개별 예외를 만들 수 없다.
+
+   <a href>는 UA 기본값이 이미 pointer이므로 여기서 다루지 않는다(next/link 포함). */
+@layer base {
+  button:not(:disabled):not([aria-disabled="true"]),
+  [role="button"]:not([aria-disabled="true"]),
+  /* for가 있는 label만: 클릭 시 실제로 연결된 폼 컨트롤이 토글되는 경우로 한정한다.
+     (폼 컨트롤과 연결되지 않은 설명용 label에 손가락이 뜨면 오해를 준다) */
+  label[for],
+  summary,
+  /* 체크박스·라디오는 UA 기본값이 default라, 감싼 label엔 손가락이 뜨는데
+     정작 네모칸 위에서는 화살표로 되돌아가는 어긋남이 생긴다. 함께 맞춘다. */
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  select:not(:disabled) {
+    cursor: pointer;
+  }
+  /* 비활성 컨트롤은 눌리지 않으므로 손가락 대신 금지 표시를 준다.
+     ("왜 눌러도 반응이 없지?" 혼란 방지 — 제출 중 disabled 버튼이 대표적)
+     로딩 중임을 강조하고 싶은 버튼은 개별적으로 cursor-wait 유틸리티를 얹으면 이 규칙을 덮는다. */
+  button:disabled,
+  button[aria-disabled="true"],
+  [role="button"][aria-disabled="true"],
+  input[type="checkbox"]:disabled,
+  input[type="radio"]:disabled,
+  select:disabled {
+    cursor: not-allowed;
+  }
+}
+
 /* 탈퇴 회원 작성자명: 실제 닉네임보다 '덜 눈에 띄게' 흐린 회색 + 이탤릭.
    호출부(AuthorName)마다 기본 색·굵기 클래스가 달라(text-neutral-500, font-semibold 등),
    그것을 확실히 덮으려고 !important로 지정한다. 이 규칙은 @layer 밖(unlayered)이라
