@@ -104,9 +104,9 @@ export interface AdminUser {
   displayGradeName: string;  // 등급 한글 표기 (예: "아시가루") — 백엔드 enum 표시명
   emailVerified: boolean;
   createdAt: string;
-  // 포인트로 산 차단권(#6 ActivityBlock)에 의해 현재 활동이 제한 중이면 그 해제 시각, 아니면 null.
-  // status(계정 정지)와는 완전히 별개 메커니즘 — 정지되지 않은 계정도 이 값이 있으면 차단 중이다.
-  activeBlockExpiresAt: string | null;
+  // 정지 중일 때의 해제 예정 시각. null이면 정지가 아니거나 ROOT가 건 무기한 정지다
+  // (구분은 status로 한다).
+  suspendedUntil: string | null;
 }
 
 // 카테고리
@@ -331,25 +331,13 @@ export interface AdminReportDetail {
 //  CHECKIN: 시스템 ↔ 유저, 매일 로그인 시 자동 출첵. amount는 플러스(지급)·마이너스(차감) 둘 다 가능.
 //  ROULETTE: 유저 ↔ 유저(시스템 경유), 유저가 직접 베팅해 상대와 겨루는 룰렛 승부.
 //  ROULETTE_FEE: 유저 → 시스템, 룰렛 판당 수수료.
-//  TRANSFER: 유저 → 유저, 회원이 직접 다른 회원에게 보내는 포인트 송금.
-//  TRANSFER_FEE: 송금 시 붙는 수수료. 랜덤이라 방향이 뒤바뀔 수 있다(유저→시스템이 기본이지만,
-//    음수로 뽑히면 시스템→유저로 오히려 보너스가 지급된다). sender/recipient 중 하나가 시스템(null)이다.
-//  BLOCK_PURCHASE: 유저 → 시스템, 다른 유저에게 활동 차단권 사용.
-//  BLOCK_UNBLOCK: 유저 → 시스템, 본인 차단을 포인트로 즉시 해제.
-//  BID_HOLD: 유저 → 시스템, 권한 경매 입찰 시 예탁(에스크로). 재입찰(인상) 시 차액만큼 추가로 발생.
-//  BID_REFUND: 시스템 → 유저, 낙찰 실패 또는 입찰 취소 시 예탁금 환불.
 //  PACHINKO_FEE: 유저 → 시스템, 파칭코 판당 수수료.
 //  PACHINKO: 유저 ↔ 시스템, 파칭코 결과 정산(순손익). 방향은 승/패에 따라 갈린다.
 //  SLOT_FEE: 유저 → 시스템, 슬롯머신 판당 수수료.
 //  SLOT: 유저 ↔ 시스템, 슬롯머신 결과 정산(순손익). 방향은 승/패에 따라 갈린다.
-//  SHIELD_PURCHASE: 유저 → 시스템, 룰렛 방어권 구매.
-//  JMT: 폐지된 유형(시스템 → 유저). 백엔드가 더 이상 발생시키지 않지만 과거 원장 행이 남아 있어
-//    내역 조회에 계속 섞여 나온다. 백엔드에서 데이터 정리 + enum 제거가 끝나기 전까지는
-//    이 union에서 빼면 안 된다(lib/point.ts describeTransaction의 case 주석 참고).
 export type TransactionType =
-  | 'GRANT' | 'COLLECT' | 'ACCOUNT_OPENED' | 'CHECKIN' | 'ROULETTE' | 'ROULETTE_FEE' | 'TRANSFER' | 'TRANSFER_FEE'
-  | 'BLOCK_PURCHASE' | 'BLOCK_UNBLOCK' | 'BID_HOLD' | 'BID_REFUND'
-  | 'PACHINKO_FEE' | 'PACHINKO' | 'SLOT_FEE' | 'SLOT' | 'JMT' | 'SHIELD_PURCHASE';
+  | 'GRANT' | 'COLLECT' | 'ACCOUNT_OPENED' | 'CHECKIN' | 'ROULETTE' | 'ROULETTE_FEE'
+  | 'PACHINKO_FEE' | 'PACHINKO' | 'SLOT_FEE' | 'SLOT';
 
 // 포인트 잔액 (백엔드 PointResponse와 1:1)
 export interface PointBalance {
@@ -495,23 +483,6 @@ export interface SlotPlayResult {
   balanceAfter: number;
 }
 
-// 포인트 송금 요청 (백엔드 TransferRequest와 1:1)
-export interface TransferRequestBody {
-  recipientId: number;
-  amount: number;
-}
-
-// 포인트 송금 결과 (백엔드 TransferResponse와 1:1)
-// ⚠️ 이 API는 항상 HTTP 200으로 응답한다 — 실제 성공/실패는 이 안의 status로 판단해야 한다.
-// (ApiError의 HTTP status 기반 분기가 통하지 않는 유일한 API)
-export interface TransferResult {
-  status: 'ACCEPTED' | 'NOT_ACCEPTABLE';
-  code?: string;              // 실패 시 백엔드 ErrorCode 이름(예: INSUFFICIENT_BALANCE). 없을 수도 있다.
-  transfer?: PointTransaction | null;
-  fee?: PointTransaction | null;
-  e?: string;                 // 실패 시 예외 메시지. code가 없을 때의 폴백으로 쓴다.
-}
-
 // 알림 종류 — 백엔드 NotificationType enum과 1:1.
 //  COMMENT: 내 게시글에 댓글 / REPLY: 내 댓글에 답글 / LIKE: 내 게시글에 좋아요
 //  CONTENT_REMOVED: 관리자가 내 게시글/댓글을 강제 삭제함
@@ -522,14 +493,7 @@ export interface TransferResult {
 //  POINT_WON: 룰렛(베팅) 대결에서 승리해 포인트를 얻음. POINT_STOLEN과 postId/amount 규칙은 동일.
 //  POST_REWARD: 게시글 작성으로 포인트를 받음. postId/postTitle은 채워지고, sender는 시스템 지급이라 항상 null.
 //  COMMENT_REWARD: 댓글 작성으로 포인트를 받음. postId/commentId 둘 다 채워지고, sender는 항상 null.
-//  LIKE_REWARD: 내 게시글이 좋아요를 받아 포인트를 받음. postId가 채워지고, sender는 항상 null.
-//  TRANSFER: 다른 회원이 나에게 포인트를 송금함. postId/commentId 항상 null, amount(받은 금액,
-//    수수료 제외)가 채워진다. POINT_STOLEN/WON과 마찬가지로 isAnonymous 항상 false.
-//  ROLE_AUCTION_WON: 관리자 권한 경매에 낙찰됨. postId/commentId 항상 null, amount(지불한 낙찰가)가
-//    채워지고, sender는 시스템 정산이라 항상 null.
-//  ROLE_AUCTION_LOST: 관리자 권한 경매에 낙첨됨. postId/commentId 항상 null, amount(환불된 입찰가)가
-//    채워지고, sender는 항상 null.
-export type NotificationType = 'COMMENT' | 'REPLY' | 'LIKE' | 'CONTENT_REMOVED' | 'POINT_STOLEN' | 'POINT_WON' | 'POST_REWARD' | 'COMMENT_REWARD' | 'LIKE_REWARD' | 'TRANSFER' | 'ROLE_AUCTION_WON' | 'ROLE_AUCTION_LOST';
+export type NotificationType = 'COMMENT' | 'REPLY' | 'LIKE' | 'CONTENT_REMOVED' | 'POINT_STOLEN' | 'POINT_WON' | 'POST_REWARD' | 'COMMENT_REWARD';
 
 // 알림 (백엔드 NotificationResponse record와 1:1)
 // ⚠️ 키 이름 주의: 백엔드 record의 boolean 컴포넌트는 "선언명 그대로" 직렬화된다.
@@ -553,167 +517,10 @@ export interface Notification {
   amount: number | null;      // POINT_STOLEN/POINT_WON 전용, 오간 포인트 액수. 그 외 타입은 null.
 }
 
-// ========== 상점 ==========
-
-// 상점 상품 종류 — 백엔드 ShopItemType enum과 1:1.
-//  BLOCK: 정가 판매되는 임시 활동 차단권 (price/durationMinutes 사용)
-//  ROLE_AUCTION: 주기적으로 경매가 열리는 UserRole 판매 설정 (targetRole~cadenceDays 사용)
-//  SHIELD: 정가 판매되는 룰렛 방어권 (price/durationMinutes 사용, BLOCK과 동일한 필드)
-export type ShopItemType = 'BLOCK' | 'ROLE_AUCTION' | 'SHIELD';
-
-// 상점 상품 (백엔드 ShopItemResponse와 1:1)
-// type에 따라 사용되는 필드가 다르다 — BLOCK은 price/durationMinutes만, ROLE_AUCTION은 나머지만 채워진다.
-export interface ShopItem {
-  id: number;
-  type: ShopItemType;
-  name: string;
-  price: number | null;
-  durationMinutes: number | null;
-  targetRole: UserRole | null;
-  quantity: number | null;
-  minPrice: number | null;
-  durationDays: number | null;
-  cadenceDays: number | null;
-  active: boolean;
-}
-
-// 임시 활동 차단 구매 요청 (백엔드 PurchaseBlockRequest와 1:1)
-export interface PurchaseBlockBody {
-  targetUserId: number;
-  itemId: number;
-}
-
-// 룰렛 방어권 구매 요청 (백엔드 PurchaseShieldRequest와 1:1). 대상 유저 없이 본인에게 적용된다.
-export interface PurchaseShieldBody {
-  itemId: number;
-}
-
-// 내 방어권 보유 현황 (백엔드 RouletteShieldStatusResponse와 1:1)
-// active=false면 나머지 필드는 내려오지 않는다.
-export interface RouletteShieldStatus {
-  active: boolean;
-  itemName?: string;
-  expiresAt?: string;
-}
-
-// 내 차단 상태 (백엔드 BlockStatusResponse와 1:1)
-// blocked=false면 나머지 필드는 내려오지 않는다.
-export interface BlockStatus {
-  blocked: boolean;
-  reason?: string;            // "OO님이 [24시간 차단권]을 사용해 차단했습니다" 형태의 조합 문구
-  blockerNickname?: string;
-  itemName?: string;
-  expiresAt?: string;
-  unblockItemName?: string;   // 해제에 사용할 상품명 (= 차단에 쓰인 상품과 동일)
-  unblockPrice?: number;      // 해제에 필요한 포인트
-}
-
-// 차단 이의제기 접수 요청 (백엔드 BlockAppealRequest와 1:1)
-export interface BlockAppealBody {
-  message: string;
-}
-
-// 관리자 - 차단 이의제기 목록 항목 (백엔드 BlockAppealResponse와 1:1)
-export interface BlockAppeal {
-  id: number;
-  activityBlockId: number;
-  senderNickname: string;
-  message: string;
-  handled: boolean;
-  createdAt: string;
-}
-
-// 진행 중인 권한 경매 회차 (백엔드 RoleAuctionRoundResponse와 1:1)
-export interface RoleAuctionRound {
-  id: number;
-  shopItemId: number;   // 어떤 ROLE_AUCTION 상품(shop_item)에서 열린 회차인지 — 관리자 화면에서 매칭용
-  targetRole: UserRole;
-  quantity: number;
-  minPrice: number;
-  startAt: string;
-  endAt: string;
-  topBidAmount: number | null;   // 입찰이 없으면 null
-  activeBidCount: number;
-}
-
-// 입찰/재입찰 요청 (백엔드 PlaceBidRequest와 1:1)
-export interface PlaceBidBody {
-  amount: number;
-}
-
-// 진행 중인 경매 회차 종료 시각 수정 요청 (백엔드 UpdateRoleAuctionRoundRequest와 1:1, ROOT 전용)
-// endAt이 현재/과거 시각이면 조기 종료(즉시 정산)로 처리된다.
-export interface UpdateRoleAuctionRoundBody {
-  endAt: string;
-}
-
-// 내 권한 경매 낙찰(보유) 현황 (백엔드 RolePurchaseStatusResponse와 1:1)
-// active=false면 나머지 필드는 내려오지 않는다.
-export interface RolePurchaseStatus {
-  active: boolean;
-  targetRole?: UserRole;
-  expiresAt?: string;
-}
-
-// 관리자 - 경매로 role을 보유 중인 유저 현황 (백엔드 RolePurchaseAdminResponse와 1:1)
-export interface RolePurchaseAdmin {
-  userId: number;
-  nickname: string;
-  targetRole: UserRole;
-  previousRole: UserRole;
-  expiresAt: string;
-}
-
-// 상점 상품 등록 요청 (백엔드 CreateShopItemRequest와 1:1, ROOT 전용)
-// type=BLOCK이면 price/durationMinutes만, type=ROLE_AUCTION이면 targetRole~cadenceDays만 채운다.
-export interface CreateShopItemBody {
-  type: ShopItemType;
-  name: string;
-  price?: number;
-  durationMinutes?: number;
-  targetRole?: UserRole;
-  quantity?: number;
-  minPrice?: number;
-  durationDays?: number;
-  cadenceDays?: number;
-}
-
-// 상점 상품 수정 요청 (백엔드 UpdateShopItemRequest와 1:1, ROOT 전용)
-// 필드는 모두 선택 — 넘긴 값만 반영된다. 이미 OPEN인 경매 회차에는 소급 적용되지 않는다.
-export interface UpdateShopItemBody {
-  price?: number;
-  durationMinutes?: number;
-  quantity?: number;
-  minPrice?: number;
-  durationDays?: number;
-  cadenceDays?: number;
-  active?: boolean;
-}
-
-// 정지 기한 프리셋 (백엔드 SuspendDurationPresetResponse와 1:1)
-// 조회는 정지 모달을 여는 어떤 관리자(ADMIN/ROOT)든 가능하지만, 구성(추가/삭제)은 ROOT 전용.
-// 이름·표시 순서는 따로 두지 않는다 — 프론트가 minutes로 라벨을 계산하고(lib/format.ts의
-// formatSuspendDuration), 항상 minutes 오름차순으로 정렬해 보여준다(백엔드가 이미 정렬해서 준다).
-export interface SuspendDurationPreset {
-  id: number;
-  minutes: number;
-}
-
-// 정지 기한 프리셋 등록 요청 (백엔드 CreateSuspendDurationPresetRequest와 1:1, ROOT 전용)
-export interface CreateSuspendDurationPresetBody {
-  minutes: number;
-}
-
 // 본인의 정지 현황 (백엔드 SuspensionStatusResponse와 1:1, GET /api/users/me/suspension).
-// suspended가 false면 suspendedUntil/unlockPrice는 의미 없다(null).
+// suspended가 false면 suspendedUntil은 의미 없다(null).
+// suspended=true인데 suspendedUntil이 null이면 ROOT가 건 무기한 정지다.
 export interface SuspensionStatus {
   suspended: boolean;
   suspendedUntil: string | null;
-  unlockPrice: number | null;
-}
-
-// 정지를 포인트로 즉시 해제할 때의 가격 (백엔드 SuspendUnlockPriceResponse와 1:1).
-// 조회/변경 모두 ROOT 전용.
-export interface SuspendUnlockPrice {
-  price: number;
 }

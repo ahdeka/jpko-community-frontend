@@ -12,7 +12,6 @@ export const MESSAGES = {
     unsavedChangesConfirm:
       '작성 중인 내용이 있습니다.\n페이지를 벗어나면 저장되지 않은 변경 사항이 사라집니다. 이동하시겠습니까?',
     loginRequiredToReport: '신고하려면 로그인이 필요합니다.',
-    loginRequiredToTransfer: '포인트를 보내려면 로그인이 필요합니다.',
     errorBoundary: {
       title: '문제가 발생했습니다',
       description: '일시적인 오류일 수 있습니다. 잠시 후 다시 시도해주세요.',
@@ -160,16 +159,11 @@ export const MESSAGES = {
       title: '이용이 제한된 계정입니다',
       loading: '정지 정보를 불러오는 중…',
       loadFailed: '정지 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.',
-      actionFailed: '요청에 실패했습니다. 잠시 후 다시 시도해주세요.',
-      // 위반 여부를 단정하지 않는다 — 관리자 재량으로도 정지될 수 있어(포인트 차단 이의제기 처리 등),
-      // "약관 위반이 확인됨"이라 단정하면 사실과 다를 수 있다. 주체(관리자)만 명확히 밝힌다.
+      // 위반 여부를 단정하지 않는다 — 관리자 재량으로도 정지될 수 있어 "약관 위반이 확인됨"이라
+      // 단정하면 사실과 다를 수 있다. 주체(관리자)만 명확히 밝힌다.
       description: '관리자에 의해 계정 이용이 정지되었습니다.',
       untilPrefix: '정지 해제 예정: ',
       indefinite: '별도 안내 전까지 무기한 정지',
-      unlockTitle: '포인트로 즉시 해제',
-      unlockDescription: (price: number) => `${price.toLocaleString()}P를 지불하면 즉시 정지가 해제됩니다.`,
-      unlockButton: '포인트로 즉시 해제',
-      unlocking: '해제 중…',
       inquiryTitle: '정지 사유 확인·해제 문의',
       inquiryDescriptionPrefix: '정지 사유가 궁금하거나 해제를 원하시면 아래 이메일로 문의해주세요. 확인이 빠르도록 ',
       inquiryDescriptionEmphasis: '가입하신 이메일 주소와 닉네임',
@@ -349,7 +343,7 @@ export const MESSAGES = {
       lostSuffix: '날라감ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ',
       neutral: '쟌-넨',
     },
-    // 룰렛 승/패 알림(POINT_STOLEN/POINT_WON), 활동 리워드 알림(POST_REWARD 등), 송금 알림(TRANSFER).
+    // 룰렛 승/패 알림(POINT_STOLEN/POINT_WON)과 활동 리워드 알림(POST_REWARD/COMMENT_REWARD).
     // lib/notification.ts(순수 텍스트)와 NotificationBell.tsx(강조 포함 JSX)가
     // 동일한 prefix/suffix를 조합해 쓴다.
     notification: {
@@ -357,48 +351,9 @@ export const MESSAGES = {
       stolenSuffix: ' 헌납. 이대로 끝?',
       wonAfterName: '님을 포인트 룰렛에서 개발라버리고 ',
       wonSuffix: '털음 ㅊㅋㅊㅋ!',
-      // POST_REWARD/COMMENT_REWARD/LIKE_REWARD 공용 suffix. 앞부분(어떤 글/댓글인지)은
+      // POST_REWARD/COMMENT_REWARD 공용 suffix. 앞부분(어떤 글/댓글인지)은
       // postTitle/commentContent 유무에 따라 문구가 갈려 lib/notification.ts·NotificationBell.tsx가 직접 조립한다.
       rewardSuffix: 'P를 받았습니다!',
-      transferAfterName: '님이 회원님에게 ',
-      transferSuffix: 'P를 보냈습니다.',
-      // 관리자 권한 경매 결과(ROLE_AUCTION_WON/LOST). 낙찰가를 실제로 지불/환불하므로
-      // 룰렛과 달리 장난스러운 톤 대신 TRANSFER와 같은 담담한 톤을 쓴다.
-      auctionWonPrefix: '경매에 낙찰되어 ',
-      auctionWonSuffix: 'P를 지불하고 관리자 권한을 획득했습니다.',
-      auctionLostPrefix: '경매에 낙첨되어 입찰하신 ',
-      auctionLostSuffix: 'P가 환불되었습니다.',
-    },
-    // 포인트 송금 모달 (TransferPointsModal).
-    transfer: {
-      title: '포인트 보내기',
-      balanceLabel: '보유 포인트',
-      feeNotice: '송금 시 소정의 수수료가 무작위로 부과되거나, 반대로 보너스가 지급될 수 있어요.',
-      recipientLabel: '받는 사람 닉네임',
-      recipientPlaceholder: '닉네임을 입력하세요',
-      recipientRequired: '받는 사람 닉네임을 입력해주세요.',
-      recipientNotFound: '존재하지 않는 닉네임입니다.',
-      recipientChecking: '확인 중…',
-      recipientFound: (nickname: string) => `✓ ${nickname}님에게 보냅니다`,
-      selfTransferNotAllowed: '본인에게는 송금할 수 없습니다.',
-      amountLabel: '보낼 포인트',
-      amountPlaceholder: '금액을 입력하세요',
-      amountRequired: '보낼 금액을 입력해주세요.',
-      amountInvalid: '송금 금액은 0보다 커야 합니다.',
-      lookupFailed: '닉네임 확인에 실패했습니다. 잠시 후 다시 시도해주세요.',
-      genericFailed: '송금에 실패했습니다. 잠시 후 다시 시도해주세요.',
-      // 백엔드 ErrorCode 이름 → 한글 메시지. src/main/java/.../global/exception/ErrorCode.java와 동일한 문구.
-      errorCodeMessages: {
-        INSUFFICIENT_BALANCE: '포인트 잔액이 부족합니다.',
-        INVALID_TRANSACTION_AMOUNT: '송금 금액은 0보다 커야 합니다.',
-        SUSPENDED_ACCOUNT: '이용이 제한된 계정입니다.',
-        SYSTEM_ACCOUNT_NOT_FOUND: '일시적인 오류로 송금에 실패했습니다. 잠시 후 다시 시도해주세요.',
-        USER_ID_NOT_FOUND: '받는 사람을 찾을 수 없습니다.',
-      } as Record<string, string>,
-      doneTitle: '송금 완료',
-      doneDescription: (nickname: string, amount: string) => `${nickname}님에게 ${amount}P를 보냈습니다.`,
-      feeChargedNote: (amount: string) => `수수료 ${amount}P가 함께 부과되었습니다.`,
-      feeRefundedNote: (amount: string) => `수수료 대신 보너스 ${amount}P가 지급되었습니다.`,
     },
   },
 
@@ -500,10 +455,17 @@ export const MESSAGES = {
         `${nickname}님의 계정을 정지할까요?\n정지되면 해당 회원은 즉시 로그아웃되며 로그인할 수 없습니다.`,
       unsuspendConfirm: (nickname: string) => `${nickname}님의 계정 정지를 해제할까요?`,
       statusChangeFailed: '상태 변경에 실패했습니다.',
-      // ROOT의 즉시 관리자 권한 박탈(경매로 얻었든 수동 임명이든 즉시 USER로 되돌린다).
+      // ROOT의 즉시 관리자 권한 박탈(대상을 즉시 USER로 되돌린다).
       revokeAdminConfirm: (nickname: string) =>
         `${nickname}님의 관리자 권한을 즉시 박탈할까요?\n이미 로그인된 세션에도 다음 요청부터 바로 반영됩니다.`,
       revokeAdminFailed: '권한 박탈에 실패했습니다.',
+      // ROOT의 관리자 임명. 권한이 커지는 방향이라 무엇이 열리는지 명시해 확인받는다.
+      promoteAdminConfirm: (nickname: string) =>
+        `${nickname}님을 관리자(ADMIN)로 임명할까요?\n\n` +
+        `· 관리자 페이지(회원·신고·공지 관리)에 접근할 수 있게 됩니다.\n` +
+        `· 다른 회원을 정지시킬 수 있게 됩니다(기한은 최대 7일).\n` +
+        `· 이미 로그인된 세션에도 다음 요청부터 바로 반영됩니다.`,
+      promoteAdminFailed: '관리자 임명에 실패했습니다.',
       searchEmpty: (keyword: string) => `'${keyword}' 검색 결과가 없습니다.`,
       empty: '회원이 없습니다.',
       // ADMIN 계정으로 정지할 때 기한 선택 모달(SuspendUserModal) 전용 문구. ROOT만 무기한 정지 가능.
@@ -512,7 +474,6 @@ export const MESSAGES = {
         durationRequiredNotice: 'ADMIN 권한으로는 기한이 있는 정지만 가능합니다. 기한을 선택해주세요.',
         durationOptionalNotice: '기한을 정하지 않으면 무기한 정지됩니다.',
         presetLabel: '정지 기한',
-        presetsLoadFailed: '정지 기한 목록을 불러오지 못했습니다.',
         indefinite: '무기한',
         confirm: '정지',
         confirming: '처리 중…',
@@ -529,29 +490,6 @@ export const MESSAGES = {
       deleteConfirm: (title: string) => `"${title}" 공지를 삭제할까요?\n삭제 후에는 복구할 수 없습니다.`,
       deleteFailed: '삭제에 실패했습니다.',
       empty: '등록된 공지가 없습니다.',
-    },
-    // 정지 관련 설정 화면(/admin/settings/suspend-presets) — 정지 기한 프리셋 + 정지 포인트 해제 가격. ROOT 전용.
-    suspendPresets: {
-      title: '정지 설정',
-      presetsTitle: '정지 기한 프리셋',
-      description: 'ADMIN·ROOT가 유저 정지 시 고를 수 있는 기한 버튼 목록입니다. 짧은 순서부터 자동으로 정렬됩니다.',
-      loadFailed: '프리셋 목록을 불러오지 못했습니다.',
-      empty: '등록된 프리셋이 없습니다.',
-      minutesPlaceholder: '기한(분)',
-      addButton: '추가',
-      adding: '추가 중…',
-      addFailed: '프리셋 추가에 실패했습니다.',
-      deleteConfirm: (label: string) => `'${label}' 프리셋을 삭제할까요?`,
-      deleteFailed: '삭제에 실패했습니다.',
-      // 정지를 포인트로 즉시 해제할 때의 가격 설정 (같은 화면 안에 함께 둔다).
-      unlockPriceTitle: '정지 포인트 해제 가격',
-      unlockPriceDescription: '관리자에게 정지당한 유저가 본인 포인트로 즉시 해제할 때 지불하는 가격입니다.',
-      unlockPriceLoadFailed: '가격을 불러오지 못했습니다.',
-      unlockPricePlaceholder: '가격(P)',
-      unlockPriceSave: '저장',
-      unlockPriceSaving: '저장 중…',
-      unlockPriceSaved: '저장되었습니다.',
-      unlockPriceSaveFailed: '저장에 실패했습니다.',
     },
     noticeForm: {
       titleRequired: '제목을 입력해주세요.',
@@ -589,83 +527,5 @@ export const MESSAGES = {
   share: {
     copied: '복사됨',
     copyFallbackPrompt: '아래 링크를 복사하세요',
-  },
-
-  shop: {
-    // 전체화면 차단 안내(ActivityBlockScreen).
-    blockScreen: {
-      title: '활동이 제한되었습니다',
-      loading: '차단 정보를 불러오는 중…',
-      loadFailed: '차단 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.',
-      actionFailed: '요청에 실패했습니다. 잠시 후 다시 시도해주세요.',
-      expiresAtLabel: '해제 시각:',
-      unblockTitle: '포인트로 즉시 해제',
-      unblockDescription: (itemName?: string, price?: number) =>
-        itemName && price != null
-          ? `[${itemName}] ${price.toLocaleString()}P를 지불하면 즉시 차단이 해제됩니다.`
-          : '포인트를 지불하면 즉시 차단이 해제됩니다.',
-      unblockButton: '포인트로 즉시 해제',
-      unblocking: '해제 중…',
-      appealTitle: '관리자에게 메시지 보내기',
-      appealPlaceholder: '상황을 설명해주세요.',
-      sendAppeal: '보내기',
-      sendingAppeal: '보내는 중…',
-      appealSent: '전송 완료. 운영진이 확인 후 조치할 예정입니다.',
-      logout: '로그아웃',
-    },
-    // 상점 허브 페이지(/shop).
-    catalog: {
-      loginGateSuffix: '후 상점을 이용할 수 있습니다.',
-      description: '포인트로 활동 차단권을 사용하거나, 관리자 권한 경매에 입찰할 수 있습니다.',
-      loadFailed: '상품 목록을 불러오지 못했습니다.',
-      blockItemHint: '다른 회원의 프로필 페이지에서 사용할 수 있습니다.',
-      blockItemDurationSuffix: '시간 동안 활동 제한',
-    },
-    // 권한 경매 섹션(RoleAuctionSection).
-    roleAuction: {
-      loadFailed: '경매 정보를 불러오지 못했습니다.',
-      empty: '진행 중인 경매가 없습니다.',
-      minPriceLabel: '최저가',
-      topBidLabel: '현재 최고가',
-      noBidYet: '아직 입찰 없음',
-      bidCountLabel: (count: number) => `입찰 ${count}건`,
-      endsAtLabel: '마감',
-      quantityLabel: (quantity: number) => `${quantity}명 선발`,
-      amountPlaceholder: '입찰 금액',
-      amountRequired: '입찰 금액을 입력해주세요.',
-      placeBid: '입찰하기',
-      raiseBid: '입찰가 올리기',
-      cancelBid: '입찰 취소',
-      bidding: '처리 중…',
-      bidSuccess: '입찰이 완료되었습니다.',
-      cancelSuccess: '입찰을 취소했습니다.',
-      myStatusActive: (targetRole: string, expiresAt: string) => `현재 ${targetRole} 권한 보유 중 · ${expiresAt}까지`,
-    },
-    // 룰렛 방어권 섹션(RouletteShieldSection).
-    shield: {
-      loadFailed: '방어권 상품을 불러오지 못했습니다.',
-      empty: '판매 중인 방어권이 없습니다.',
-      hint: '구매하면 즉시 룰렛 대결 동의가 취소되어, 기간 동안 룰렛 대결 상대로 뽑히거나 스핀할 수 없습니다.',
-      durationSuffix: '시간 동안 보호',
-      buy: '구매하기',
-      buying: '구매 중…',
-      buySuccess: '방어권을 구매했습니다.',
-      myStatusActive: (expiresAt: string) => `방어권 적용 중 · ${expiresAt}까지`,
-    },
-    // 백엔드 ErrorCode 이름 → 한글 메시지 (상점 전반에서 공용으로 사용).
-    errorCodeMessages: {
-      ACTIVITY_BLOCKED: '활동이 제한된 상태입니다.',
-      SELF_BLOCK_NOT_ALLOWED: '본인을 차단할 수 없습니다.',
-      TARGET_NOT_BLOCKABLE: '차단할 수 없는 대상입니다.',
-      BLOCK_NOT_FOUND: '활성화된 차단이 없습니다.',
-      ITEM_NOT_FOUND: '존재하지 않는 상품입니다.',
-      ITEM_INACTIVE: '판매 중지된 상품입니다.',
-      CANNOT_AUCTION_ROOT_ROLE: 'ROOT 권한은 경매 대상으로 등록할 수 없습니다.',
-      AUCTION_ROUND_NOT_OPEN: '진행 중인 경매 회차가 아니거나 존재하지 않습니다.',
-      BID_TOO_LOW: '입찰가가 최저가 또는 기존 입찰가보다 낮습니다.',
-      BID_NOT_FOUND: '입찰 내역이 없습니다.',
-      INSUFFICIENT_BALANCE: '포인트 잔액이 부족합니다.',
-      SUSPENDED_ACCOUNT: '이용이 제한된 계정입니다.',
-    } as Record<string, string>,
   },
 } as const

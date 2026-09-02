@@ -24,17 +24,10 @@ export const SESSION_EXPIRED_EVENT = 'auth:session-expired'
 
 // 세션 도중 계정이 정지(SUSPENDED)됐음을 브라우저 전역에 알리는 이벤트 이름.
 // 관리자가 계정을 정지시키면 백엔드 JWT 필터가 매 요청마다 403 + code SUSPENDED_ACCOUNT를 준다.
-// 정지된 계정도 로그인은 유지되고(SuspendAllowedPaths로 제한된 API만 계속 쓸 수 있다), AuthProvider가
-// 이 이벤트를 받아 전체 화면 SuspendedScreen으로 전환한다 — 그 화면이 자체 API로 상세 정보를 조회한다
-// (ActivityBlockScreen과 동일한 패턴). 세션 만료(401)와 성격이 달라 별도 이벤트로 분리한다.
+// 정지된 계정도 로그인은 유지되고(SuspendAllowedPaths — 정지 현황 조회와 로그아웃만 허용),
+// AuthProvider가 이 이벤트를 받아 전체 화면 SuspendedScreen으로 전환한다 — 그 화면이 자체 API로
+// 정지 사유·기한을 조회한다. 세션 만료(401)와 성격이 달라 별도 이벤트로 분리한다.
 export const ACCOUNT_SUSPENDED_EVENT = 'auth:account-suspended'
-
-// 세션 도중 계정이 임시 활동 차단(#6, ACTIVITY_BLOCKED)됐음을 브라우저 전역에 알리는 이벤트 이름.
-// 정지(SUSPENDED)와 달리 세션 자체는 유효하고, 백엔드가 허용한 몇 개 경로
-// (/api/shop/blocks/me, .../unblock, .../appeal, /api/auth/logout)는 계속 정상 동작한다.
-// 그래서 정지처럼 자동 로그아웃하지 않는다 — AuthProvider가 이 이벤트를 받아
-// 전체 화면 안내(ActivityBlockScreen)를 띄우기만 한다.
-export const ACTIVITY_BLOCKED_EVENT = 'auth:activity-blocked'
 
 // 이 엔드포인트들의 401은 "액세스 토큰 만료"가 아니라 그 자체가 정상적인 인증 응답이므로
 // 재발급 재시도 대상에서 제외한다.
@@ -79,7 +72,7 @@ function refreshAccessToken(): Promise<RefreshResult> {
 // XHR 경로(uploadWithProgress)가 동일한 규칙을 쓰도록 한 곳으로 모았다.
 //  - bodyText: 응답 본문 원문. 우리 API면 { message, code } JSON이지만, 413은 nginx가
 //    백엔드에 닿기 전에 끊어 HTML을 주므로 파싱이 실패한다 → 그 경우 용량 초과 문구로 보정한다.
-//  - endpoint: 정지/차단 전역 이벤트를 auth 플로우에서는 쏘지 않기 위해(isAuthFlow) 필요.
+//  - endpoint: 정지 전역 이벤트를 auth 플로우에서는 쏘지 않기 위해(isAuthFlow) 필요.
 // 반환 타입 never: 이 함수는 항상 throw하므로, 호출부 이후 코드는 도달하지 않는다.
 function throwApiError(status: number, bodyText: string | null, endpoint: string): never {
   let message: string =
@@ -104,16 +97,6 @@ function throwApiError(status: number, bodyText: string | null, endpoint: string
     !isAuthFlow(endpoint)
   ) {
     window.dispatchEvent(new Event(ACCOUNT_SUSPENDED_EVENT))
-  }
-
-  // 임시 활동 차단 전역 감지.
-  if (
-    status === 403 &&
-    code === 'ACTIVITY_BLOCKED' &&
-    typeof window !== 'undefined' &&
-    !isAuthFlow(endpoint)
-  ) {
-    window.dispatchEvent(new Event(ACTIVITY_BLOCKED_EVENT))
   }
 
   throw new ApiError(message, status, code)
@@ -170,7 +153,7 @@ async function request<T>(
     }
 
     // 응답 본문을 원문으로 읽어(한 번만 읽을 수 있으므로 text로) 공용 처리기에 넘긴다.
-    // 정지/차단 전역 이벤트 발행과 413 보정, ApiError 변환을 throwApiError가 일괄 담당한다.
+    // 정지 전역 이벤트 발행과 413 보정, ApiError 변환을 throwApiError가 일괄 담당한다.
     const bodyText = await response.text().catch(() => null)
     throwApiError(response.status, bodyText, endpoint)
   }
@@ -219,7 +202,7 @@ export const apiClient = {
 // XMLHttpRequest로 처리한다. 인증/에러 규칙은 request()와 동일하게 맞춘다:
 //  - withCredentials로 쿠키(accessToken) 동봉
 //  - 401이면 refresh 1회 후 정확히 한 번 재시도(그 재시도도 401이면 그대로 에러)
-//  - 실패 응답은 throwApiError로 변환(413 보정 · 정지/차단 전역 이벤트 포함)
+//  - 실패 응답은 throwApiError로 변환(413 보정 · 정지 전역 이벤트 포함)
 // onProgress는 "브라우저 → 서버 전송" 구간(0~100%)만 알린다. 100% 도달 후 서버가 동영상을
 // 재인코딩하는 시간은 XHR이 알 수 없으므로, 호출부가 100% 시점에 "압축 중" 표시로 전환한다.
 export function uploadWithProgress<T>(
@@ -289,7 +272,7 @@ export function uploadWithProgress<T>(
         return
       }
 
-      // 그 외 실패는 공용 처리기로 변환(413 보정 · 정지/차단 이벤트 · ApiError).
+      // 그 외 실패는 공용 처리기로 변환(413 보정 · 정지 이벤트 · ApiError).
       try {
         throwApiError(status, xhr.responseText, endpoint)
       } catch (err) {

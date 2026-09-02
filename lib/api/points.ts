@@ -1,5 +1,5 @@
 import { apiClient } from './client'
-import type { MyRanking, PageResponse, PointBalance, PointTransaction, TopRanking, TransferRequestBody, TransferResult } from '@/types'
+import type { MyRanking, PageResponse, PointBalance, PointTransaction, TopRanking } from '@/types'
 
 // 포인트 잔액이 방금 바뀌었음을 브라우저 전역에 알리는 이벤트 이름.
 // 헤더(UserMenu)처럼 잔액을 상시 표시하는 컴포넌트가 이 이벤트를 구독해, 새로고침 없이
@@ -8,7 +8,7 @@ export const POINT_BALANCE_CHANGED_EVENT = 'points:balance-changed'
 
 export interface PointBalanceChangedDetail {
   // 변동 후 확정 잔액. 서버 응답에 balanceAfter가 있는 경우(게임)만 채운다 → 구독자가
-  // 추가 조회 없이 그 값을 즉시 반영한다. 알 수 없으면(송금 등) 생략하고, 구독자가
+  // 추가 조회 없이 그 값을 즉시 반영한다. 알 수 없으면 생략하고, 구독자가
   // getBalance()로 다시 조회한다.
   balance?: number
 }
@@ -36,12 +36,6 @@ export const pointsApi = {
   // sort는 보내지 않는다 (reportsApi.getMyReports와 동일한 이유).
   getMyTransactions: (page = 0, size = 20) =>
     apiClient.get<PageResponse<PointTransaction>>(`/api/transactions?page=${page}&size=${size}`),
-
-  // 다른 회원에게 포인트 송금.
-  // ⚠️ 이 엔드포인트는 항상 HTTP 200으로 응답한다 — 호출부는 res.data.status로
-  // 성공('ACCEPTED')/실패('NOT_ACCEPTABLE')를 판단해야 한다(HTTP status 기반 판단 불가).
-  transfer: (body: TransferRequestBody) =>
-    apiClient.post<TransferResult>('/api/points/transfer', body),
 }
 
 // 포인트 랭킹 API.

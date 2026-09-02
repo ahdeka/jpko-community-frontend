@@ -1,19 +1,26 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { adminApi } from '@/lib/api/admin'
 import { ApiError } from '@/lib/api/client'
 import { formatSuspendDuration } from '@/lib/format'
 import { MESSAGES } from '@/lib/messages'
-import type { SuspendDurationPreset } from '@/types'
 
 const T = MESSAGES.admin.users.suspendModal
+
+// 정지 기한 선택지(분). 예전에는 ROOT가 /admin/settings/suspend-presets에서 구성한 값을
+// 서버에서 받아왔지만, 그 설정 화면과 API가 함께 제거되어 프론트 상수로 되돌렸다.
+//
+// ⚠️ 백엔드는 ADMIN이 거는 정지를 최대 7일(UserService.MAX_ADMIN_SUSPEND_DAYS)로 제한하고,
+//    "now + 7일"을 서버 시각 기준으로 비교한다. 마지막 7일 선택지는 그 경계에 정확히 걸리므로,
+//    관리자 PC 시계가 서버보다 앞서 있으면 SUSPEND_DURATION_TOO_LONG이 날 수 있다.
+//    그 경우 아래 errorCodeMessages가 사유를 그대로 보여주고, 더 짧은 기한을 고르면 된다.
+const DURATION_PRESETS_MINUTES = [60, 360, 720, 1440, 4320, 10080]
 
 interface Props {
   open: boolean
   onClose: () => void
   targetNickname: string
-  // ADMIN이 정지하는 경우: 기한 선택이 필수이고 "무기한" 옵션이 없다(경매로 얻었든 수동 임명이든 동일).
+  // ADMIN이 정지하는 경우: 기한 선택이 필수이고 "무기한" 옵션이 없다.
   // ROOT: 기본이 무기한이고, 원하면 기한을 선택적으로 걸 수 있다 — 진짜 관리자는 ROOT뿐이라는 원칙.
   actingIsAdmin: boolean
   // 실제 API 호출은 호출부(AdminUsersPage/AdminReportsPage)가 담당한다 — 정지 후 후속 처리
@@ -21,13 +28,9 @@ interface Props {
   onConfirm: (suspendedUntil?: string) => Promise<void>
 }
 
-// 정지 기한 선택 모달. TransferPointsModal과 동일한 구조(오버레이/ESC/스크롤 잠금)를 따른다.
-//
-// 정지 기한 프리셋 버튼 목록은 더 이상 하드코딩이 아니라 ROOT가 /admin/settings/suspend-presets에서
-// 구성한 값을 그대로 불러온다(GET /api/admin/settings/suspend-presets — 조회는 ADMIN도 가능).
+// 정지 기한 선택 모달. 오버레이 클릭/ESC로 닫히고, 열려 있는 동안 배경 스크롤을 잠근다.
 export default function SuspendUserModal({ open, onClose, targetNickname, actingIsAdmin, onConfirm }: Props) {
-  const [presets, setPresets] = useState<SuspendDurationPreset[] | null>(null)
-  const [presetsError, setPresetsError] = useState<string | null>(null)
+  // null = 무기한. ADMIN은 기한이 필수라 열릴 때 가장 짧은 기한을 기본값으로 잡아준다.
   const [selectedMinutes, setSelectedMinutes] = useState<number | null>(null)
   const [confirming, setConfirming] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -41,31 +44,23 @@ export default function SuspendUserModal({ open, onClose, targetNickname, acting
     const prevOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
 
-    adminApi.getSuspendPresets()
-      .then(res => {
-        const list = res.data ?? []
-        setPresets(list)
-        // ADMIN은 기한 선택이 필수라 첫 프리셋을 기본으로 선택해둔다. ROOT는 무기한이 기본이다.
-        if (actingIsAdmin) setSelectedMinutes(list[0]?.minutes ?? null)
-      })
-      .catch((e: unknown) => setPresetsError(e instanceof ApiError ? e.message : T.presetsLoadFailed))
-
     return () => {
       document.removeEventListener('keydown', onKeyDown)
       document.body.style.overflow = prevOverflow
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, confirming, onClose, actingIsAdmin])
+  }, [open, confirming, onClose])
 
+  // 닫힐 때 입력 상태를 초기화해, 다음에 다른 대상으로 열어도 이전 선택이 남지 않게 한다.
+  // 여는 쪽에서는 ADMIN 기본값(가장 짧은 기한)을 세팅한다 — ADMIN은 무기한을 고를 수 없기 때문.
   useEffect(() => {
-    if (!open) {
-      setPresets(null)
-      setPresetsError(null)
+    if (open) {
+      setSelectedMinutes(actingIsAdmin ? DURATION_PRESETS_MINUTES[0] : null)
+    } else {
       setSelectedMinutes(null)
       setConfirming(false)
       setError(null)
     }
-  }, [open])
+  }, [open, actingIsAdmin])
 
   if (!open) return null
 
@@ -74,6 +69,8 @@ export default function SuspendUserModal({ open, onClose, targetNickname, acting
     setError(null)
     setConfirming(true)
     try {
+      // 백엔드는 LocalDateTime으로 받지만 JacksonConfig가 KST 기준으로 역직렬화하므로,
+      // 표준 ISO(UTC "Z") 문자열을 그대로 보내면 된다.
       const suspendedUntil = selectedMinutes != null
         ? new Date(Date.now() + selectedMinutes * 60_000).toISOString()
         : undefined
@@ -115,37 +112,30 @@ export default function SuspendUserModal({ open, onClose, targetNickname, acting
 
         <p className="mb-2 text-xs font-medium text-neutral-600 dark:text-neutral-400">{T.presetLabel}</p>
 
-        {presetsError && <p className="mb-3 text-xs text-red-500">{presetsError}</p>}
-
-        {!presetsError && presets === null && (
-          <p className="mb-4 text-xs text-neutral-400">불러오는 중…</p>
-        )}
-
-        {presets !== null && (
-          <div className="mb-4 flex flex-wrap gap-2">
-            {presets.map(preset => (
-              <button
-                key={preset.id}
-                type="button"
-                onClick={() => setSelectedMinutes(preset.minutes)}
-                disabled={confirming}
-                className={presetButtonClass(selectedMinutes === preset.minutes)}
-              >
-                {formatSuspendDuration(preset.minutes)}
-              </button>
-            ))}
-            {!actingIsAdmin && (
-              <button
-                type="button"
-                onClick={() => setSelectedMinutes(null)}
-                disabled={confirming}
-                className={presetButtonClass(selectedMinutes === null)}
-              >
-                {T.indefinite}
-              </button>
-            )}
-          </div>
-        )}
+        <div className="mb-4 flex flex-wrap gap-2">
+          {DURATION_PRESETS_MINUTES.map(minutes => (
+            <button
+              key={minutes}
+              type="button"
+              onClick={() => setSelectedMinutes(minutes)}
+              disabled={confirming}
+              className={presetButtonClass(selectedMinutes === minutes)}
+            >
+              {formatSuspendDuration(minutes)}
+            </button>
+          ))}
+          {/* 무기한은 ROOT만 고를 수 있다 — ADMIN이 보내면 백엔드가 SUSPEND_DURATION_REQUIRED로 거부한다. */}
+          {!actingIsAdmin && (
+            <button
+              type="button"
+              onClick={() => setSelectedMinutes(null)}
+              disabled={confirming}
+              className={presetButtonClass(selectedMinutes === null)}
+            >
+              {T.indefinite}
+            </button>
+          )}
+        </div>
 
         {error && <p className="mb-3 text-xs text-red-500">{error}</p>}
 

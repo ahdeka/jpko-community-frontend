@@ -5,11 +5,10 @@ import type { ReactNode } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import type { CheckInInfo, User } from '@/types'
 import { authApi } from '@/lib/api/auth'
-import { ApiError, SESSION_EXPIRED_EVENT, ACCOUNT_SUSPENDED_EVENT, ACTIVITY_BLOCKED_EVENT } from '@/lib/api/client'
+import { ApiError, SESSION_EXPIRED_EVENT, ACCOUNT_SUSPENDED_EVENT } from '@/lib/api/client'
 import SuspendedScreen from '@/components/auth/SuspendedScreen'
 import CheckInResultModal from '@/components/points/CheckInResultModal'
 import RedirectingOverlay from '@/components/auth/RedirectingOverlay'
-import ActivityBlockScreen from '@/components/auth/ActivityBlockScreen'
 
 // 계정 전환(온보딩)이 필요한 유저에게도 접근을 허용하는 경로.
 // 이 목록 밖의 모든 경로는 전역 가드가 /onboarding으로 되돌린다.
@@ -31,7 +30,7 @@ interface AuthContextType {
   // 성공 시 호출하며, AuthProvider가 렌더하는 CheckInResultModal이 이 값을 소비하고 null로 되돌린다.
   // 두 폼 모두 성공 즉시 router.replace로 이동하고 useRedirectIfAuthenticated가 폼을 언마운트하므로,
   // 폼 내부가 아니라 여기(AuthProvider)에서 상태를 들고 있어야 페이지 전환 중에도 모달이 살아남는다
-  // (SuspendedScreen/ActivityBlockScreen과 동일한 이유).
+  // (SuspendedScreen과 동일한 이유).
   notifyCheckInResult: (info: CheckInInfo) => void
 }
 
@@ -45,9 +44,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // 세션 도중(또는 새로고침 시점에) 관리자 정지가 감지됐는지. true면 children 대신 전체 화면
   // SuspendedScreen을 렌더한다 — 정지돼도 세션 자체는 유효하다(로그인은 되고 출첵도 처리됨).
   const [suspended, setSuspended] = useState(false)
-  // 세션 도중(또는 새로고침 시점에) 임시 활동 차단이 감지됐는지. true면 children 대신
-  // 전체 화면 ActivityBlockScreen을 렌더한다 — 정지와 달리 로그아웃은 하지 않는다.
-  const [blocked, setBlocked] = useState(false)
   // 로그인/회원가입 직후 보여줄 출첵 결과. null이면 모달을 띄우지 않는다.
   const [checkInResult, setCheckInResult] = useState<CheckInInfo | null>(null)
 
@@ -80,25 +76,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   // 세션 도중 계정이 정지되면 client.ts가 이 이벤트를 쏜다(403 + code SUSPENDED_ACCOUNT).
-  // 활동 차단과 마찬가지로 로그아웃하지 않는다 — 정지된 계정도 세션은 유효하고, SuspendedScreen이
-  // 그 안에서 정지 현황 조회·포인트로 즉시 해제까지 처리한다(SuspendAllowedPaths로 제한된 API만 사용).
+  // 로그아웃하지는 않는다 — 정지된 계정도 세션 자체는 유효하고, SuspendedScreen이 그 안에서
+  // 정지 사유·기한 조회와 로그아웃까지 처리한다(SuspendAllowedPaths로 제한된 API만 사용).
   useEffect(() => {
     function handleAccountSuspended() {
       setSuspended(true)
     }
     window.addEventListener(ACCOUNT_SUSPENDED_EVENT, handleAccountSuspended)
     return () => window.removeEventListener(ACCOUNT_SUSPENDED_EVENT, handleAccountSuspended)
-  }, [])
-
-  // 임시 활동 차단이 감지되면(403 ACTIVITY_BLOCKED — /api/auth/me 자체도 포함) client.ts가 이 이벤트를 쏜다.
-  // 정지와 달리 세션은 유효하므로 로그아웃하지 않는다 — 화면만 ActivityBlockScreen으로 전환한다.
-  // 그 화면이 백엔드가 허용한 /api/shop/blocks/me 등으로 직접 상세 정보를 조회한다.
-  useEffect(() => {
-    function handleActivityBlocked() {
-      setBlocked(true)
-    }
-    window.addEventListener(ACTIVITY_BLOCKED_EVENT, handleActivityBlocked)
-    return () => window.removeEventListener(ACTIVITY_BLOCKED_EVENT, handleActivityBlocked)
   }, [])
 
   async function logout() {
@@ -136,16 +121,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider value={{ user, isLoading, fetchUser, logout, clearAuth, notifyCheckInResult }}>
       {/* 정지(suspended)가 최우선이다 — 정지된 유저는 /api/auth/me 자체가 403이라 user가 null로
-          남으므로 gating(=!!user 전제)이 애초에 성립하지 않고, blocked보다도 먼저 확인해 우선순위
+          남으므로 gating(=!!user 전제)이 애초에 성립하지 않는다. 그래도 순서를 명시해 우선순위
           충돌 없이 SuspendedScreen을 보여준다.
           온보딩 게이트가 걸린 동안에는 리다이렉트가 끝날 때까지 본문 대신 전환 오버레이만 보여줘
-          게이트 대상 페이지 내용이 잠깐 노출되는 것을 막는다.
-          차단(blocked)도 같은 이유로 gating보다 먼저 걸린다. */}
+          게이트 대상 페이지 내용이 잠깐 노출되는 것을 막는다. */}
       {suspended ? (
         <SuspendedScreen onResolved={() => { window.location.href = '/' }} />
-      ) : gating ? <RedirectingOverlay /> : blocked ? (
-        <ActivityBlockScreen onResolved={() => { window.location.href = '/' }} />
-      ) : children}
+      ) : gating ? <RedirectingOverlay /> : children}
       <CheckInResultModal
         info={checkInResult}
         onClose={() => setCheckInResult(null)}

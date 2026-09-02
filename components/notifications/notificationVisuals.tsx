@@ -159,62 +159,6 @@ export function NotificationBody({ n, meta }: { n: Notification; meta: Notificat
     )
   }
 
-  // 좋아요 받아 포인트 지급: 마찬가지로 발신자를 밝히지 않는다(누가 눌렀는지는 LIKE 알림이 따로 알려준다).
-  if (n.type === 'LIKE_REWARD') {
-    const what = n.postTitle ? (
-      <>
-        게시글{' '}
-        <span className="font-medium text-neutral-700 dark:text-neutral-200">
-          “{truncatePostTitle(n.postTitle)}”
-        </span>
-        이(가){' '}
-      </>
-    ) : (
-      <>게시글이 </>
-    )
-    return (
-      <>
-        {what}좋아요를 받아{' '}
-        <span className={`font-semibold ${meta.accentText}`}>{(n.amount ?? 0).toLocaleString()}</span>
-        {MESSAGES.points.notification.rewardSuffix}
-      </>
-    )
-  }
-
-  // 다른 회원이 포인트를 직접 송금한 경우: 게시글/댓글과 무관하므로 별도 문구로 조립한다.
-  if (n.type === 'TRANSFER') {
-    const who = <span className="font-semibold text-neutral-900 dark:text-white">{notificationSenderLabel(n)}</span>
-    return (
-      <>
-        {who}{MESSAGES.points.notification.transferAfterName}
-        <span className={`font-semibold ${meta.accentText}`}>{(n.amount ?? 0).toLocaleString()}P</span>
-        {MESSAGES.points.notification.transferSuffix}
-      </>
-    )
-  }
-
-  // 관리자 권한 경매 낙찰: 시스템 정산이라 발신자가 없다.
-  if (n.type === 'ROLE_AUCTION_WON') {
-    return (
-      <>
-        {MESSAGES.points.notification.auctionWonPrefix}
-        <span className={`font-semibold ${meta.accentText}`}>{(n.amount ?? 0).toLocaleString()}</span>
-        {MESSAGES.points.notification.auctionWonSuffix}
-      </>
-    )
-  }
-
-  // 관리자 권한 경매 낙첨: 마찬가지로 발신자가 없다.
-  if (n.type === 'ROLE_AUCTION_LOST') {
-    return (
-      <>
-        {MESSAGES.points.notification.auctionLostPrefix}
-        <span className={`font-semibold ${meta.accentText}`}>{(n.amount ?? 0).toLocaleString()}</span>
-        {MESSAGES.points.notification.auctionLostSuffix}
-      </>
-    )
-  }
-
   const who = <span className="font-semibold text-neutral-900 dark:text-white">{notificationSenderLabel(n)}</span>
   // 액션 키워드는 좌측 색상 아이콘이 이미 종류를 알려주므로 별도 색을 넣지 않고 본문과 같은 톤으로 둔다.
   const keyword = meta.label

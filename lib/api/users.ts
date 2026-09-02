@@ -61,10 +61,7 @@ export const usersApi = {
 
   // 본인의 정지(SUSPENDED) 현황. 정지 중인 계정도 호출 가능(client.ts의 SUSPENDED_ACCOUNT
   // 인터셉트 대상에서 백엔드가 예외 처리하는 경로 — global/security/SuspendAllowedPaths).
+  // 해제는 ADMIN/ROOT만 할 수 있으므로, 정지된 본인이 쓸 수 있는 건 이 조회뿐이다.
   getMySuspensionStatus: () =>
     apiClient.get<SuspensionStatus>('/api/users/me/suspension'),
-
-  // 포인트를 지불해 본인 정지를 즉시 해제. 정지 중인 계정도 호출 가능.
-  unlockSuspension: () =>
-    apiClient.post<void>('/api/users/me/suspension/unlock'),
 }

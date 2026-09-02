@@ -8,23 +8,19 @@ import { formatDateTime } from '@/lib/format'
 import { describeTransaction, transactionTypeMeta } from '@/lib/point'
 import { useAuth } from '@/lib/auth-context'
 import { MESSAGES } from '@/lib/messages'
-import TransferPointsModal from '@/components/points/TransferPointsModal'
 import type { PointTransaction } from '@/types'
 
 const PAGE_SIZE = 20
 
 // 내 포인트 거래 내역 탭. 잔액 자체는 마이페이지 상단 통계 카드가 보여준다.
-// onBalanceChange: 송금 성공 시 상단 통계 카드의 잔액도 갱신할 수 있도록 부모(MyPage)에 알린다.
-export default function MyPointsTab({ onBalanceChange }: { onBalanceChange?: () => void }) {
+// 이 탭에서 잔액을 바꾸는 동작은 없으므로(조회 전용) 부모에 알릴 것도 없다.
+export default function MyPointsTab() {
   const { user } = useAuth()
   const [transactions, setTransactions] = useState<PointTransaction[]>([])
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [transferOpen, setTransferOpen] = useState(false)
-  // 송금 성공 시 값을 바꿔 아래 useEffect가 목록을 다시 불러오게 한다.
-  const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(() => {
     if (!user) return
@@ -50,38 +46,10 @@ export default function MyPointsTab({ onBalanceChange }: { onBalanceChange?: () 
     return () => {
       cancelled = true
     }
-  }, [page, user, refreshKey])
+  }, [page, user])
 
-  function handleTransferSuccess() {
-    setPage(0)
-    setRefreshKey(k => k + 1)
-    onBalanceChange?.()
-  }
-
-  const transferButton = user && (
-    <div className="mb-4 flex justify-end">
-      <button
-        type="button"
-        onClick={() => setTransferOpen(true)}
-        className="rounded-md bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-700"
-      >
-        송금하기
-      </button>
-    </div>
-  )
-
-  const transferModal = user && (
-    <TransferPointsModal
-      open={transferOpen}
-      onClose={() => setTransferOpen(false)}
-      onSuccess={handleTransferSuccess}
-    />
-  )
-
-  // loading/error/empty/목록을 각각 별도 return으로 두면 분기마다 형제 엘리먼트 구성(자식 개수)이
-  // 달라져, key 없는 형제를 인덱스로 매칭하는 React가 분기 전환 시점에 이 아래의 transferModal을
-  // 엉뚱한 자리의 다른 엘리먼트와 매칭해버릴 수 있다(리마운트로 이어짐). 그래서 "본문"만 갈아끼우고
-  // transferButton/transferModal은 항상 마지막에 고정된 위치로 딱 한 번만 렌더한다.
+  // loading/error/empty/목록을 하나의 content 변수로 모아 렌더한다 — 분기마다 별도 return을 두면
+  // 형제 엘리먼트 구성이 달라져 React가 분기 전환 시 엉뚱한 자리끼리 매칭할 수 있기 때문이다.
   let content: ReactNode
   if (loading) {
     content = <p className="py-12 text-center text-sm text-neutral-400">불러오는 중…</p>
@@ -150,11 +118,5 @@ export default function MyPointsTab({ onBalanceChange }: { onBalanceChange?: () 
     )
   }
 
-  return (
-    <div>
-      {transferButton}
-      {content}
-      {transferModal}
-    </div>
-  )
+  return <div>{content}</div>
 }

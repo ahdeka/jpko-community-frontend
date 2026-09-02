@@ -5,13 +5,12 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { MESSAGES } from '@/lib/messages'
-import { isStaff, isRoot } from '@/lib/role'
+import { isStaff } from '@/lib/role'
 
 // 관리자 영역 공통 레이아웃.
 // 1) 접근 제어: 로그인 + 운영진(ADMIN·ROOT)인 경우에만 콘텐츠를 렌더한다.
 //    (백엔드도 대부분의 관리자 엔드포인트를 @PreAuthorize("hasAnyRole('ADMIN','ROOT')")로
-//     2차 검증하므로, 이 클라이언트 가드는 UX용이며 보안의 최종 방어선은 서버다.
-//     ROOT 전용 기능(상점 관리 등)은 사이드바/페이지에서 isRoot()로 별도 게이트한다.)
+//     2차 검증하므로, 이 클라이언트 가드는 UX용이며 보안의 최종 방어선은 서버다.)
 // 2) 좌측 사이드바 네비게이션을 모든 /admin/* 페이지에 공유한다.
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const { user, isLoading } = useAuth()
@@ -70,12 +69,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           {navItem('/admin/notices', '공지사항 관리')}
           {navItem('/admin/users', '회원 관리')}
           {navItem('/admin/reports', '신고 관리')}
-          {/* 차단 이의제기·임시 관리자 현황은 ROOT 전용 — 감시 대상이 ADMIN 자신일 수 있어
-              동료 ADMIN에게는 노출하지 않는다(백엔드도 hasRole('ROOT')로 보호). */}
-          {isRoot(user.role) && navItem('/admin/shop/block-appeals', '차단 이의제기')}
-          {isRoot(user.role) && navItem('/admin/shop/role-purchases', '임시 관리자 현황')}
-          {isRoot(user.role) && navItem('/admin/shop/items', '상점 관리')}
-          {isRoot(user.role) && navItem('/admin/settings/suspend-presets', '정지 설정')}
         </nav>
       </aside>
 

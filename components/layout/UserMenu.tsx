@@ -27,7 +27,7 @@ export default function UserMenu({ user, onLogout }: Props) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   // 잔액은 /api/auth/me에 포함되지 않으므로 이 컴포넌트가 직접 조회한다.
-  // 마운트 시 1회 조회하고, 이후 포인트 변동 이벤트(송금·게임)를 구독해 새로고침 없이 갱신한다.
+  // 마운트 시 1회 조회하고, 이후 포인트 변동 이벤트(게임 등)를 구독해 새로고침 없이 갱신한다.
   const [balance, setBalance] = useState<number | null>(null)
 
   // 언마운트 이후 도착하는 응답이 setState를 호출하지 않도록 하는 살아있음 플래그.
@@ -60,7 +60,7 @@ export default function UserMenu({ user, onLogout }: Props) {
   }, [refreshBalance])
 
   // 포인트 변동 이벤트 구독. detail.balance가 실려 오면(게임) 추가 조회 없이 즉시 반영하고,
-  // 없으면(송금 등) 서버에서 다시 조회한다. 언마운트 시 리스너를 해제해 누수를 막는다.
+  // 없으면 서버에서 다시 조회한다. 언마운트 시 리스너를 해제해 누수를 막는다.
   useEffect(() => {
     function onBalanceChanged(e: Event) {
       const detail = (e as CustomEvent<PointBalanceChangedDetail>).detail
@@ -136,9 +136,6 @@ export default function UserMenu({ user, onLogout }: Props) {
           {/* 룰렛·파칭코·슬롯은 게임센터 허브(/game-center)로 통합. 메뉴에서는 진입점 하나만 노출한다. */}
           <Link href="/game-center" role="menuitem" className={menuItem} onClick={() => setOpen(false)}>
             게임센터
-          </Link>
-          <Link href="/shop" role="menuitem" className={menuItem} onClick={() => setOpen(false)}>
-            상점
           </Link>
 
           {isAdmin && (

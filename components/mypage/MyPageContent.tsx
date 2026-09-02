@@ -71,13 +71,6 @@ export default function MyPageContent() {
     return () => { cancelled = true }
   }, [user])
 
-  // 포인트 탭에서 송금에 성공하면 상단 통계 카드의 잔액도 함께 갱신한다.
-  function refreshPointBalance() {
-    pointsApi.getBalance()
-      .then(res => setPointBalance(res.data?.balance ?? 0))
-      .catch(() => {})
-  }
-
   // 인증 상태 확인 중에는 깜빡임을 막기 위해 아무것도 그리지 않는다.
   if (isLoading) return null
 
@@ -193,7 +186,7 @@ export default function MyPageContent() {
       <div>
         {tab === 'posts' && <MyPostsTab />}
         {tab === 'comments' && <MyCommentsTab />}
-        {tab === 'points' && <MyPointsTab onBalanceChange={refreshPointBalance} />}
+        {tab === 'points' && <MyPointsTab />}
         {tab === 'ranking' && <MyRankingTab />}
         {tab === 'reports' && <MyReportsTab />}
         {tab === 'profile' && <ProfileSettings />}

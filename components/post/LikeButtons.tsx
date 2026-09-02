@@ -31,10 +31,8 @@ export default function LikeButtons({ postId, initialLikeCount, initialDislikeCo
   }, [postId])
 
   // 여기서는 notifyPointBalanceChanged()를 부르지 않는다 — 의도된 것이다.
-  // 좋아요 보상(GRANT)은 누른 사람이 아니라 글쓴이에게 지급되고, 백엔드가 둘이 같은 사람이면
-  // 아예 지급하지 않으므로(LikeService.grantLikeReward) 누른 사람의 잔액은 어떤 경우에도 바뀌지 않는다.
-  // 여기서 알리면 매 클릭마다 무의미한 /api/points 재조회만 늘어난다.
-  // (글쓴이 화면의 헤더 잔액은 push 채널이 없어 실시간 갱신이 불가하며, 대신 LIKE_REWARD 알림으로 전달된다.)
+  // 좋아요 수신 포인트 보상은 백엔드에서 폐지되어, 좋아요는 누른 사람에게도 글쓴이에게도
+  // 포인트를 움직이지 않는다. 알려봐야 매 클릭마다 무의미한 /api/points 재조회만 늘어난다.
   const toggle = async (type: 'LIKE' | 'DISLIKE') => {
     if (!user) {
       router.push('/login')

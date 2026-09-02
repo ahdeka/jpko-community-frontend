@@ -41,43 +41,6 @@ export const TRANSACTION_TYPES: TransactionTypeMeta[] = [
     label: '룰렛 수수료',
     badge: 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400',
   },
-  // 폐지된 유형. 백엔드가 더 이상 발생시키지 않지만 과거 원장 행이 남아 있어 계속 조회된다.
-  // 뱃지는 다른 폐지·중립 항목과 같은 회색 계열로 둔다.
-  {
-    value: 'JMT',
-    label: '정산',
-    badge: 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400',
-  },
-  {
-    value: 'TRANSFER',
-    label: '송금',
-    badge: 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300',
-  },
-  {
-    value: 'TRANSFER_FEE',
-    label: '송금 수수료',
-    badge: 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400',
-  },
-  {
-    value: 'BLOCK_PURCHASE',
-    label: '차단권 구매',
-    badge: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300',
-  },
-  {
-    value: 'BLOCK_UNBLOCK',
-    label: '차단 해제',
-    badge: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300',
-  },
-  {
-    value: 'BID_HOLD',
-    label: '경매 입찰',
-    badge: 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300',
-  },
-  {
-    value: 'BID_REFUND',
-    label: '경매 환불',
-    badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
-  },
   {
     value: 'PACHINKO_FEE',
     label: '파칭코 수수료',
@@ -98,11 +61,6 @@ export const TRANSACTION_TYPES: TransactionTypeMeta[] = [
     label: '슬롯머신',
     badge: 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300',
   },
-  {
-    value: 'SHIELD_PURCHASE',
-    label: '방어권 구매',
-    badge: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300',
-  },
 ]
 
 export const transactionTypeMeta = (type: TransactionType): TransactionTypeMeta =>
@@ -118,14 +76,13 @@ export interface TransactionDisplay {
 
 // myUserId 시점에서 거래 1건을 해석한다.
 // ROULETTE는 sender/recipient가 항상 유저 대 유저(시스템 경유)라 방향에 따라 승리/피해가 갈리고,
-// CHECKIN은 시스템이 상대라 counterpart가 없지만 방향(recipient/sender)에 따라 지급/차감이 갈리며,
-// GRANT/COLLECT/ROULETTE_FEE는 상대가 항상 시스템이라 counterpart가 없고,
-// ACCOUNT_OPENED는 금액 이동이 없는 감사 로그라 항상 중립(0P) 처리하며,
-// TRANSFER는 유저 대 유저 직접 송금이라 ROULETTE와 동일한 구조로 방향에 따라 갈리고,
-// TRANSFER_FEE는 상대가 항상 시스템이지만 금액이 랜덤이라 방향이 뒤바뀔 수 있다
-// (수수료가 음수로 뽑히면 시스템→유저로 보너스가 지급되어 내가 recipient가 된다).
-// BLOCK_PURCHASE/BLOCK_UNBLOCK/BID_HOLD는 항상 유저→시스템(내 내역에 있다는 건 내가 sender라는 뜻)이고,
-// BID_REFUND는 항상 시스템→유저라 GRANT/COLLECT처럼 방향 분기 없이 단일 케이스로 처리한다.
+// CHECKIN/PACHINKO/SLOT은 시스템이 상대라 counterpart가 없지만 방향(recipient/sender)에 따라
+// 지급/차감이 갈리며, GRANT/COLLECT/*_FEE는 상대가 항상 시스템이라 counterpart가 없고,
+// ACCOUNT_OPENED는 금액 이동이 없는 감사 로그라 항상 중립(0P) 처리한다.
+//
+// ⚠️ switch는 TransactionType union 전체를 빠짐없이 덮어야 한다. case가 빠지면 그 값에서
+//    아무것도 반환하지 않아 호출부의 display.* 접근이 런타임 크래시가 된다
+//    (TS가 반환 타입 불일치로 컴파일 시점에 잡아준다).
 export function describeTransaction(tx: PointTransaction, myUserId: number): TransactionDisplay {
   const isRecipient = tx.recipientId === myUserId
 
@@ -183,79 +140,11 @@ export function describeTransaction(tx: PointTransaction, myUserId: number): Tra
         description: '룰렛 수수료',
         counterpartLabel: null,
       }
-    // 폐지된 유형. 과거 룰렛 수수료 정산 과정에서 시스템 → 유저로 지급되던 기록이라 방향은 항상
-    // 수령(+) 한 가지뿐이다. 백엔드가 더 이상 이 타입을 만들지 않지만 기존 원장 행은 남아 있어
-    // 내역에 계속 섞여 나오므로 이 case를 지우면 안 된다 — 지우면 switch가 이 값에서 아무것도
-    // 반환하지 않아 describeTransaction이 undefined를 돌려주고, 호출부의 display.* 접근에서
-    // 런타임 크래시가 난다(TS는 union에 남아 있는 한 이 누락을 컴파일 시점에 잡아준다).
-    case 'JMT':
-      return {
-        signedAmountLabel: `+${tx.amount.toLocaleString()}P`,
-        colorClass: 'text-emerald-600 dark:text-emerald-400',
-        description: '지난 정산 지급',
-        counterpartLabel: null,
-      }
     case 'ACCOUNT_OPENED':
       return {
         signedAmountLabel: '0P',
         colorClass: 'text-neutral-400 dark:text-neutral-500',
         description: '포인트 계좌가 개설되었습니다',
-        counterpartLabel: null,
-      }
-    case 'TRANSFER':
-      return isRecipient
-        ? {
-            signedAmountLabel: `+${tx.amount.toLocaleString()}P`,
-            colorClass: 'text-emerald-600 dark:text-emerald-400',
-            description: '송금 받음',
-            counterpartLabel: tx.senderNickname ? `${tx.senderNickname}님으로부터` : null,
-          }
-        : {
-            signedAmountLabel: `-${tx.amount.toLocaleString()}P`,
-            colorClass: 'text-red-600 dark:text-red-400',
-            description: '송금 보냄',
-            counterpartLabel: tx.recipientNickname ? `${tx.recipientNickname}님에게` : null,
-          }
-    case 'TRANSFER_FEE':
-      return isRecipient
-        ? {
-            signedAmountLabel: `+${tx.amount.toLocaleString()}P`,
-            colorClass: 'text-emerald-600 dark:text-emerald-400',
-            description: '송금 수수료 환급',
-            counterpartLabel: null,
-          }
-        : {
-            signedAmountLabel: `-${tx.amount.toLocaleString()}P`,
-            colorClass: 'text-red-600 dark:text-red-400',
-            description: '송금 수수료',
-            counterpartLabel: null,
-          }
-    case 'BLOCK_PURCHASE':
-      return {
-        signedAmountLabel: `-${tx.amount.toLocaleString()}P`,
-        colorClass: 'text-red-600 dark:text-red-400',
-        description: '활동 차단권 구매',
-        counterpartLabel: null,
-      }
-    case 'BLOCK_UNBLOCK':
-      return {
-        signedAmountLabel: `-${tx.amount.toLocaleString()}P`,
-        colorClass: 'text-red-600 dark:text-red-400',
-        description: '차단 조기 해제',
-        counterpartLabel: null,
-      }
-    case 'BID_HOLD':
-      return {
-        signedAmountLabel: `-${tx.amount.toLocaleString()}P`,
-        colorClass: 'text-orange-600 dark:text-orange-400',
-        description: '권한 경매 입찰',
-        counterpartLabel: null,
-      }
-    case 'BID_REFUND':
-      return {
-        signedAmountLabel: `+${tx.amount.toLocaleString()}P`,
-        colorClass: 'text-emerald-600 dark:text-emerald-400',
-        description: '권한 경매 입찰 환불',
         counterpartLabel: null,
       }
     case 'PACHINKO':
@@ -298,13 +187,6 @@ export function describeTransaction(tx: PointTransaction, myUserId: number): Tra
         signedAmountLabel: `-${tx.amount.toLocaleString()}P`,
         colorClass: 'text-red-600 dark:text-red-400',
         description: '슬롯 수수료',
-        counterpartLabel: null,
-      }
-    case 'SHIELD_PURCHASE':
-      return {
-        signedAmountLabel: `-${tx.amount.toLocaleString()}P`,
-        colorClass: 'text-red-600 dark:text-red-400',
-        description: '룰렛 방어권 구매',
         counterpartLabel: null,
       }
   }
