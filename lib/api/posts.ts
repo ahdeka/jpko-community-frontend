@@ -1,5 +1,5 @@
 import { apiClient } from './client'
-import { PostListResponse, PostDetail, PostResponse, PostSummary, SearchType } from '@/types'
+import { PostListResponse, PostDetail, PopularPeriod, PostResponse, PostSummary, SearchType } from '@/types'
 
 export const postsApi = {
 
@@ -35,9 +35,10 @@ export const postsApi = {
     return apiClient.get<PostListResponse>(`/api/posts/search?${query.toString()}`)
   },
 
-  // 인기글 (days: 1=실시간, 7=주간, 30=월간)
-  getPopular: (days = 7, limit = 6) =>
-    apiClient.get<PostSummary[]>(`/api/posts/popular?days=${days}&limit=${limit}`),
+  // 인기글. period만 넘기고 개수는 백엔드 display-size 설정을 따른다(현재 5개).
+  // 백엔드가 캐시 갱신 이후 삭제된 글을 걸러내므로 실제 응답은 5개보다 적을 수 있다.
+  getPopular: (period: PopularPeriod = 'WEEKLY') =>
+    apiClient.get<PostSummary[]>(`/api/posts/popular?period=${period}`),
 
   // 게시글 상세
   getById: (postId: number, options?: RequestInit) =>

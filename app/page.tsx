@@ -3,7 +3,7 @@ import { postsApi } from '@/lib/api/posts'
 import { noticesApi } from '@/lib/api/notices'
 import RecentPostsSection from '@/components/post/RecentPostsSection'
 import CategorySection from '@/components/post/CategorySection'
-import WeeklyPopularSection from '@/components/home/WeeklyPopularSection'
+import PopularSection from '@/components/home/PopularSection'
 import PointRankingSection from '@/components/home/PointRankingSection'
 import NoticeSection from '@/components/home/NoticeSection'
 import FeaturedNoticeBar from '@/components/home/FeaturedNoticeBar'
@@ -25,11 +25,16 @@ export default async function Home() {
   // 카테고리·게시글 목록과 메인 상단 중요 공지(featured)를 병렬로 조회한다.
   // (한쪽이 실패해도 나머지는 그려야 하므로 Promise.all + 개별 catch로 부분 실패를 허용한다.)
   // 메인 상단은 featured 공지를 보여준다. pinned 공지는 게시판 목록(/posts) 상단에만 노출된다.
-  const [categoriesRes, postListRes, featuredRes] = await Promise.all([
-    categoriesApi.getAll().catch(() => null),
-    postsApi.getAll(0, RECENT_POSTS_LIMIT).catch(() => null),
-    noticesApi.getFeatured().catch(() => null),
-  ])
+  // 인기글은 오늘/주간을 각각 따로 조회한다(백엔드는 period별 캐시를 들고 있고,
+  // 노출 개수는 백엔드 display-size 설정이 정한다 — 현재 각 5개).
+  const [categoriesRes, postListRes, featuredRes, todayPopularRes, weeklyPopularRes] =
+    await Promise.all([
+      categoriesApi.getAll().catch(() => null),
+      postsApi.getAll(0, RECENT_POSTS_LIMIT).catch(() => null),
+      noticesApi.getFeatured().catch(() => null),
+      postsApi.getPopular('TODAY').catch(() => null),
+      postsApi.getPopular('WEEKLY').catch(() => null),
+    ])
 
   const categories: Category[] = (categoriesRes?.data ?? [])
     .slice()
@@ -44,6 +49,9 @@ export default async function Home() {
 
   const featuredNotices: NoticeSummary[] = featuredRes?.data ?? []
   const recentPosts: PostSummary[] = postListRes?.data?.posts?.content ?? []
+  // 한쪽 인기글이 실패해도 나머지 사이드바는 그려야 하므로 빈 배열로 떨어뜨린다.
+  const todayPopularPosts: PostSummary[] = todayPopularRes?.data ?? []
+  const weeklyPopularPosts: PostSummary[] = weeklyPopularRes?.data ?? []
 
   return (
     <div className="flex flex-col gap-6">
@@ -58,7 +66,16 @@ export default async function Home() {
           ))}
         </div>
         <aside className="flex flex-col gap-6">
-          <WeeklyPopularSection />
+          <PopularSection
+            title="오늘 인기글"
+            bulletColor="bg-red-500"
+            posts={todayPopularPosts}
+          />
+          <PopularSection
+            title="주간 인기글"
+            bulletColor="bg-orange-500"
+            posts={weeklyPopularPosts}
+          />
           <PointRankingSection />
           <NoticeSection />
         </aside>

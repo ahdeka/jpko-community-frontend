@@ -6,7 +6,7 @@ import { MESSAGES } from '@/lib/messages'
 //  - /api/points/ranking/top은 비로그인도 조회 가능하므로 인증 헤더가 필요 없다.
 //  - "내 순위 보기" 링크는 마이페이지 랭킹 탭으로 딥링크한다(비로그인이면 마이페이지가 로그인으로 유도).
 //  - 조회 실패/빈 랭킹이어도 사이드바 나머지는 그려야 하므로 catch로 부분 실패를 흡수한다
-//    (WeeklyPopularSection과 동일한 패턴).
+//    (page.tsx의 인기글 조회와 동일한 패턴).
 export default async function PointRankingSection() {
   const res = await rankingApi.getTop().catch(() => null)
   const entries = res?.data?.entries ?? []

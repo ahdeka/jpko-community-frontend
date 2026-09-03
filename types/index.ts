@@ -189,6 +189,11 @@ export interface PostListResponse {
 // NICKNAME은 닉네임 "정확 일치"이며, 익명글(anonymous)은 결과에서 제외된다.
 export type SearchType = 'TITLE' | 'TITLE_CONTENT' | 'NICKNAME';
 
+// 인기글 집계 기간. 백엔드 PopularPeriod enum과 1:1.
+// 노출 개수는 요청 파라미터가 아니라 백엔드 설정(app.popular-post.display-size)이 정하므로
+// 프론트에서 개수를 지정하지 않는다.
+export type PopularPeriod = 'TODAY' | 'WEEKLY';
+
 // 게시글 작성/수정 응답용
 export interface PostResponse {
   id: number
