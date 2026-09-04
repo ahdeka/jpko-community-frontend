@@ -93,6 +93,7 @@ export default function CommentItem({ comment, target, isReply = false, rootId }
               author={comment.author}
               isAdmin={comment.adminAuthor}
               isRoot={comment.rootAuthor}
+              level={comment.authorLevel}
               nickname={comment.anonymous ? undefined : comment.author}
               className="text-sm font-semibold text-gray-800 dark:text-neutral-100"
             />

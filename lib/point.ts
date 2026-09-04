@@ -2,7 +2,7 @@ import type { PointTransaction, TransactionType } from '@/types'
 
 // 포인트 거래 유형 표시 메타데이터의 단일 출처.
 // 백엔드는 enum 상수로만 내려주므로 한글 표기·색상은 프론트가 관리한다.
-// (lib/report.ts, lib/grade.ts와 같은 패턴)
+// (lib/report.ts, lib/level.ts와 같은 패턴)
 
 export interface TransactionTypeMeta {
   value: TransactionType

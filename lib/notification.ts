@@ -22,7 +22,7 @@ export function truncatePostTitle(title: string, max = 15): string {
 //  - suffix:    키워드 뒤에 붙는 서술어
 //  - icon:      좌측 아이콘 종류
 //
-// ⚠️ CONTENT_REMOVED/POINT_STOLEN/POINT_WON/POST_REWARD/COMMENT_REWARD는 문구 구조 자체가
+// ⚠️ CONTENT_REMOVED/POINT_STOLEN/POINT_WON/POST_REWARD/COMMENT_REWARD/LEVEL_UP은 문구 구조 자체가
 //    달라(첫 번째는 발신자를 밝히지 않고 대상이 이미 삭제됨, 나머지는 시스템 지급이거나 애초에
 //    게시글/댓글과 무관함) label/target/suffix를 쓰지 않는다. NotificationBody와 notificationText가
 //    별도로 분기하며, 여기서는 아이콘/색만 의미를 갖는다.
@@ -32,7 +32,7 @@ export interface NotificationMeta {
   iconBg: string
   target: 'post' | 'comment'
   suffix: string
-  icon: 'comment' | 'reply' | 'like' | 'removed' | 'point'
+  icon: 'comment' | 'reply' | 'like' | 'removed' | 'point' | 'level'
 }
 
 const META: Record<NotificationType, NotificationMeta> = {
@@ -106,6 +106,18 @@ const META: Record<NotificationType, NotificationMeta> = {
     suffix: '',
     icon: 'point',
   },
+  // 활동 경험치가 쌓여 레벨이 올랐음. 시스템 알림이라 발신자가 없고 게시글/댓글과도 무관하다.
+  // 색은 포인트(emerald)와 구분되게 indigo로 둔다 — 둘 다 '좋은 소식'이라 같은 색이면
+  // 알림 목록에서 포인트 지급과 레벨업이 한 덩어리로 보인다.
+  // ⚠️ amount에 담겨 오는 값은 포인트 액수가 아니라 '도달한 레벨'이다.
+  LEVEL_UP: {
+    label: '레벨',
+    accentText: 'text-indigo-600 dark:text-indigo-400',
+    iconBg: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-400',
+    target: 'post',
+    suffix: '',
+    icon: 'level',
+  },
 }
 
 export function notificationMeta(type: NotificationType): NotificationMeta {
@@ -133,6 +145,9 @@ export function notificationHref(n: Notification): string | null {
     return isRemovedComment(n) ? `/posts/${n.postId}#comments` : null
   }
   if (n.type === 'POINT_STOLEN' || n.type === 'POINT_WON') return null
+  // 레벨업은 게시글/댓글과 무관해 postId가 항상 null이지만, 이동할 곳이 없는 건 아니다.
+  // 마이페이지에 레벨·경험치 카드가 있으므로 거기로 보내 "얼마나 올랐는지"를 바로 확인시킨다.
+  if (n.type === 'LEVEL_UP') return '/mypage'
   return n.postId !== null ? `/posts/${n.postId}` : null
 }
 
@@ -168,6 +183,13 @@ export function notificationText(n: Notification): string {
   if (n.type === 'COMMENT_REWARD') {
     const what = n.commentContent ? `댓글 "${truncatePostTitle(n.commentContent)}"으로` : '댓글 작성으로'
     return `${what} ${(n.amount ?? 0).toLocaleString()}${MESSAGES.points.notification.rewardSuffix}`
+  }
+
+  // 레벨업: 시스템 알림이라 발신자를 밝히지 않는다(POST_REWARD와 같은 이유).
+  // amount가 도달 레벨이며, 혹시 비어 오면 0이 아니라 문구에서 숫자를 뺄 수 없으므로
+  // 최소값 0으로 폴백한다(그래도 문장 자체는 성립한다).
+  if (n.type === 'LEVEL_UP') {
+    return `${MESSAGES.level.notification.prefix}Lv.${n.amount ?? 0} ${MESSAGES.level.notification.afterLevel}`
   }
 
   const who = notificationSenderLabel(n)

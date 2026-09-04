@@ -2,12 +2,18 @@ import Link from 'next/link'
 import { isWithdrawnAuthor } from '@/lib/author'
 import AdminBadge from './AdminBadge'
 import RootBadge from './RootBadge'
+import LevelBadge from './LevelBadge'
 
 // 작성자명 표시 컴포넌트.
 // 탈퇴한 회원이면 회색·이탤릭으로 흐리게 처리해, 실제 사용자 닉네임과 시각적으로 구분한다.
 // isRoot면 "운영자"(보라) 뱃지를, 아니면서 isAdmin이면 "운영진"(amber) 뱃지를 닉네임 앞에 보여준다
 // (진짜 운영자/운영진임을 서버 role 기반으로 신뢰 있게 표시). 둘은 백엔드에서 상호배타로 내려오지만,
 // 만약을 대비해 프론트에서도 ROOT를 우선해 한 개만 표시한다(뱃지 중복 방지).
+//
+// level을 넘기면 뱃지들 맨 앞에 활동 레벨 칩을 함께 보여준다.
+// ⚠️ Lv.0은 유효한 값이므로 판정은 반드시 `level != null`로 한다(falsy 체크를 쓰면 0이 사라진다).
+//    백엔드는 익명 글/댓글·탈퇴 회원·삭제된 댓글이면 authorLevel을 null로 내려주므로,
+//    호출부는 그 값을 그대로 넘기기만 하면 마스킹이 자동으로 지켜진다.
 //
 // nickname을 넘기면 이름을 공개 프로필(/users/{nickname})로 가는 링크로 감싼다.
 // ⚠️ 호출부는 "링크를 걸어도 되는 경우"에만 nickname을 넘겨야 한다:
@@ -27,12 +33,14 @@ export default function AuthorName({
   author,
   isAdmin,
   isRoot,
+  level,
   nickname,
   className,
 }: {
   author: string
   isAdmin?: boolean
   isRoot?: boolean
+  level?: number | null
   nickname?: string | null
   className?: string
 }) {
@@ -49,9 +57,14 @@ export default function AuthorName({
     )
   }
 
+  // 뱃지 순서: [레벨][운영진/운영자][닉네임].
+  // 폭이 고정된 좁은 숫자 칩을 맨 왼쪽에 둬야 여러 줄이 쌓였을 때 세로로 정렬돼 보이고,
+  // 텍스트가 있어 폭이 들쭉날쭉한 역할 뱃지는 그 뒤로 밀어 닉네임과 붙여 둔다.
+  //
   // ROOT를 우선한다: 백엔드는 상호배타로 내려주지만, 혹시 둘 다 true여도 뱃지는 하나만.
   const body = (
     <>
+      {level != null && <LevelBadge level={level} className="mr-1 align-middle" />}
       {isRoot ? (
         <RootBadge className="mr-1 align-middle" />
       ) : (

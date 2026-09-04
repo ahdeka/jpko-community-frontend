@@ -39,6 +39,17 @@ export function TypeIcon({ icon }: { icon: NotificationMeta['icon'] }) {
       </svg>
     )
   }
+  // 레벨업: 위로 향한 화살표(상승) + 아래 받침선.
+  // 포인트(동전)와 형태를 확실히 다르게 해서, 색이 비슷하게 보이는 환경에서도 구분되게 한다.
+  if (icon === 'level') {
+    return (
+      <svg {...common}>
+        <path d="M12 19V6" />
+        <path d="m6 12 6-6 6 6" />
+        <path d="M5 21h14" />
+      </svg>
+    )
+  }
   // 포인트 도난: 동전
   if (icon === 'point') {
     return (
@@ -155,6 +166,20 @@ export function NotificationBody({ n, meta }: { n: Notification; meta: Notificat
         {what}
         <span className={`font-semibold ${meta.accentText}`}>{(n.amount ?? 0).toLocaleString()}</span>
         {MESSAGES.points.notification.rewardSuffix}
+      </>
+    )
+  }
+
+  // 레벨업: 시스템 알림이라 발신자가 없다(POST_REWARD/COMMENT_REWARD와 같은 구조).
+  // ⚠️ amount는 포인트 액수가 아니라 '도달한 레벨'이라 toLocaleString()으로 천단위를 찍지 않는다
+  //    — "Lv.1,000"처럼 보이면 레벨이 아니라 금액으로 읽힌다.
+  if (n.type === 'LEVEL_UP') {
+    return (
+      <>
+        {MESSAGES.level.notification.prefix}
+        <span className={`font-semibold ${meta.accentText}`}>Lv.{n.amount ?? 0}</span>
+        {' '}
+        {MESSAGES.level.notification.afterLevel}
       </>
     )
   }

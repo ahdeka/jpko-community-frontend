@@ -266,6 +266,31 @@ export const MESSAGES = {
     loginGate: '로그인 후 알림을 확인할 수 있습니다.',
   },
 
+  // 유저 레벨 — 레벨 뱃지 툴팁, 마이페이지 레벨 카드, 레벨업 알림 문구.
+  // 구간 이름("새내기"/"주민"/...)과 색은 문구가 아니라 표시 정책이라 lib/level.ts가 갖는다.
+  level: {
+    // 뱃지 툴팁. 뱃지 자체는 숫자만 그리므로 여기서 "Lv." 접두와 구간 이름을 붙여준다.
+    badgeTitle: (level: number, tierLabel: string) => `Lv.${level} · ${tierLabel}`,
+    card: {
+      title: '레벨',
+      // 진행바 아래 "320 / 500 EXP". 분모(expPerLevel)는 백엔드가 응답에 실어주는 값이라
+      // 하드코딩이 아니다 — 백엔드 설정이 바뀌어도 자동으로 따라간다.
+      progress: (into: string, per: string) => `${into} / ${per} EXP`,
+      toNext: (remaining: string) => `다음 레벨까지 ${remaining} EXP`,
+      totalExp: (total: string) => `누적 ${total} EXP`,
+      // ⚠️ 활동별 획득량과 일일 상한은 백엔드 설정(app.exp.*)에만 있고 프론트로 내려오지 않는다.
+      //    포인트 안내(points.pointInfo)와 같은 이유로 숫자 없이 서술한다.
+      howTo: '글과 댓글을 쓰면 경험치가 쌓이고, 일정량을 채울 때마다 레벨이 오릅니다. 하루에 얻을 수 있는 경험치에는 상한이 있어요.',
+    },
+    // 레벨업 알림 문구. 발신자가 없는 시스템 알림이라 "누가"로 시작하지 않는다.
+    notification: {
+      prefix: '축하합니다! ',
+      // ⚠️ 앞에 "Lv.N"이 붙는 자리다. 여기에 조사(을/를)를 넣으면 숫자를 읽는 소리에 따라
+      //    갈리므로(Lv.1→'일'을 / Lv.5→'오'를) 반드시 한쪽이 틀린다. 조사 없이 끊는다.
+      afterLevel: '달성!',
+    },
+  },
+
   points: {
     roulette: {
       unlockFailed: '들어올 땐 마음대로겠지만 나갈땐 아니란다',

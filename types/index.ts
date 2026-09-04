@@ -27,10 +27,20 @@ export type UserRole = 'USER' | 'ADMIN' | 'ROOT';
 // 관리자 API로는 ACTIVE·SUSPENDED만 지정 가능하며, DELETED는 회원 탈퇴로만 진입한다(읽기 전용).
 export type UserStatus = 'ACTIVE' | 'SUSPENDED' | 'DELETED';
 
-// 유저 등급(grade) — role과 무관한 별개의 뱃지성 축(사무라이 계급 테마).
-// 관리자가 수동 부여하며, 낮은 순 → 높은 순으로 나열한다.
-// 백엔드 UserGrade enum과 1:1이며, SHOGUN(쇼군)은 운영진(ADMIN) 전용이다.
-export type UserGrade = 'ASHIGARU' | 'SAMURAI' | 'HATAMOTO' | 'DAIMYO' | 'SHOGUN';
+// 유저 레벨/경험치 (백엔드 UserLevelResponse와 1:1).
+// role(권한)과 무관한 활동량 축이며, 예전 UserGrade(관리자 수동 부여)를 대체한다.
+//
+// 백엔드 LevelPolicy: level = floor(totalExp / expPerLevel), expPerLevel은 현재 500이고
+// **레벨 상한이 없다**(Lv.100도 가능). 구간별 표시 정책은 lib/level.ts가 단독으로 관리한다.
+//  - totalExp:     누적 경험치 전체
+//  - expIntoLevel: 현재 레벨 구간에서 모은 경험치 (진행률 분자)
+//  - expPerLevel:  한 레벨에 필요한 경험치 (진행률 분모). 백엔드 설정값이라 하드코딩하지 않는다.
+export interface UserLevelInfo {
+  level: number;
+  totalExp: number;
+  expIntoLevel: number;
+  expPerLevel: number;
+}
 
 // 유저
 export interface User {
@@ -41,9 +51,12 @@ export interface User {
   // 이메일 인증 여부. 미인증이어도 모든 기능은 이용 가능하며, 마이페이지에서 인증을 "권장"만 한다.
   // 백엔드 /api/auth/me(UserInfoResponse)가 내려주는 값.
   emailVerified: boolean;
-  // 유저 등급. 백엔드는 enum 상수("ASHIGARU" 등)로만 내려주며,
-  // 한글 이름·설명·색상은 프론트(lib/grade.ts)가 매핑한다.
-  grade: UserGrade;
+  // 내 레벨/경험치. 백엔드 /api/auth/me(UserInfoResponse.level)가 내려주며,
+  // 마이페이지 레벨 카드가 이 값만으로 진행바까지 그린다(추가 API 호출 없음).
+  // ⚠️ optional인 이유: 프론트(Vercel)가 백엔드(EC2)보다 먼저 배포되면 이 필드가 통째로 없다.
+  //    그 경우 레벨 카드만 숨기고 마이페이지의 나머지는 정상 동작해야 한다.
+  //    (Notification.postTitle이 optional인 것과 같은 배포 스큐 방어)
+  level?: UserLevelInfo;
   // 자기소개(최대 200자). 백엔드 /api/auth/me(UserInfoResponse)가 내려주며, 없으면 null.
   // 마이페이지 자기소개 편집의 현재 값으로 쓴다.
   bio: string | null;
@@ -71,8 +84,7 @@ export interface LoginResponse {
 export interface PublicProfile {
   id: number;
   nickname: string;
-  grade: UserGrade;
-  displayGradeName: string;   // 등급 한글 표기 (프론트 lib/grade.ts와 별개로 백엔드가 내려주는 표시명)
+  level: number;              // 활동 레벨 — 닉네임 옆 레벨 뱃지 표시용 (lib/level.ts가 구간·색 매핑)
   adminAuthor: boolean;       // 운영진(ADMIN) 여부 — 닉네임 옆 "운영진" 뱃지 표시용
   rootAuthor: boolean;        // 최고 관리자(ROOT) 여부 — 닉네임 옆 "운영자"(보라) 뱃지 표시용. adminAuthor와 상호배타
   suspended: boolean;         // 관리자에 의해 정지(SUSPENDED)된 계정인지
@@ -100,8 +112,6 @@ export interface AdminUser {
   nickname: string;
   role: UserRole;
   status: UserStatus;
-  grade: UserGrade;
-  displayGradeName: string;  // 등급 한글 표기 (예: "아시가루") — 백엔드 enum 표시명
   emailVerified: boolean;
   createdAt: string;
   // 정지 중일 때의 해제 예정 시각. null이면 정지가 아니거나 ROOT가 건 무기한 정지다
@@ -123,6 +133,11 @@ export interface PostSummary {
   categoryName: string;
   title: string;
   author: string;
+  // 작성자의 활동 레벨. 닉네임 옆 레벨 뱃지 표시용.
+  // ⚠️ 익명 글이면 백엔드가 null로 내려준다 — 익명 글에 레벨이 붙으면 같은 글타래에서
+  //    작성자를 좁힐 수 있는 식별 단서가 되어 익명성이 깨지기 때문(adminAuthor와 동일 규칙).
+  //    탈퇴 회원도 null이다. 0은 유효한 값(=Lv.0)이므로 falsy 체크가 아니라 null 체크로 판별할 것.
+  authorLevel: number | null;
   // 작성자가 운영진(ADMIN)인지 — 닉네임 옆 "운영진" 뱃지 표시용.
   // 백엔드는 익명 글이면 false로 내려준다(운영진이 익명으로 써도 신원 노출 방지).
   adminAuthor: boolean;
@@ -223,6 +238,9 @@ export interface CommentPage {
 export interface Comment {
   id: number;
   author: string;
+  // 작성자의 활동 레벨. PostSummary.authorLevel과 동일 규칙이며,
+  // 삭제된 댓글도 null이다(백엔드가 작성자 자체를 "(삭제됨)"으로 감추므로).
+  authorLevel: number | null;
   // 작성자가 운영진(ADMIN)인지. 백엔드는 삭제·익명 댓글이면 false로 내려준다.
   adminAuthor: boolean;
   // 작성자가 최고 관리자(ROOT)인지 — "운영자"(보라) 뱃지 표시용. adminAuthor와 상호배타.
@@ -498,7 +516,10 @@ export interface SlotPlayResult {
 //  POINT_WON: 룰렛(베팅) 대결에서 승리해 포인트를 얻음. POINT_STOLEN과 postId/amount 규칙은 동일.
 //  POST_REWARD: 게시글 작성으로 포인트를 받음. postId/postTitle은 채워지고, sender는 시스템 지급이라 항상 null.
 //  COMMENT_REWARD: 댓글 작성으로 포인트를 받음. postId/commentId 둘 다 채워지고, sender는 항상 null.
-export type NotificationType = 'COMMENT' | 'REPLY' | 'LIKE' | 'CONTENT_REMOVED' | 'POINT_STOLEN' | 'POINT_WON' | 'POST_REWARD' | 'COMMENT_REWARD';
+//  LEVEL_UP: 활동 경험치가 쌓여 레벨이 올랐음. 시스템 알림이라 sender가 항상 null이고,
+//    postId/commentId도 항상 null이다(DB 제약 ck_notifications_post_id_by_type로 보장).
+//    ⚠️ amount에 "도달한 레벨"이 담겨 온다 — 포인트 알림의 amount(포인트 액수)와 의미가 다르다.
+export type NotificationType = 'COMMENT' | 'REPLY' | 'LIKE' | 'CONTENT_REMOVED' | 'POINT_STOLEN' | 'POINT_WON' | 'POST_REWARD' | 'COMMENT_REWARD' | 'LEVEL_UP';
 
 // 알림 (백엔드 NotificationResponse record와 1:1)
 // ⚠️ 키 이름 주의: 백엔드 record의 boolean 컴포넌트는 "선언명 그대로" 직렬화된다.
@@ -519,7 +540,11 @@ export interface Notification {
   commentContent: string | null;
   isRead: boolean;
   createdAt: string;
-  amount: number | null;      // POINT_STOLEN/POINT_WON 전용, 오간 포인트 액수. 그 외 타입은 null.
+  // 타입별로 의미가 다르다(백엔드 NotificationResponse.amount 주석과 동일):
+  //  POINT_STOLEN/POINT_WON/POST_REWARD/COMMENT_REWARD → 오간 포인트 액수
+  //  LEVEL_UP                                          → 도달한 레벨
+  //  그 외 타입                                         → null
+  amount: number | null;
 }
 
 // 본인의 정지 현황 (백엔드 SuspensionStatusResponse와 1:1, GET /api/users/me/suspension).

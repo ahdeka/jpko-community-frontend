@@ -14,6 +14,9 @@ import MyRankingTab from '@/components/mypage/MyRankingTab'
 import ProfileSettings from '@/components/mypage/ProfileSettings'
 import EmailVerificationBanner from '@/components/mypage/EmailVerificationBanner'
 import PointInfoPopover from '@/components/common/PointInfoPopover'
+import LevelBadge from '@/components/common/LevelBadge'
+import { levelTier, levelProgressPercent, expToNextLevel } from '@/lib/level'
+import type { UserLevelInfo } from '@/types'
 import { MESSAGES } from '@/lib/messages'
 
 type Tab = 'posts' | 'comments' | 'points' | 'ranking' | 'reports' | 'profile'
@@ -35,6 +38,67 @@ function StatCard({ label, value, accent }: { label: string; value: number | nul
         {value === null ? '—' : value.toLocaleString()}
       </p>
     </div>
+  )
+}
+
+// 레벨 · 경험치 카드.
+//
+// /api/auth/me(UserInfoResponse.level)가 level/totalExp/expIntoLevel/expPerLevel을 한 번에
+// 내려주므로 추가 API 호출 없이 그린다(글/댓글/포인트 통계와 달리 useEffect 패칭이 없다).
+// 진행바가 있어 가로 폭이 필요하므로 통계 카드 그리드에 끼우지 않고 별도 섹션으로 둔다.
+//
+// 색(구간별 강조색·진행바)은 전부 lib/level.ts가 정하며, 목록의 레벨 뱃지와 같은 출처를 쓰기
+// 때문에 "뱃지는 초록인데 마이페이지 바는 파랑"처럼 어긋날 일이 없다.
+function LevelCard({ info }: { info: UserLevelInfo }) {
+  const tier = levelTier(info.level)
+  const percent = levelProgressPercent(info)
+  const remaining = expToNextLevel(info)
+
+  return (
+    <section className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-800/50">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-baseline gap-2">
+          <p className="shrink-0 text-xs text-neutral-500 dark:text-neutral-400">
+            {MESSAGES.level.card.title}
+          </p>
+          <span className={`text-2xl font-bold tabular-nums ${tier.text}`}>Lv.{info.level}</span>
+          <span className="truncate text-xs text-neutral-400 dark:text-neutral-500">{tier.label}</span>
+        </div>
+        <p className="shrink-0 text-[11px] tabular-nums text-neutral-400 dark:text-neutral-500">
+          {MESSAGES.level.card.totalExp(info.totalExp.toLocaleString())}
+        </p>
+      </div>
+
+      {/*
+        진행바. width를 인라인 style로 주는 이유는 퍼센트가 런타임 값이라
+        Tailwind가 빌드 시점에 클래스를 생성할 수 없기 때문이다(w-[37%] 같은 동적 클래스는 안 만들어짐).
+        스크린리더에는 role="progressbar" + aria-value*로 같은 정보를 전달한다.
+      */}
+      <div
+        role="progressbar"
+        aria-valuenow={Math.round(percent)}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={MESSAGES.level.card.title}
+        className="mt-3 h-2 w-full overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-700"
+      >
+        <div className={`h-full rounded-full ${tier.bar}`} style={{ width: `${percent}%` }} />
+      </div>
+
+      <div className="mt-1.5 flex items-center justify-between gap-2 text-[11px] tabular-nums text-neutral-500 dark:text-neutral-400">
+        <span>
+          {MESSAGES.level.card.progress(
+            info.expIntoLevel.toLocaleString(),
+            info.expPerLevel.toLocaleString(),
+          )}
+        </span>
+        <span>{MESSAGES.level.card.toNext(remaining.toLocaleString())}</span>
+      </div>
+
+      <p className="mt-2 text-[11px] leading-snug text-neutral-400 dark:text-neutral-500">
+        {MESSAGES.level.card.howTo}
+      </p>
+    </section>
   )
 }
 
@@ -105,6 +169,9 @@ export default function MyPageContent() {
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <h1 className="truncate text-lg font-bold">{user.nickname}</h1>
+              {/* 목록·프로필과 동일한 레벨 뱃지를 여기에도 붙여, 내 레벨이 남에게 어떻게
+                  보이는지 그대로 확인할 수 있게 한다. (level 자체가 없으면 아래 카드와 함께 사라짐) */}
+              {user.level && <LevelBadge level={user.level.level} />}
               {isAdmin && (
                 <span className="shrink-0 rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-bold text-orange-600 dark:bg-orange-500/20 dark:text-orange-400">
                   관리자
@@ -141,6 +208,14 @@ export default function MyPageContent() {
 
       {/* 이메일 미인증 경고 (인증 완료 시 자동으로 숨겨짐) */}
       <EmailVerificationBanner />
+
+      {/*
+        레벨 · 경험치.
+        ⚠️ user.level이 없을 수 있다 — 프론트(Vercel)가 백엔드(EC2)보다 먼저 배포되면
+           /api/auth/me 응답에 level 필드가 통째로 없다. 그 경우 이 카드만 조용히 빠지고
+           마이페이지의 나머지(통계·탭)는 정상 동작한다.
+      */}
+      {user.level && <LevelCard info={user.level} />}
 
       {/* 통계 카드 */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
