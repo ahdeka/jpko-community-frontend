@@ -69,9 +69,12 @@ export default function PublicProfile({ profile, postsPage, currentPage, nicknam
             <h1 className="truncate text-lg font-bold text-neutral-900 dark:text-neutral-100">
               {profile.nickname}
             </h1>
-            {/* 활동 레벨. 공개 프로필은 익명이 아닌 실명 프로필이라 항상 노출한다
-                (PublicProfile.level은 nullable이 아니며, Lv.0도 그대로 보여준다). */}
-            <LevelBadge level={profile.level} />
+            {/* 활동 레벨. 공개 프로필은 익명이 아닌 실명 프로필이라 값이 항상 있고(nullable 아님),
+                Lv.0도 그대로 보여준다 — 그래서 falsy 체크가 아니라 역할 조건만으로 가른다.
+                ⚠️ 운영진(ADMIN)·운영자(ROOT)에게는 표시하지 않는다: 레벨은 활동량 축이라
+                   권한 축인 운영진 뱃지 옆에 붙으면 권한 표시를 희석시킨다(AuthorName과 같은 정책).
+                   단 마이페이지의 내 레벨 카드는 남에게 보이지 않는 화면이라 그대로 둔다. */}
+            {!profile.rootAuthor && !profile.adminAuthor && <LevelBadge level={profile.level} />}
             {/* ROOT를 우선한다: 백엔드는 상호배타로 내려주지만 뱃지는 한 개만 노출. */}
             {profile.rootAuthor ? <RootBadge /> : profile.adminAuthor && <AdminBadge />}
             {profile.suspended && (

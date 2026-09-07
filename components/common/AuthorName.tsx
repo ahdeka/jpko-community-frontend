@@ -15,6 +15,13 @@ import LevelBadge from './LevelBadge'
 //    백엔드는 익명 글/댓글·탈퇴 회원·삭제된 댓글이면 authorLevel을 null로 내려주므로,
 //    호출부는 그 값을 그대로 넘기기만 하면 마스킹이 자동으로 지켜진다.
 //
+// ⚠️ 단, 운영진(ADMIN)·운영자(ROOT)에게는 레벨 뱃지를 그리지 않는다. 레벨은 '활동량' 축이고
+//    운영진/운영자 뱃지는 '권한' 축이라, 둘을 나란히 붙이면 권한 표시가 활동량에 희석된다
+//    (레벨이 낮은 운영진이 만만해 보이는 식). 운영진 뱃지 하나만 남기는 편이 신뢰 표시로 명확하다.
+//    이 판정은 호출부가 아니라 여기서 일괄로 한다 — 표시 지점마다 조건을 흩뿌리면 새 호출부가
+//    생겼을 때 빠뜨리기 쉽고, 게시글·댓글이 모두 이 컴포넌트를 거치므로 한 곳이면 충분하다.
+//    (레벨 값 자체는 API 응답에 그대로 실려 온다. 이건 '표시'를 가리는 것이지 '비공개'가 아니다.)
+//
 // nickname을 넘기면 이름을 공개 프로필(/users/{nickname})로 가는 링크로 감싼다.
 // ⚠️ 호출부는 "링크를 걸어도 되는 경우"에만 nickname을 넘겨야 한다:
 //    - 익명 글/댓글: author가 "ㅇㅇ(마스킹IP)"라 실제 닉네임이 아님 → 넘기지 말 것.
@@ -60,6 +67,12 @@ export default function AuthorName({
     )
   }
 
+  // 운영진/운영자는 레벨 뱃지를 그리지 않는다(위 주석의 정책). 결과적으로 한 줄에는
+  // '레벨 뱃지'와 '역할 뱃지' 중 최대 하나만 붙는다.
+  // isAdmin/isRoot는 optional이라 안 넘어오면 undefined → falsy → 레벨이 그대로 보인다
+  // (공지처럼 애초에 level을 안 넘기는 호출부에는 영향이 없다).
+  const showLevel = level != null && !isRoot && !isAdmin
+
   // 뱃지 순서: [레벨][운영진/운영자][닉네임].
   // 폭이 고정된 좁은 숫자 칩을 맨 왼쪽에 둬야 여러 줄이 쌓였을 때 세로로 정렬돼 보이고,
   // 텍스트가 있어 폭이 들쭉날쭉한 역할 뱃지는 그 뒤로 밀어 닉네임과 붙여 둔다.
@@ -67,7 +80,7 @@ export default function AuthorName({
   // ROOT를 우선한다: 백엔드는 상호배타로 내려주지만, 혹시 둘 다 true여도 뱃지는 하나만.
   const body = (
     <>
-      {level != null && <LevelBadge level={level} className="mr-1 align-middle" />}
+      {showLevel && <LevelBadge level={level} className="mr-1 align-middle" />}
       {isRoot ? (
         <RootBadge className="mr-1 align-middle" />
       ) : (
