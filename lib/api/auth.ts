@@ -43,8 +43,8 @@ export const authApi = {
 
   // ===== 로그인 =====
 
-  // 로그인 식별자는 아이디 또는 이메일 둘 다 허용한다(백엔드가 loginId → email 순으로 조회).
-  // 응답 body에는 출첵 결과(checkIn)와 계정 전환 필요 여부(needsOnboarding)가 함께 담겨 온다.
+  // 로그인 식별자는 아이디(loginId)뿐이다 — 이메일 로그인은 백엔드에서 제거됐다.
+  // 응답 body에는 출첵 결과(checkIn)가 담겨 온다.
   // 실제 인증 상태는 이 body가 아니라 /api/auth/me(fetchUser)로 확정한다.
   //
   // turnstileToken: Cloudflare Turnstile 1회용 토큰. 백엔드 LoginRequest의 @NotBlank를 미러링한다.
@@ -67,53 +67,29 @@ export const authApi = {
   refresh: () =>
     apiClient.post<void>('/api/auth/refresh'),
 
-  // ===== 기존 유저 온보딩(마이그레이션) =====
-  // 흐름: (미인증 유저) 새 이메일 등록·인증 → (인증 완료 후) 아이디·비밀번호 설정.
-  // ⚠️ 마이그레이션이 끝나면 백엔드와 함께 정리될 API.
+  // ===== 이메일 변경 =====
+  // 이메일 인증(가입 후 재인증)·온보딩 API는 백엔드에서 제거됐고, 이메일 변경만 남았다.
+  // 새 이메일로 인증 메일을 보내고, 그 메일의 링크(/verify-email-change?token=)가 교체를 확정한다.
+  // ⚠️ 현재 프론트에는 requestEmailChange를 부르는 화면이 없다(온보딩 화면과 함께 제거됨).
+  //    마이페이지에 이메일 변경 UI를 붙이면 그때 이 API가 다시 쓰인다.
 
-  // 온보딩 1단계(이메일 미인증 유저). 인증받을 새 이메일을 등록하고 인증 메일을 요청한다.
-  // 백엔드가 그 이메일을 토큰에 보관했다가, 링크 확인 시점에 계정 이메일로 교체 + 인증 처리한다.
-  // 실패 code: ALREADY_VERIFIED_EMAIL(409), DUPLICATE_EMAIL(409), INVALID_EMAIL_DOMAIN(400).
+  // 바꿀 이메일을 등록하고 인증 메일을 요청한다.
+  // 백엔드가 그 이메일을 토큰에 보관했다가, 링크 확인 시점에 계정 이메일로 교체한다.
+  // 실패 code: ALREADY_VERIFIED_EMAIL(409 - 지금 쓰는 이메일과 동일), DUPLICATE_EMAIL(409),
+  //           INVALID_EMAIL_DOMAIN(400 - MX 레코드 없음).
   requestEmailChange: (email: string) =>
     apiClient.patch<void>('/api/auth/email', { email }),
 
   // 이메일 변경(EMAIL_CHANGE) 링크(/verify-email-change?token=)가 여는 페이지가 호출한다.
-  // 성공하면 그 이메일이 계정 이메일로 등록되고 emailVerified=true가 된다.
+  // 성공하면 그 이메일이 계정 이메일로 교체된다.
   // 실패 code: INVALID_VERIFICATION_TOKEN, EXPIRED_VERIFICATION_TOKEN, DUPLICATE_EMAIL.
   confirmEmailChange: (token: string) =>
     apiClient.post<void>(`/api/auth/email/confirm?token=${encodeURIComponent(token)}`),
 
-  // 온보딩 2단계(이메일 인증 완료 유저). 아이디·비밀번호를 설정해 계정 전환을 마친다.
-  // 성공하면 isFullyOnboarded=true가 되어 needsOnboarding이 해제된다.
-  // 실패 code: EMAIL_VERIFICATION_REQUIRED(403 - 인증 먼저), ALREADY_ASSIGN_LOGIN_ID(409),
-  //           DUPLICATE_LOGIN_ID(409), PASSWORD_MISMATCH(400).
-  completeOnboarding: (body: {
-    loginId: string
-    password: string
-    passwordConfirm: string
-  }) => apiClient.patch<void>('/api/auth/complete-onboarding', body),
-
-  // ===== 이메일 인증 (기존 계정의 현재 이메일 재인증용) =====
-
-  // 로그인한 사용자가 자기 계정으로 인증 메일 발송을 요청한다(body 없음, 쿠키로 사용자 식별).
-  // 실패 code: ALREADY_VERIFIED_EMAIL(409), INVALID_EMAIL_DOMAIN(400 - MX 레코드 없음).
-  requestEmailVerification: () =>
-    apiClient.post<void>('/api/auth/email-verification/request'),
-
-  // 비로그인 상태에서 이메일로 인증 메일 재발송을 요청한다.
-  // 계정 열거(enumeration) 방지를 위해 가입/인증 여부와 무관하게 항상 200을 준다.
-  resendEmailVerification: (email: string) =>
-    apiClient.post<void>('/api/auth/email-verification/resend', { email }),
-
-  // 메일 링크가 여는 /verify-email 페이지가 호출한다. 토큰은 query string으로 전달.
-  // 실패 code: INVALID_VERIFICATION_TOKEN, EXPIRED_VERIFICATION_TOKEN.
-  confirmEmailVerification: (token: string) =>
-    apiClient.post<void>(`/api/auth/email-verification/confirm?token=${encodeURIComponent(token)}`),
-
   // ===== 비밀번호 재설정 =====
 
   // 이메일로 재설정 링크 발송을 요청한다.
-  // 계정 열거 방지를 위해 가입/인증 여부와 무관하게 항상 200을 준다(프론트는 성공/실패를 구분할 수 없음).
+  // 계정 열거 방지를 위해 가입 여부와 무관하게 항상 200을 준다(프론트는 성공/실패를 구분할 수 없음).
   requestPasswordReset: (email: string) =>
     apiClient.post<void>('/api/auth/password-reset/request', { email }),
 

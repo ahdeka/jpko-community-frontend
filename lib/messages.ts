@@ -80,36 +80,6 @@ export const MESSAGES = {
       duplicateNickname: '이미 사용 중인 닉네임입니다.',
       genericError: '회원가입 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
     },
-    // 기존 유저 온보딩(마이그레이션) 화면 전용 문구.
-    onboarding: {
-      // 안내(상단 설명).
-      introTitle: '계정 전환이 필요합니다',
-      introEmailStep: '더 안전한 로그인을 위해, 인증받을 이메일을 먼저 등록해주세요.',
-      introLoginIdStep: '이제 로그인에 사용할 아이디와 비밀번호를 설정해주세요.',
-      // 이메일 단계.
-      emailRequired: '이메일을 입력해주세요.',
-      emailInvalid: '이메일 형식이 올바르지 않습니다.',
-      duplicateEmail: '이미 다른 계정에서 사용 중인 이메일입니다. 다른 이메일을 입력해주세요.',
-      invalidDomain: '메일을 받을 수 없는 이메일 주소입니다. 이메일을 다시 확인해주세요.',
-      emailSentTitle: '인증 메일을 보냈어요',
-      emailSentPrefix: '',
-      emailSentSuffix: ' 으로 인증 메일을 보냈습니다. 메일함(스팸함 포함)의 링크를 눌러 인증을 완료해주세요.',
-      emailSentContinue: '인증을 완료한 뒤, 아래 버튼을 눌러 계속 진행해주세요.',
-      refreshAfterVerify: '인증을 완료했어요',
-      stillNotVerified: '아직 인증이 확인되지 않았습니다. 메일의 링크를 눌러 인증을 완료한 뒤 다시 시도해주세요.',
-      emailGenericError: '인증 메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.',
-      // 아이디·비밀번호 단계.
-      loginIdRequired: '아이디를 입력해주세요.',
-      loginIdPattern: '아이디는 영문 소문자·숫자·언더바(_) 4~20자만 사용할 수 있습니다.',
-      duplicateLoginId: '이미 사용 중인 아이디입니다.',
-      passwordRequired: '비밀번호를 입력해주세요.',
-      passwordTooShort: '비밀번호는 8자 이상이어야 합니다.',
-      passwordConfirmRequired: '비밀번호 확인을 입력해주세요.',
-      passwordMismatch: '비밀번호와 비밀번호 확인이 일치하지 않습니다.',
-      passwordMatched: '비밀번호가 일치합니다.',
-      emailVerificationRequired: '이메일 인증을 먼저 완료해주세요.',
-      genericError: '계정 전환에 실패했습니다. 잠시 후 다시 시도해주세요.',
-    },
     // 이메일 변경(EMAIL_CHANGE) 링크 확인 결과 화면(/verify-email-change).
     emailChange: {
       missingToken: '유효하지 않은 인증 링크입니다. 메일의 링크를 다시 확인해주세요.',
@@ -117,10 +87,10 @@ export const MESSAGES = {
       successTitle: '이메일 인증 완료',
       successDescription: '이메일 인증이 정상적으로 완료되었습니다.',
       failTitle: '인증에 실패했습니다',
-      expiredToken: '인증 링크가 만료되었습니다. 계정 전환 화면에서 인증 메일을 다시 받아주세요.',
-      invalidToken: '유효하지 않거나 이미 사용된 인증 링크입니다. 계정 전환 화면에서 인증 메일을 다시 받아주세요.',
+      expiredToken: '인증 링크가 만료되었습니다. 이메일 변경을 다시 요청해주세요.',
+      invalidToken: '유효하지 않거나 이미 사용된 인증 링크입니다. 이메일 변경을 다시 요청해주세요.',
       duplicateEmail: '이미 다른 계정에서 사용 중인 이메일입니다. 다른 이메일로 다시 시도해주세요.',
-      continueOnboarding: '계정 전환 계속하기',
+      goHome: '홈으로 가기',
     },
     forgotPassword: {
       emailRequired: '이메일을 입력해주세요.',
@@ -130,9 +100,6 @@ export const MESSAGES = {
       sentInstructionEmphasis: '비밀번호 재설정 링크',
       sentInstructionSuffix: '를 눌러주세요.',
       spamHint: '메일이 보이지 않으면 스팸함도 확인해주세요.',
-      unverifiedHelp:
-        '이메일 인증이 완료되지 않은 계정에는 재설정 메일이 발송되지 않습니다. 아래에서 인증 메일을 먼저 받아 인증을 완료한 뒤 다시 시도해주세요.',
-      verifyResent: '인증 메일을 보냈습니다(가입·미인증 계정인 경우). 인증 완료 후 다시 시도해주세요.',
     },
     resetPassword: {
       genericError: '비밀번호 재설정에 실패했습니다. 잠시 후 다시 시도해주세요.',
@@ -144,16 +111,6 @@ export const MESSAGES = {
       missingTokenDescription: '재설정 링크가 올바르지 않습니다. 비밀번호 찾기를 다시 진행해주세요.',
       doneTitle: '비밀번호 변경 완료',
       doneDescription: '새 비밀번호로 변경되었습니다. 보안을 위해 다른 기기의 로그인은 모두 해제되었습니다.',
-    },
-    verifyEmail: {
-      missingToken: '유효하지 않은 인증 링크입니다. 메일의 링크를 다시 확인해주세요.',
-      expiredToken: '인증 링크가 만료되었습니다. 아래에서 인증 메일을 다시 받아주세요.',
-      invalidToken: '유효하지 않거나 이미 사용된 인증 링크입니다. 아래에서 인증 메일을 다시 받아주세요.',
-      verifying: '이메일 인증을 확인하고 있습니다…',
-      successTitle: '이메일 인증 완료',
-      successDescription: '이메일 인증이 정상적으로 완료되었습니다.',
-      failTitle: '인증에 실패했습니다',
-      resendSent: '입력하신 이메일이 가입되어 있고 미인증 상태라면, 인증 메일을 보내드렸습니다. 메일함을 확인해주세요.',
     },
     suspendedAccount: {
       title: '이용이 제한된 계정입니다',
@@ -176,13 +133,6 @@ export const MESSAGES = {
 
   mypage: {
     loginGateSuffix: '후 마이페이지를 이용할 수 있습니다.',
-    emailVerification: {
-      bannerTitle: '이메일 인증이 필요합니다',
-      invalidDomain: '메일을 받을 수 없는 이메일 주소입니다. 이메일을 다시 확인해주세요.',
-      sendFailed: '인증 메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.',
-      sentAfterEmail: '으로 인증 메일을 보냈습니다. 메일함(스팸함 포함)의 링크를 눌러 인증을 완료해주세요.',
-      notVerifiedInfo: '모든 기능은 이용할 수 있지만, 비밀번호 찾기 등 계정 보호를 위해 이메일 인증을 권장합니다.',
-    },
     profileSettings: {
       bioTooLong: (max: number) => `자기소개는 ${max}자 이하여야 합니다.`,
       bioSaved: '자기소개가 저장되었습니다.',
@@ -302,7 +252,6 @@ export const MESSAGES = {
       betRange: (min: string, max: string) => `${min}P ~ ${max}P 사이로 베팅하셈`,
       betUnitMismatch: (unit: string) => `${unit}P 단위로만 베팅하셈`,
       spinFailed: 'ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ룰렛! 실패!',
-      emailNotVerified: '이메일 인증부터 하고 오셈',
       win: (nickname: string, amount: string) => `${nickname}한테서 ${amount}P 털음 ㅊㅋㅊㅋ`,
       lose: (nickname: string, amount: string) => `ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ${nickname}한테 ${amount}P 털렸누...  ㅠ`,
       randomOpponentHint: '다음 스핀은 랜덤 상대하고 ㄱㄱ',
@@ -319,7 +268,6 @@ export const MESSAGES = {
       ballCountRequired: '구슬 몇 개 쏠지 정해',
       ballCountRange: (min: string, max: string) => `구슬은 ${min}개 ~ ${max}개 사이로만 쏠 수 있음`,
       playFailed: 'ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ구슬! 실패!',
-      emailNotVerified: '이메일 인증부터 하고 오셈',
       win: (amount: string) => `대박! ${amount}P 벌음 ㅊㅋㅊㅋ`,
       lose: (amount: string) => `ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ${amount}P 날림... ㅠ`,
     },
@@ -328,7 +276,6 @@ export const MESSAGES = {
       betRange: (min: string, max: string) => `${min}P ~ ${max}P 사이로 베팅하셈`,
       betUnitMismatch: (unit: string) => `${unit}P 단위로만 베팅하셈`,
       playFailed: 'ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ릴! 실패!',
-      emailNotVerified: '이메일 인증부터 하고 오셈',
       win: (amount: string) => `트리플 매치! ${amount}P 벌음 ㅊㅋㅊㅋ`,
       lose: (amount: string) => `ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ${amount}P 날림... ㅠ`,
     },

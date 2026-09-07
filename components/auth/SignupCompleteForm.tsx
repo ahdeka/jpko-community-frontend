@@ -165,8 +165,7 @@ export default function SignupCompleteForm({ token }: { token: string }) {
       setRedirecting(true)
       await fetchUser()
       if (res.data?.checkIn) notifyCheckInResult(res.data.checkIn)
-      // 정상 가입이면 needsOnboarding=false지만, 방어적으로 값을 따른다.
-      router.replace(res.data?.needsOnboarding ? '/onboarding' : '/')
+      router.replace('/')
     } catch (err) {
       setLoading(false)
       if (err instanceof ApiError) {

@@ -32,7 +32,7 @@ export const ACCOUNT_SUSPENDED_EVENT = 'auth:account-suspended'
 // 이 엔드포인트들의 401은 "액세스 토큰 만료"가 아니라 그 자체가 정상적인 인증 응답이므로
 // 재발급 재시도 대상에서 제외한다.
 //  - refresh: 여기서 재발급을 다시 부르면 무한 재귀가 된다(엣지케이스 ①).
-//  - login/logout/signup/email-verification/password-reset: 비밀번호 오류·비로그인 등이라 재발급이 무의미.
+//  - login/logout/signup/password-reset: 비밀번호 오류·비로그인 등이라 재발급이 무의미.
 // 반면 /api/auth/me는 "세션 유지"의 핵심이라 재시도 대상으로 남긴다(그래서 명시적으로 제외).
 function isAuthFlow(endpoint: string): boolean {
   return endpoint.startsWith('/api/auth/') && !endpoint.startsWith('/api/auth/me')

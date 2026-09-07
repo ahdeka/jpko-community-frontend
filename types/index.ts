@@ -48,9 +48,6 @@ export interface User {
   email: string;
   nickname: string;
   role: UserRole;
-  // 이메일 인증 여부. 미인증이어도 모든 기능은 이용 가능하며, 마이페이지에서 인증을 "권장"만 한다.
-  // 백엔드 /api/auth/me(UserInfoResponse)가 내려주는 값.
-  emailVerified: boolean;
   // 내 레벨/경험치. 백엔드 /api/auth/me(UserInfoResponse.level)가 내려주며,
   // 마이페이지 레벨 카드가 이 값만으로 진행바까지 그린다(추가 API 호출 없음).
   // ⚠️ optional인 이유: 프론트(Vercel)가 백엔드(EC2)보다 먼저 배포되면 이 필드가 통째로 없다.
@@ -60,11 +57,6 @@ export interface User {
   // 자기소개(최대 200자). 백엔드 /api/auth/me(UserInfoResponse)가 내려주며, 없으면 null.
   // 마이페이지 자기소개 편집의 현재 값으로 쓴다.
   bio: string | null;
-  // 계정 전환(온보딩)이 아직 필요한지. 백엔드 isFullyOnboarded()의 반대값으로,
-  // loginId가 아직 없거나(마이그레이션 대상) 이메일 미인증이면 true.
-  // true인 유저는 전역 가드(AuthProvider)가 /onboarding으로 강제 이동시킨다.
-  // ⚠️ 마이그레이션이 끝나면 백엔드와 함께 정리될 필드.
-  needsOnboarding: boolean;
 }
 
 // 로그인/회원가입 응답 (백엔드 LoginResponse와 1:1)
@@ -73,9 +65,6 @@ export interface LoginResponse {
   nickname: string;
   role: UserRole;
   checkIn: CheckInInfo;
-  // 로그인(또는 회원가입 완료 직후 자동 로그인) 시점에 계정 전환이 아직 필요한지.
-  // true면 로그인 폼이 홈 대신 /onboarding으로 보낸다. (User.needsOnboarding과 동일 규칙)
-  needsOnboarding: boolean;
 }
 
 // 공개 프로필 (백엔드 PublicProfileResponse와 1:1)
@@ -112,7 +101,6 @@ export interface AdminUser {
   nickname: string;
   role: UserRole;
   status: UserStatus;
-  emailVerified: boolean;
   createdAt: string;
   // 정지 중일 때의 해제 예정 시각. null이면 정지가 아니거나 ROOT가 건 무기한 정지다
   // (구분은 status로 한다).

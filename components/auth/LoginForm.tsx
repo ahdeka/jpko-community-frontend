@@ -12,7 +12,7 @@ import RedirectingOverlay from './RedirectingOverlay'
 import Turnstile, { type TurnstileHandle } from './Turnstile'
 
 interface FieldErrors {
-  // 로그인 식별자(아이디 또는 이메일) 입력 칸의 에러.
+  // 아이디 입력 칸의 에러.
   loginId?: string
   password?: string
   // 위젯이 아직 토큰을 내주지 않았거나(로딩 중) 챌린지가 끝나지 않은 상태로 제출한 경우.
@@ -27,7 +27,7 @@ export default function LoginForm() {
   const { fetchUser, notifyCheckInResult } = useAuth()
   // 이미 로그인한 사용자는 홈으로 돌려보낸다(뒤로가기·주소창 직접 진입 차단)
   const { blocked } = useRedirectIfAuthenticated()
-  // 아이디 또는 이메일 둘 다 받는 로그인 식별자.
+  // 로그인 아이디. 이메일 로그인은 백엔드에서 제거돼 더 이상 받지 않는다.
   const [loginId, setLoginId] = useState('')
   const [password, setPassword] = useState('')
   // Cloudflare Turnstile 통과 시 발급되는 1회용 토큰. 백엔드 LoginRequest의 @NotBlank를 미러링한다.
@@ -76,7 +76,7 @@ export default function LoginForm() {
 
     setLoading(true)
     try {
-      // 백엔드 LoginRequest가 loginId를 trim().toLowerCase()로 정규화하므로(아이디·이메일 공통),
+      // 백엔드 LoginRequest가 loginId를 trim().toLowerCase()로 정규화하므로,
       // 저장된 값과 확실히 매칭되도록 전송값도 동일하게 맞춘다(대소문자·공백 차이로 인한 실패 방지).
       // 정지(SUSPENDED)된 계정도 여기서 막히지 않는다 — 로그인은 되고, fetchUser() 이후 AuthProvider가
       // 전역 SuspendedScreen으로 전환한다(정지된 계정도 출첵은 처리되고, 그 화면에서 포인트로 즉시 해제할 수 있다).
@@ -87,10 +87,8 @@ export default function LoginForm() {
       })
       await fetchUser()
       if (res.data?.checkIn) notifyCheckInResult(res.data.checkIn)
-      // 아직 계정 전환(온보딩)이 필요한 기존 유저는 홈이 아니라 온보딩 화면으로 보낸다.
-      // (전역 가드도 동일하게 막지만, 여기서 곧바로 보내 깜빡임을 없앤다.)
       // replace로 이동해 히스토리에 로그인 페이지를 남기지 않는다.
-      router.replace(res.data?.needsOnboarding ? '/onboarding' : '/')
+      router.replace('/')
     } catch (e) {
       // ⚠️ 실패 원인과 무관하게 항상 위젯을 리셋한다.
       //    Turnstile 토큰은 1회용(siteverify 1회 호출로 소진)이고, 백엔드는 비밀번호 검증보다
@@ -136,7 +134,7 @@ export default function LoginForm() {
       <div>
         <input
           type="text"
-          placeholder="아이디 또는 이메일"
+          placeholder="아이디"
           value={loginId}
           onChange={e => setLoginId(e.target.value)}
           autoCapitalize="none"

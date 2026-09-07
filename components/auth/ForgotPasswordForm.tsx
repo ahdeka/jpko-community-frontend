@@ -17,15 +17,6 @@ export default function ForgotPasswordForm() {
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
 
-  // 재설정 메일이 안 오는 가장 흔한 원인은 "이메일 미인증"이다.
-  // 백엔드는 보안(계정 열거 방지)상 인증 여부를 알려주지 않으므로, 사용자가 직접
-  // 인증 메일을 받아 문제를 해결할 수 있도록 같은 이메일로 재발송 경로를 제공한다.
-  const [verifyLoading, setVerifyLoading] = useState(false)
-  const [verifySent, setVerifySent] = useState(false)
-  // 미인증 자가복구 안내는 기본으로 접어둔다. 대다수(이미 인증된 사용자)는
-  // 성공 안내만 보게 하고, "메일이 오지 않나요?"를 누른 소수에게만 인증 경로를 편다.
-  const [showHelp, setShowHelp] = useState(false)
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
@@ -45,22 +36,10 @@ export default function ForgotPasswordForm() {
       await authApi.requestPasswordReset(trimmed)
     } catch {
       // 계정 열거 방지 정책상 백엔드는 항상 성공을 주지만, 네트워크 오류 등으로 실패해도
-      // 존재 여부를 노출하지 않기 위해 동일한 안내 화면으로 넘어간다.
+      // 가입 여부를 노출하지 않기 위해 동일한 안내 화면으로 넘어간다.
     } finally {
       setSent(true)
       setLoading(false)
-    }
-  }
-
-  async function handleResendVerification() {
-    setVerifyLoading(true)
-    try {
-      await authApi.resendEmailVerification(email.trim())
-    } catch {
-      // 위와 동일하게 성공/실패를 구분하지 않는다.
-    } finally {
-      setVerifySent(true)
-      setVerifyLoading(false)
     }
   }
 
@@ -107,39 +86,6 @@ export default function ForgotPasswordForm() {
         <p className="text-center text-xs text-neutral-400 dark:text-neutral-500">
           {MESSAGES.auth.forgotPassword.spamHint}
         </p>
-
-        {/* 미인증 계정은 재설정 메일이 발송되지 않는다 → 자가 해결 경로.
-            기본은 접어두고, "메일이 오지 않나요?"를 누른 사용자에게만 펼쳐 보인다. */}
-        {showHelp ? (
-          <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 dark:border-amber-500/30 dark:bg-amber-500/10">
-            <p className="text-xs leading-relaxed text-amber-800 dark:text-amber-300">
-              {MESSAGES.auth.forgotPassword.unverifiedHelp}
-            </p>
-            {verifySent ? (
-              <p className="mt-2 text-xs font-medium text-amber-800 dark:text-amber-300">
-                {MESSAGES.auth.forgotPassword.verifyResent}
-              </p>
-            ) : (
-              <button
-                type="button"
-                onClick={handleResendVerification}
-                disabled={verifyLoading}
-                className="mt-2 rounded bg-amber-500 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {verifyLoading ? '전송 중…' : '인증 메일 받기'}
-              </button>
-            )}
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setShowHelp(true)}
-            aria-expanded={false}
-            className="text-center text-xs text-neutral-500 underline-offset-2 hover:underline dark:text-neutral-400"
-          >
-            메일이 오지 않나요?
-          </button>
-        )}
 
         <Link href="/login" className="text-center text-sm text-blue-600 hover:underline dark:text-blue-400">
           로그인으로 돌아가기

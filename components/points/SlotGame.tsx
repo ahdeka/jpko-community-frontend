@@ -3,9 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { pointsApi, notifyPointBalanceChanged } from '@/lib/api/points'
 import { slotApi } from '@/lib/api/slot'
-import { authApi } from '@/lib/api/auth'
 import { ApiError } from '@/lib/api/client'
-import { useAuth } from '@/lib/auth-context'
 import { MESSAGES } from '@/lib/messages'
 import type { SlotConfig, SlotPlayResult } from '@/types'
 
@@ -45,8 +43,6 @@ function buildReelStrip(finalSymbol: string, allSymbolNames: string[]): string[]
 
 // 슬롯머신(3릴, 트리플 매치만 당첨) 플레이 화면. 유저 대 시스템(하우스) 게임이라 룰렛과 달리 상대가 없다.
 export default function SlotGame() {
-  const { user, fetchUser } = useAuth()
-
   const [balance, setBalance] = useState<number | null>(null)
   const [config, setConfig] = useState<SlotConfig | null>(null)
 
@@ -54,10 +50,6 @@ export default function SlotGame() {
   const [playing, setPlaying] = useState(false)
   const [error, setError] = useState('')
   const [result, setResult] = useState<SlotPlayResult | null>(null)
-
-  const [emailGateHit, setEmailGateHit] = useState(false)
-  const [verifySending, setVerifySending] = useState(false)
-  const [verifySent, setVerifySent] = useState(false)
 
   // 릴 3개의 스트립(각 칸에 표시할 심볼 이름). 처음엔 빈 스트립(첫 심볼 하나만 정지 표시).
   const [reelStrips, setReelStrips] = useState<string[][]>([[], [], []])
@@ -107,36 +99,9 @@ export default function SlotGame() {
     setPlaying(false)
   }
 
-  async function handleSendVerification() {
-    setVerifySending(true)
-    try {
-      await authApi.requestEmailVerification()
-      setVerifySent(true)
-    } catch (e) {
-      if (e instanceof ApiError && e.code === 'ALREADY_VERIFIED_EMAIL') {
-        await fetchUser()
-        setError('')
-        setEmailGateHit(false)
-      } else if (e instanceof ApiError && e.code === 'INVALID_EMAIL_DOMAIN') {
-        setError(MESSAGES.mypage.emailVerification.invalidDomain)
-      } else {
-        setError(e instanceof ApiError ? e.message : MESSAGES.mypage.emailVerification.sendFailed)
-      }
-    } finally {
-      setVerifySending(false)
-    }
-  }
-
   async function handlePlay() {
     if (!config) return
     setError('')
-    setEmailGateHit(false)
-
-    if (!user?.emailVerified) {
-      setError(MESSAGES.points.slot.emailNotVerified)
-      setEmailGateHit(true)
-      return
-    }
 
     const amount = Number(betAmount)
     if (!Number.isFinite(amount) || amount <= 0) {
@@ -274,27 +239,7 @@ export default function SlotGame() {
             {config.maxBet.toLocaleString()}P · 수수료 {Math.round(config.feeRate * 100)}%
           </p>
         )}
-        {error && (
-          <div className="mt-2 text-center">
-            <p className="text-xs text-red-500">{error}</p>
-            {emailGateHit && (
-              verifySent ? (
-                <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                  <strong>{user?.email}</strong> {MESSAGES.mypage.emailVerification.sentAfterEmail}
-                </p>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleSendVerification}
-                  disabled={verifySending}
-                  className="mt-1 text-xs font-medium text-orange-600 underline underline-offset-2 hover:text-orange-700 disabled:opacity-50 dark:text-orange-400"
-                >
-                  {verifySending ? '전송 중…' : '인증 메일 보내기'}
-                </button>
-              )
-            )}
-          </div>
-        )}
+        {error && <p className="mt-2 text-center text-xs text-red-500">{error}</p>}
       </div>
 
       {/* 결과 */}

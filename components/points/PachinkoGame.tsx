@@ -3,9 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { pointsApi, notifyPointBalanceChanged } from '@/lib/api/points'
 import { pachinkoApi } from '@/lib/api/pachinko'
-import { authApi } from '@/lib/api/auth'
 import { ApiError } from '@/lib/api/client'
-import { useAuth } from '@/lib/auth-context'
 import { MESSAGES } from '@/lib/messages'
 import type { PachinkoConfig, PachinkoPlayResult } from '@/types'
 
@@ -57,8 +55,6 @@ function pegPositions(row: number, rows: number): number[] {
 // 시차를 두고) 쏴서 각자 독립적으로 못판을 통과해 슬롯에 착지한 결과를 합산해 보여준다.
 // 배당표(슬롯별 배율)는 백엔드가 의도적으로 노출하지만, 못의 좌/우 확률은 노출하지 않는다.
 export default function PachinkoGame() {
-  const { user, fetchUser } = useAuth()
-
   const [balance, setBalance] = useState<number | null>(null)
   const [config, setConfig] = useState<PachinkoConfig | null>(null)
 
@@ -69,11 +65,6 @@ export default function PachinkoGame() {
   // 애니메이션에 렌더링할 구슬 개수. 응답을 받기 전부터 보드에 구슬 div를 준비해둬야 하므로
   // result와 별도로 들고 있는다(플레이 시작 시 요청한 개수로 세팅, 다음 플레이 전까지 유지).
   const [ballsInFlight, setBallsInFlight] = useState(0)
-
-  // 이메일 미인증으로 플레이가 막힌 경우에만 에러 문구 아래 "인증 메일 보내기" 액션을 같이 보여준다.
-  const [emailGateHit, setEmailGateHit] = useState(false)
-  const [verifySending, setVerifySending] = useState(false)
-  const [verifySent, setVerifySent] = useState(false)
 
   const ballRefs = useRef<(HTMLDivElement | null)[]>([])
   // 서버 응답은 이미 받았지만, 구슬 낙하 애니메이션이 끝날 때까지 결과 공개를 미루기 위한 보관소.
@@ -121,36 +112,9 @@ export default function PachinkoGame() {
     setPlaying(false)
   }
 
-  async function handleSendVerification() {
-    setVerifySending(true)
-    try {
-      await authApi.requestEmailVerification()
-      setVerifySent(true)
-    } catch (e) {
-      if (e instanceof ApiError && e.code === 'ALREADY_VERIFIED_EMAIL') {
-        await fetchUser()
-        setError('')
-        setEmailGateHit(false)
-      } else if (e instanceof ApiError && e.code === 'INVALID_EMAIL_DOMAIN') {
-        setError(MESSAGES.mypage.emailVerification.invalidDomain)
-      } else {
-        setError(e instanceof ApiError ? e.message : MESSAGES.mypage.emailVerification.sendFailed)
-      }
-    } finally {
-      setVerifySending(false)
-    }
-  }
-
   async function handlePlay() {
     if (!config) return
     setError('')
-    setEmailGateHit(false)
-
-    if (!user?.emailVerified) {
-      setError(MESSAGES.points.pachinko.emailNotVerified)
-      setEmailGateHit(true)
-      return
-    }
 
     const ballCount = Number(ballCountInput)
     if (!Number.isInteger(ballCount) || ballCount <= 0) {
@@ -316,27 +280,7 @@ export default function PachinkoGame() {
             {config.maxBalls.toLocaleString()}개 · 수수료 {Math.round(config.feeRate * 100)}%
           </p>
         )}
-        {error && (
-          <div className="mt-2 text-center">
-            <p className="text-xs text-red-500">{error}</p>
-            {emailGateHit && (
-              verifySent ? (
-                <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                  <strong>{user?.email}</strong> {MESSAGES.mypage.emailVerification.sentAfterEmail}
-                </p>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleSendVerification}
-                  disabled={verifySending}
-                  className="mt-1 text-xs font-medium text-orange-600 underline underline-offset-2 hover:text-orange-700 disabled:opacity-50 dark:text-orange-400"
-                >
-                  {verifySending ? '전송 중…' : '인증 메일 보내기'}
-                </button>
-              )
-            )}
-          </div>
-        )}
+        {error && <p className="mt-2 text-center text-xs text-red-500">{error}</p>}
       </div>
 
       {/* 결과 */}

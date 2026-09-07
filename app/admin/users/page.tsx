@@ -179,17 +179,10 @@ export default function AdminUsersPage() {
 
                 return (
                   <tr key={user.id} className={isDeleted ? 'opacity-60' : undefined}>
-                    {/* 회원: 닉네임 + 이메일(+ 미인증 표시). 긴 값이 표를 밀지 않게 폭을 제한하고 말줄임 처리 */}
+                    {/* 회원: 닉네임 + 이메일. 긴 값이 표를 밀지 않게 폭을 제한하고 말줄임 처리 */}
                     <td className="max-w-[220px] px-3 py-2.5">
                       <div className="truncate font-medium leading-tight text-neutral-900 dark:text-neutral-100">{user.nickname}</div>
-                      <div className="mt-0.5 flex items-center gap-1.5 text-[11px] leading-tight text-neutral-400">
-                        <span className="truncate">{user.email}</span>
-                        {!user.emailVerified && !isDeleted && (
-                          <span className="shrink-0 rounded bg-neutral-100 px-1 py-0.5 text-[10px] text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
-                            미인증
-                          </span>
-                        )}
-                      </div>
+                      <div className="mt-0.5 truncate text-[11px] leading-tight text-neutral-400">{user.email}</div>
                     </td>
 
                     {/* 역할. ROOT는 violet 계열로 구분한다(RootBadge와 같은 색 계열) —

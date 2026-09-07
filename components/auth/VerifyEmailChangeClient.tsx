@@ -9,11 +9,11 @@ import { MESSAGES } from '@/lib/messages'
 
 type Status = 'verifying' | 'success' | 'error'
 
-// 이메일 변경/등록(EMAIL_CHANGE) 인증 링크(/verify-email-change?token=)가 여는 결과 화면.
-// 온보딩 1단계에서 등록한 이메일을 확정(계정 이메일 교체 + emailVerified=true)한다.
+// 이메일 변경(EMAIL_CHANGE) 인증 링크(/verify-email-change?token=)가 여는 결과 화면.
+// 메일로 받은 토큰으로 계정 이메일 교체를 확정한다.
 // 인증 자체는 토큰 기반이라 로그인 여부와 무관하게 동작한다.
 export default function VerifyEmailChangeClient({ token }: { token: string }) {
-  const { user, fetchUser } = useAuth()
+  const { fetchUser } = useAuth()
 
   const [status, setStatus] = useState<Status>(token ? 'verifying' : 'error')
   const [errorMsg, setErrorMsg] = useState(token ? '' : MESSAGES.auth.emailChange.missingToken)
@@ -29,7 +29,7 @@ export default function VerifyEmailChangeClient({ token }: { token: string }) {
       .confirmEmailChange(token)
       .then(async () => {
         setStatus('success')
-        // 같은 브라우저에서 로그인 상태라면 emailVerified를 즉시 갱신한다.
+        // 같은 브라우저에서 로그인 상태라면 바뀐 이메일을 즉시 반영한다.
         // 비로그인(401)이면 fetchUser 내부에서 조용히 무시된다.
         await fetchUser()
       })
@@ -59,9 +59,6 @@ export default function VerifyEmailChangeClient({ token }: { token: string }) {
   }
 
   if (status === 'success') {
-    // 인증만 끝났을 뿐 아직 계정 전환(아이디·비밀번호 설정)이 남아 있으므로 온보딩으로 이어준다.
-    // 이 브라우저에서 비로그인 상태라면 온보딩 진입 시 로그인이 필요하므로 로그인으로 보낸다.
-    const continueHref = user ? '/onboarding' : '/login'
     return (
       <div className="flex flex-col items-center gap-4 py-2 text-center">
         <CheckIcon />
@@ -72,10 +69,10 @@ export default function VerifyEmailChangeClient({ token }: { token: string }) {
           </p>
         </div>
         <Link
-          href={continueHref}
+          href="/"
           className="mt-1 w-full rounded bg-blue-600 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-700"
         >
-          {MESSAGES.auth.emailChange.continueOnboarding}
+          {MESSAGES.auth.emailChange.goHome}
         </Link>
       </div>
     )
@@ -90,10 +87,10 @@ export default function VerifyEmailChangeClient({ token }: { token: string }) {
         <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">{errorMsg}</p>
       </div>
       <Link
-        href={user ? '/onboarding' : '/login'}
+        href="/"
         className="w-full rounded bg-blue-600 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-700"
       >
-        {MESSAGES.auth.emailChange.continueOnboarding}
+        {MESSAGES.auth.emailChange.goHome}
       </Link>
     </div>
   )
