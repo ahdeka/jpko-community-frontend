@@ -267,12 +267,15 @@ export const MESSAGES = {
   },
 
   // 유저 레벨 — 레벨 뱃지 툴팁, 마이페이지 레벨 카드, 레벨업 알림 문구.
-  // 구간 이름("새내기"/"주민"/...)과 색은 문구가 아니라 표시 정책이라 lib/level.ts가 갖는다.
+  // ⚠️ 구간 명칭(새내기/주민/…)은 정책적으로 없앴다. 레벨은 숫자와 색으로만 표시하며,
+  //    색 정의는 문구가 아니라 표시 정책이라 lib/level.ts가 갖는다.
   level: {
-    // 뱃지 툴팁. 뱃지 자체는 숫자만 그리므로 여기서 "Lv." 접두와 구간 이름을 붙여준다.
-    badgeTitle: (level: number, tierLabel: string) => `Lv.${level} · ${tierLabel}`,
+    // 뱃지 툴팁. 뱃지 자체는 숫자만 그리므로 여기서 "Lv." 접두만 붙여준다.
+    badgeTitle: (level: number) => `Lv.${level}`,
     card: {
       title: '레벨',
+      // 카드 제목 옆 "Lv.12" 표기. 뱃지(숫자만)와 달리 여기는 폭이 넉넉해 접두를 붙인다.
+      levelLabel: (level: number) => `Lv.${level}`,
       // 진행바 아래 "320 / 500 EXP". 분모(expPerLevel)는 백엔드가 응답에 실어주는 값이라
       // 하드코딩이 아니다 — 백엔드 설정이 바뀌어도 자동으로 따라간다.
       progress: (into: string, per: string) => `${into} / ${per} EXP`,

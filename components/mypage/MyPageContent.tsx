@@ -15,7 +15,7 @@ import ProfileSettings from '@/components/mypage/ProfileSettings'
 import EmailVerificationBanner from '@/components/mypage/EmailVerificationBanner'
 import PointInfoPopover from '@/components/common/PointInfoPopover'
 import LevelBadge from '@/components/common/LevelBadge'
-import { levelTier, levelProgressPercent, expToNextLevel } from '@/lib/level'
+import { levelStyle, levelProgressPercent, expToNextLevel } from '@/lib/level'
 import type { UserLevelInfo } from '@/types'
 import { MESSAGES } from '@/lib/messages'
 
@@ -47,22 +47,30 @@ function StatCard({ label, value, accent }: { label: string; value: number | nul
 // 내려주므로 추가 API 호출 없이 그린다(글/댓글/포인트 통계와 달리 useEffect 패칭이 없다).
 // 진행바가 있어 가로 폭이 필요하므로 통계 카드 그리드에 끼우지 않고 별도 섹션으로 둔다.
 //
-// 색(구간별 강조색·진행바)은 전부 lib/level.ts가 정하며, 목록의 레벨 뱃지와 같은 출처를 쓰기
+// 색(레벨별 강조색·진행바)은 전부 lib/level.ts가 정하며, 목록의 레벨 뱃지와 같은 출처를 쓰기
 // 때문에 "뱃지는 초록인데 마이페이지 바는 파랑"처럼 어긋날 일이 없다.
 function LevelCard({ info }: { info: UserLevelInfo }) {
-  const tier = levelTier(info.level)
+  const style = levelStyle(info.level)
   const percent = levelProgressPercent(info)
   const remaining = expToNextLevel(info)
 
   return (
-    <section className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-800/50">
+    // 통계 카드(글/댓글/포인트)보다 시선 우선순위가 낮은 보조 정보라 한 단계 낮은 밀도로 짠다.
+    // 획득 방법 안내는 카드 본문에서 빼고 title(툴팁)로 옮겼다 — 두 줄짜리 설명이 카드 높이의
+    // 3분의 1을 먹고 있었고, 매번 읽을 내용은 아니기 때문이다.
+    <section
+      title={MESSAGES.level.card.howTo}
+      className="rounded-lg border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-800/50"
+    >
       <div className="flex items-center justify-between gap-3">
-        <div className="flex min-w-0 items-baseline gap-2">
+        {/* 구간 명칭은 없다 — 레벨은 숫자와 색으로만 표시한다(lib/level.ts). */}
+        <div className="flex min-w-0 items-baseline gap-1.5">
           <p className="shrink-0 text-xs text-neutral-500 dark:text-neutral-400">
             {MESSAGES.level.card.title}
           </p>
-          <span className={`text-2xl font-bold tabular-nums ${tier.text}`}>Lv.{info.level}</span>
-          <span className="truncate text-xs text-neutral-400 dark:text-neutral-500">{tier.label}</span>
+          <span className={`text-lg font-bold leading-none tabular-nums ${style.text}`}>
+            {MESSAGES.level.card.levelLabel(info.level)}
+          </span>
         </div>
         <p className="shrink-0 text-[11px] tabular-nums text-neutral-400 dark:text-neutral-500">
           {MESSAGES.level.card.totalExp(info.totalExp.toLocaleString())}
@@ -80,12 +88,12 @@ function LevelCard({ info }: { info: UserLevelInfo }) {
         aria-valuemin={0}
         aria-valuemax={100}
         aria-label={MESSAGES.level.card.title}
-        className="mt-3 h-2 w-full overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-700"
+        className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-700"
       >
-        <div className={`h-full rounded-full ${tier.bar}`} style={{ width: `${percent}%` }} />
+        <div className={`h-full rounded-full ${style.bar}`} style={{ width: `${percent}%` }} />
       </div>
 
-      <div className="mt-1.5 flex items-center justify-between gap-2 text-[11px] tabular-nums text-neutral-500 dark:text-neutral-400">
+      <div className="mt-1 flex items-center justify-between gap-2 text-[10px] tabular-nums text-neutral-500 dark:text-neutral-400">
         <span>
           {MESSAGES.level.card.progress(
             info.expIntoLevel.toLocaleString(),
@@ -94,10 +102,6 @@ function LevelCard({ info }: { info: UserLevelInfo }) {
         </span>
         <span>{MESSAGES.level.card.toNext(remaining.toLocaleString())}</span>
       </div>
-
-      <p className="mt-2 text-[11px] leading-snug text-neutral-400 dark:text-neutral-500">
-        {MESSAGES.level.card.howTo}
-      </p>
     </section>
   )
 }

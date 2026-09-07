@@ -29,6 +29,9 @@ import LevelBadge from './LevelBadge'
 //
 // 뱃지는 flex가 아니라 인라인 요소로 넣는다. 이렇게 해야 호출부가 className으로 주는
 // truncate / text-center / hidden md:block 등 텍스트 레이아웃이 그대로 유지된다.
+//
+// ⚠️ 닉네임 텍스트 자체는 레벨에 따라 달라지지 않는다 — 색도 굵기도 호출부가 준 값 그대로다.
+//    레벨 차이는 앞에 붙는 뱃지 하나가 전부 담당한다(lib/level.ts 주석 참고).
 export default function AuthorName({
   author,
   isAdmin,
