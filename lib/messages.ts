@@ -285,7 +285,10 @@ export const MESSAGES = {
       // 의도적으로 숫자 없이 서술한다. 백엔드가 상한/누적치를 응답에 실어주면 그때 수치를 노출한다.
       activityRewardDescription:
         '게시글이나 댓글을 쓰고, 내 글이 좋아요를 받으면 포인트를 얻어요. 다만 하루에 활동으로 받을 수 있는 포인트에는 상한이 있어서, 그날 상한을 채우면 더 써도 포인트가 들어오지 않아요. 상한은 매일 자정에 다시 채워져요.',
-      checkinDescription: '매일 로그인할 때 하루 한 번, 포인트를 조금 얻거나 반대로 조금 잃어요.',
+      // 지급액을 숫자로 적지 않는 이유는 activityRewardDescription과 같다 — 여기 값은 백엔드
+      // 설정(app.checkin.*)에서 오고, 출석 모달은 그 값을 서버에서 받아 그대로 보여준다.
+      checkinDescription:
+        '오른쪽 위 프로필을 누르고 "출석하기"를 고르면 하루 한 번 포인트와 경험치를 받아요. 한 달 동안 모은 출석 일수가 일정 기준에 닿으면 그날은 보너스 포인트가 더 붙고, 출석 일수는 매달 1일에 다시 0부터 세요.',
       rouletteDescription:
         '원하는 만큼 직접 배팅해서 다른 회원과 겨루는 게임이에요. 이기면 상대의 포인트를 가져오고 지면 내 포인트를 잃으며, 판마다 배팅액의 일부가 수수료로 빠져나가요.',
       pachinkoDescription:
@@ -311,12 +314,46 @@ export const MESSAGES = {
       loginGateSuffix: '후 슬롯머신을 이용할 수 있습니다.',
       description: '트리플 매치 뜨면 대박',
     },
+    // 헤더 사용자 메뉴 > "출석하기"로 열리는 출석 모달(달력·버튼·결과·보상 안내) 문구.
+    // 포인트/경험치 수치는 전부 서버(CheckInCalendar.dailyAmount·dailyExp, milestones[].bonus)에서
+    // 받은 값을 끼워 넣는다 — 여기에 숫자를 적으면 백엔드 yaml만 바꿔도 조용히 거짓말이 된다.
     checkin: {
-      gainedPrefix: '오 ',
-      gainedSuffix: ' ㅊㅋㅊㅋ',
-      lostPrefix: 'ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ ',
-      lostSuffix: '날라감ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ',
-      neutral: '쟌-넨',
+      // 달력 헤더. 조회 중인 달을 그대로 쓴다(과거 달을 열면 그 달이 찍힌다).
+      monthLabel: (year: number, month: number) => `${year}년 ${month}월`,
+      // 일~토. 달력 격자의 요일 머리글.
+      weekdays: ['일', '월', '화', '수', '목', '금', '토'] as const,
+      prevMonth: '이전 달',
+      nextMonth: '다음 달',
+      backToThisMonth: '이번 달로',
+      // 조회 중인 달의 누적 출석 일수.
+      monthlyCount: (month: number, count: number) => `${month}월 출석 ${count}일`,
+      checkInButton: '오늘 출석하기',
+      checkingIn: '출석하는 중…',
+      alreadyCheckedIn: '오늘 출석 완료',
+      loadFailed: '출석 정보를 불러오지 못했습니다.',
+      checkInFailed: '출석에 실패했습니다. 잠시 후 다시 시도해주세요.',
+      // 보상 안내 한 줄. 카드에 상시 노출되는 유일한 설명이라 최대한 짧게 유지한다
+      // (수치는 서버 값 dailyAmount / dailyExp).
+      dailyReward: (amount: string, exp: string) => `매일 ${amount}포인트와 EXP ${exp}을 받습니다.`,
+      // 마일스톤 보너스는 매일 볼 내용이 아니라 "?" 팝오버 안으로 넣는다.
+      bonusPopoverLabel: '출석 보너스 안내 보기',
+      milestoneHeading: '누적 출석 보너스',
+      milestoneRow: (count: number, bonus: string) => `${count}일 달성 시 +${bonus}P`,
+      milestoneAchieved: '달성',
+      milestoneNote: '보너스는 달성한 그날 한 번만 붙고, 출석 일수는 매달 1일에 0부터 다시 세요.',
+      // 모달 제목. 출석 전/후 모두 같은 모달이라 제목은 상태와 무관하게 고정한다.
+      modalTitle: '출석',
+      // 평소 출석은 결과를 글로 알리지 않는다 — 지급액은 아래 보상 안내에 이미 적혀 있고,
+      // 헤더 잔액이 곧바로 올라가는 것으로 확인된다. 오늘 칸에 도장이 찍히는 연출로 갈음한다.
+      //
+      // 다만 마일스톤 달성일(한 달에 세 번)은 기본 지급의 3~10배가 얹히는데 아무 안내가 없으면
+      // 받은 줄도 모르고 지나간다. 그 날만 이 문구를 잠깐 띄운다.
+      resultBonus: (count: number, bonus: string) => `${count}일 달성! 보너스 ${bonus}P`,
+      // 도장이 찍힌 칸에서 잠깐 떠오르는 획득량. 아래 보상 안내가 '예고'라면 이쪽은 '영수증'이라,
+      // 규칙을 다시 서술하지 않고 방금 받은 값만 짧게 보여준다.
+      // amount는 기본 지급 + 마일스톤 보너스의 합계다(내역은 보너스 배너가 따로 알린다).
+      rewardPoint: (amount: string) => `+${amount}P`,
+      rewardExp: (exp: string) => `+${exp} EXP`,
     },
     // 룰렛 승/패 알림(POINT_STOLEN/POINT_WON)과 활동 리워드 알림(POST_REWARD/COMMENT_REWARD).
     // lib/notification.ts(순수 텍스트)와 NotificationBell.tsx(강조 포함 JSX)가

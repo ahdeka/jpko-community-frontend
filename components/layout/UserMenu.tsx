@@ -5,6 +5,7 @@ import Link from 'next/link'
 import type { User } from '@/types'
 import { pointsApi, POINT_BALANCE_CHANGED_EVENT, type PointBalanceChangedDetail } from '@/lib/api/points'
 import { isStaff } from '@/lib/role'
+import CheckInModal from '@/components/points/CheckInModal'
 
 interface Props {
   user: User
@@ -25,6 +26,9 @@ function UserIcon() {
 // 운영진(ADMIN·ROOT)에게만 "관리자 페이지" 항목을 추가로 노출한다.
 export default function UserMenu({ user, onLogout }: Props) {
   const [open, setOpen] = useState(false)
+  // 출석 모달의 열림 여부. 메뉴 open과 완전히 독립이다 — "출석하기"를 누르면 메뉴는 닫고
+  // 모달만 띄우기 때문에, 둘을 한 state로 묶으면 메뉴가 닫히는 순간 모달도 사라진다.
+  const [checkInOpen, setCheckInOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   // 잔액은 /api/auth/me에 포함되지 않으므로 이 컴포넌트가 직접 조회한다.
   // 마운트 시 1회 조회하고, 이후 포인트 변동 이벤트(게임 등)를 구독해 새로고침 없이 갱신한다.
@@ -130,6 +134,20 @@ export default function UserMenu({ user, onLogout }: Props) {
             )}
           </div>
 
+          {/* 매일 한 번 누르는 항목이라 맨 위에 둔다. 바로 위 잔액 표시와 붙어 있어,
+              출석하면 그 숫자가 올라가는 것이 같은 자리에서 보인다. */}
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false)
+              setCheckInOpen(true)
+            }}
+            className={menuItem}
+          >
+            출석하기
+          </button>
+
           <Link href="/mypage" role="menuitem" className={menuItem} onClick={() => setOpen(false)}>
             마이페이지
           </Link>
@@ -161,6 +179,11 @@ export default function UserMenu({ user, onLogout }: Props) {
           </button>
         </div>
       )}
+
+      {/* 모달은 메뉴 팝오버(w-48 · overflow-hidden) 밖에 둔다 — 그 안에 넣으면 잘려 보인다.
+          조건부 렌더라 닫을 때마다 언마운트되고, 다시 열면 상태가 초기화되어
+          지난번 출석 결과가 남아 있지 않는다. */}
+      {checkInOpen && <CheckInModal onClose={() => setCheckInOpen(false)} />}
     </div>
   )
 }

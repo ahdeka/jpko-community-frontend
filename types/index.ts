@@ -60,11 +60,11 @@ export interface User {
 }
 
 // 로그인/회원가입 응답 (백엔드 LoginResponse와 1:1)
-// 회원가입도 자동 로그인이라 checkIn이 실제로 채워져 온다(로그인과 동일하게 하루 1회 대상).
+// 예전에는 로그인 시 서버가 자동으로 출첵을 처리하고 그 결과(checkIn)를 여기에 실어 보냈지만,
+// 출석이 "출석하기 버튼"으로 개편되면서 백엔드 LoginResponse에서 제거됐다(POST /api/check-ins로 이동).
 export interface LoginResponse {
   nickname: string;
   role: UserRole;
-  checkIn: CheckInInfo;
 }
 
 // 공개 프로필 (백엔드 PublicProfileResponse와 1:1)
@@ -339,7 +339,9 @@ export interface AdminReportDetail {
 //    amount는 언제나 "실제 지급된 액수"이므로 프론트가 별도로 보정할 것은 없다.
 //  COLLECT: 유저 → 시스템 회수 (현재 어떤 API도 발생시키지 않음, 향후 관리자 차감용)
 //  ACCOUNT_OPENED: 포인트 계좌가 최초 생성될 때 남는 감사 로그. amount는 항상 0.
-//  CHECKIN: 시스템 ↔ 유저, 매일 로그인 시 자동 출첵. amount는 플러스(지급)·마이너스(차감) 둘 다 가능.
+//  CHECKIN: 시스템 → 유저, 헤더 사용자 메뉴 > "출석하기" 모달에서 하루 한 번 받는 출석 보상.
+//    개편 전에는 로그인 시 자동 처리에 차감(마이너스)도 있었지만, 지금은 언제나 지급(플러스)뿐이다.
+//    이달 누적 출석이 마일스톤(7·15·25일)에 닿은 회차에는 기본 지급액에 보너스가 합쳐진 한 건으로 기록된다.
 //  ROULETTE: 유저 ↔ 유저(시스템 경유), 유저가 직접 베팅해 상대와 겨루는 룰렛 승부.
 //  ROULETTE_FEE: 유저 → 시스템, 룰렛 판당 수수료.
 //  PACHINKO_FEE: 유저 → 시스템, 파칭코 판당 수수료.
@@ -403,13 +405,45 @@ export interface PointTransaction {
   createdAt: string;
 }
 
-// 로그인/회원가입 시 출첵 결과 (백엔드 LoginResponse.CheckInInfo와 1:1)
-// checkedIn=false: 오늘 이미 했음 → 보여줄 정보 없음.
-// checkedIn=true: 이번 로그인(또는 회원가입 직후 자동 로그인)에서 출첵이 실행됨.
-// amount는 음수(차감)일 수도, 0일 수도, 양수(지급)일 수도 있다.
-export interface CheckInInfo {
-  checkedIn: boolean;
-  amount: number | null;
+// ========== 출석 ==========
+
+// 이달 누적 출석 횟수에 걸린 보너스 한 칸 (백엔드 CheckInCalendarResponse.Milestone과 1:1).
+//  count   : 달성 조건이 되는 그 달의 누적 출석 일수 (백엔드가 1~27로 제한 — 2월도 달성 가능하도록)
+//  bonus   : 그 회차에 딱 한 번 얹어주는 보너스 포인트
+//  achieved: 조회한 달의 누적 출석이 count 이상인지. '이번 달'이 아니라 '조회한 달' 기준이라
+//            과거 달을 열어보면 그 달의 달성 여부가 그대로 온다.
+export interface CheckInMilestone {
+  count: number;
+  bonus: number;
+  achieved: boolean;
+}
+
+// 출석 달력 (백엔드 CheckInCalendarResponse와 1:1). GET /api/check-ins?year=&month=
+export interface CheckInCalendar {
+  year: number;
+  month: number;             // 1~12
+  daysInMonth: number;       // 그 달의 마지막 날(28~31). 윤년 계산을 프론트가 하지 않도록 서버가 준다.
+  // 서버가 KST로 판단한 '오늘'("YYYY-MM-DD"). 브라우저 타임존과 무관하게 이 값으로 오늘 칸을 칠한다
+  // — new Date()로 추측하면 UTC+9 밖 사용자에게 하루씩 어긋난다.
+  today: string;
+  checkedInDays: number[];   // 조회한 달에 출석한 '일'만 (예: [1, 2, 5, 7])
+  monthlyCount: number;      // = checkedInDays.length (조회한 달 기준)
+  checkedInToday: boolean;   // 조회한 달과 무관하게 항상 '오늘' 기준 — 출석 버튼 활성화용
+  dailyAmount: number;       // 출석 1회 기본 지급 포인트 (백엔드 app.checkin.amount)
+  dailyExp: number;          // 출석 1회 지급 경험치 (백엔드 app.exp.check-in, 일일 상한 제외)
+  milestones: CheckInMilestone[];
+}
+
+// 출석 실행 결과 (백엔드 CheckInOutcome과 1:1). POST /api/check-ins
+// 잔액도 갱신된 출석일 목록도 들어있지 않으므로, 성공 후에는 달력을 다시 조회하고
+// 헤더 잔액·레벨은 각각 notifyPointBalanceChanged()·fetchUser()로 따로 갱신해야 한다.
+export interface CheckInOutcome {
+  amount: number;      // 기본 + 보너스 합계. 개편 후로는 항상 양수(차감이 없다).
+  bonusAmount: number;  // 마일스톤 보너스만. 달성 회차가 아니면 0.
+  monthlyCount: number; // 이번 출석까지 포함한 이달 누적 출석 일수
+  // 실제로 지급된 경험치. 출석 exp는 일일 상한을 타지 않아 보통 dailyExp와 같지만,
+  // 서버가 UserLevel 행을 못 찾으면 0이 온다(경고 로그만 남기고 출석 자체는 성공) → 0이면 표시하지 않는다.
+  expAmount: number;
 }
 
 // 룰렛(베팅형 대결) 설정. 승률은 의도적으로 노출하지 않는다.

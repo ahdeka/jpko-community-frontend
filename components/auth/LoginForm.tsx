@@ -24,7 +24,7 @@ const inputClass =
 
 export default function LoginForm() {
   const router = useRouter()
-  const { fetchUser, notifyCheckInResult } = useAuth()
+  const { fetchUser } = useAuth()
   // 이미 로그인한 사용자는 홈으로 돌려보낸다(뒤로가기·주소창 직접 진입 차단)
   const { blocked } = useRedirectIfAuthenticated()
   // 로그인 아이디. 이메일 로그인은 백엔드에서 제거돼 더 이상 받지 않는다.
@@ -79,14 +79,16 @@ export default function LoginForm() {
       // 백엔드 LoginRequest가 loginId를 trim().toLowerCase()로 정규화하므로,
       // 저장된 값과 확실히 매칭되도록 전송값도 동일하게 맞춘다(대소문자·공백 차이로 인한 실패 방지).
       // 정지(SUSPENDED)된 계정도 여기서 막히지 않는다 — 로그인은 되고, fetchUser() 이후 AuthProvider가
-      // 전역 SuspendedScreen으로 전환한다(정지된 계정도 출첵은 처리되고, 그 화면에서 포인트로 즉시 해제할 수 있다).
-      const res = await authApi.login({
+      // 전역 SuspendedScreen으로 전환한다(그 화면에서 할 수 있는 건 상황 확인·문의·로그아웃뿐이며,
+      // 해제는 관리자만 한다).
+      // 응답 본문(nickname/role)은 쓰지 않는다 — 인증 상태는 바로 아래 fetchUser()가
+      // /api/auth/me로 다시 받아오는 값을 단일 출처로 삼는다.
+      await authApi.login({
         loginId: loginId.trim().toLowerCase(),
         password,
         turnstileToken,
       })
       await fetchUser()
-      if (res.data?.checkIn) notifyCheckInResult(res.data.checkIn)
       // replace로 이동해 히스토리에 로그인 페이지를 남기지 않는다.
       router.replace('/')
     } catch (e) {

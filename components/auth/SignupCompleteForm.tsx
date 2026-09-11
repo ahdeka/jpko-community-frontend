@@ -27,7 +27,7 @@ type Phase = 'verifying' | 'ready' | 'invalid'
 //   ② 아이디·닉네임·비밀번호·약관 입력(POST /signup/complete) → 자동 로그인 → 홈
 export default function SignupCompleteForm({ token }: { token: string }) {
   const router = useRouter()
-  const { fetchUser, notifyCheckInResult } = useAuth()
+  const { fetchUser } = useAuth()
 
   const [phase, setPhase] = useState<Phase>(token ? 'verifying' : 'invalid')
   const [linkError, setLinkError] = useState(token ? '' : MESSAGES.auth.signup.invalidLink)
@@ -152,7 +152,9 @@ export default function SignupCompleteForm({ token }: { token: string }) {
 
     setLoading(true)
     try {
-      const res = await authApi.signupComplete({
+      // 응답 본문(nickname/role)은 쓰지 않는다 — 아래 fetchUser()가 /api/auth/me로
+      // 받아오는 값을 인증 상태의 단일 출처로 삼는다.
+      await authApi.signupComplete({
         token,
         loginId: loginId.trim().toLowerCase(),
         password,
@@ -164,7 +166,6 @@ export default function SignupCompleteForm({ token }: { token: string }) {
       // 가입 완료 = 자동 로그인. 인증 상태를 갱신하고 홈으로 이동한다.
       setRedirecting(true)
       await fetchUser()
-      if (res.data?.checkIn) notifyCheckInResult(res.data.checkIn)
       router.replace('/')
     } catch (err) {
       setLoading(false)

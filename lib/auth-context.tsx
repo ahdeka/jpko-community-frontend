@@ -2,11 +2,10 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import type { ReactNode } from 'react'
-import type { CheckInInfo, User } from '@/types'
+import type { User } from '@/types'
 import { authApi } from '@/lib/api/auth'
 import { ApiError, SESSION_EXPIRED_EVENT, ACCOUNT_SUSPENDED_EVENT } from '@/lib/api/client'
 import SuspendedScreen from '@/components/auth/SuspendedScreen'
-import CheckInResultModal from '@/components/points/CheckInResultModal'
 
 interface AuthContextType {
   user: User | null
@@ -17,12 +16,9 @@ interface AuthContextType {
   // logout()과 달리 /api/auth/logout을 호출하지 않는다 — 탈퇴 응답이 이미 쿠키를 지웠으므로
   // 추가 호출은 불필요하고, 인증 없는 상태라 401만 유발할 수 있다.
   clearAuth: () => void
-  // 로그인(또는 회원가입 직후 자동 로그인) 직후 출첵 결과를 전역에 알린다. LoginForm/SignupForm이
-  // 성공 시 호출하며, AuthProvider가 렌더하는 CheckInResultModal이 이 값을 소비하고 null로 되돌린다.
-  // 두 폼 모두 성공 즉시 router.replace로 이동하고 useRedirectIfAuthenticated가 폼을 언마운트하므로,
-  // 폼 내부가 아니라 여기(AuthProvider)에서 상태를 들고 있어야 페이지 전환 중에도 모달이 살아남는다
-  // (SuspendedScreen과 동일한 이유).
-  notifyCheckInResult: (info: CheckInInfo) => void
+  // 출첵 결과 모달은 더 이상 여기 있지 않다. 로그인 시 자동 출첵이 폐지되고 헤더 사용자 메뉴의
+  // "출석하기"로 옮겨가면서, 결과도 그 모달(CheckInModal) 안에서 상태 전환으로 보여준다
+  // — 페이지 전환을 넘어 살아남아야 할 이유가 사라졌기 때문이다.
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
@@ -31,10 +27,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   // 세션 도중(또는 새로고침 시점에) 관리자 정지가 감지됐는지. true면 children 대신 전체 화면
-  // SuspendedScreen을 렌더한다 — 정지돼도 세션 자체는 유효하다(로그인은 되고 출첵도 처리됨).
+  // SuspendedScreen을 렌더한다 — 정지돼도 세션 자체는 유효하다(로그인은 된다).
   const [suspended, setSuspended] = useState(false)
-  // 로그인/회원가입 직후 보여줄 출첵 결과. null이면 모달을 띄우지 않는다.
-  const [checkInResult, setCheckInResult] = useState<CheckInInfo | null>(null)
 
   const fetchUser = useCallback(async () => {
     try {
@@ -86,23 +80,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }, [])
 
-  // checkedIn=false(오늘 이미 했음)는 보여줄 정보가 없으므로 무시한다.
-  const notifyCheckInResult = useCallback((info: CheckInInfo) => {
-    if (info.checkedIn) setCheckInResult(info)
-  }, [])
-
   return (
-    <AuthContext.Provider value={{ user, isLoading, fetchUser, logout, clearAuth, notifyCheckInResult }}>
+    <AuthContext.Provider value={{ user, isLoading, fetchUser, logout, clearAuth }}>
       {/* 정지(suspended)면 children 대신 전체 화면 SuspendedScreen을 렌더한다.
           정지된 유저는 /api/auth/me 자체가 403이라 user는 null로 남지만, 세션은 유효해서
           그 화면 안에서 정지 사유·기한 조회와 로그아웃까지 처리한다. */}
       {suspended ? (
         <SuspendedScreen onResolved={() => { window.location.href = '/' }} />
       ) : children}
-      <CheckInResultModal
-        info={checkInResult}
-        onClose={() => setCheckInResult(null)}
-      />
     </AuthContext.Provider>
   )
 }

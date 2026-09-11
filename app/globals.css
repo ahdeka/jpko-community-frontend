@@ -93,6 +93,84 @@
   }
 }
 
+/* 출석 도장이 "찍히는" 순간. 위에서 크게 내려와 종이에 탁 눌리듯 작아지며 자리를 잡는다.
+   60% 지점에서 원래 크기보다 작아졌다가(0.88) 살짝 되튀는(1.06) 것이 "눌린" 느낌을 만든다.
+   회전을 조금 섞어 손으로 찍은 듯 반듯하지 않게 보이게 한다.
+   both: 시작 전 0% 상태(투명)를 유지해 첫 프레임 깜빡임을 막는다. */
+@keyframes stamp-press {
+  0% {
+    opacity: 0;
+    transform: scale(2.1) rotate(-14deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(0.88) rotate(3deg);
+  }
+  80% {
+    transform: scale(1.06) rotate(-1deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+.animate-stamp-press {
+  animation: stamp-press 0.5s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+/* 접근성: 모션 최소화 선호 시에는 끄고 최종 상태(찍힌 도장)로 바로 표시한다. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-stamp-press {
+    animation: none;
+  }
+}
+
+/* 출석 보상 획득 표시. 모달 한가운데에 "+1,000P"가 튀어나왔다 1.5초 뒤 사라진다.
+   달력 칸(38px) 옆에 붙이면 글자가 작아 눈에 들어오지 않아 가운데로 옮겼다.
+
+   타이머(setTimeout)로 지우지 않는 이유: DOM에서 빼는 순간 레이아웃이 흔들린다.
+   절대배치 + pointer-events:none이라 사라진 뒤에도 아무것도 가리지 않는다. */
+@keyframes reward-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  15% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+  25% {
+    transform: scale(1);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.02);
+  }
+}
+.animate-reward-pop {
+  animation: reward-pop 1.5s ease-out both;
+}
+/* 접근성: 모션을 끄면 확대·축소만 없애고 '나타났다 사라지는' 것 자체는 유지한다.
+   animation: none으로 꺼버리면 문구가 툭 나타나 영영 남아 달력을 가린다
+   (실제로 그렇게 만들었다가 "갑자기 하드하게 박힌 느낌"이라는 지적을 받았다). */
+@keyframes reward-pop-fade {
+  0%,
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-reward-pop {
+    animation: reward-pop-fade 1.5s ease-out both;
+  }
+}
+
 /* 룰렛 휠 회전. transform(각도)은 RouletteGame이 인라인 style로 매번 다르게 지정하고,
    transition 자체(길이·감속 커브)만 여기서 관리한다 — 인라인 style에 duration까지 박아두면
    prefers-reduced-motion 미디어쿼리로 덮어쓸 수 없기 때문(인라인이 클래스보다 우선순위가 높음). */
