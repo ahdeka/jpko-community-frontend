@@ -446,12 +446,15 @@ export interface CheckInOutcome {
   expAmount: number;
 }
 
-// 룰렛(베팅형 대결) 설정. 승률은 의도적으로 노출하지 않는다.
+// 룰렛(베팅형 대결) 설정. winProbability는 확률 공개 패널용 승률(0~1).
+// ⚠️ 확률 필드(여기와 파칭코·슬롯 config)가 optional인 이유: 프론트(Vercel)가 백엔드(EC2)보다 먼저
+//    배포되는 사이에는 구버전 응답이 와서 필드가 비어 있다. 비어 있으면 패널을 숨긴다.
 export interface RouletteConfig {
   betUnit: number;
   minBet: number;
   maxBet: number;
   feeRate: number;
+  winProbability?: number;
   agreed: boolean;
 }
 
@@ -474,7 +477,8 @@ export interface RouletteSpinResult {
 }
 
 // 파칭코(플린코형 구슬 낙하) 설정. 구슬 1개당 가격(ballPrice)과 한 판에 쏠 수 있는 개수 범위.
-// 못의 좌/우 확률은 의도적으로 노출하지 않는다.
+// slotProbabilities는 서버가 이항분포로 계산한 슬롯별 착지 확률 — slotMultipliers와 인덱스 1:1.
+// rightProbability는 못 하나에서 오른쪽으로 튕길 확률(왼쪽은 1 - 이 값).
 export interface PachinkoConfig {
   ballPrice: number;
   minBalls: number;
@@ -482,6 +486,8 @@ export interface PachinkoConfig {
   feeRate: number;
   rows: number;
   slotMultipliers: number[];
+  slotProbabilities?: number[];
+  rightProbability?: number;
 }
 
 // 구슬 1개의 결과 (백엔드 PachinkoBallResult와 1:1)
@@ -506,13 +512,19 @@ export interface PachinkoPlayResult {
   balanceAfter: number;
 }
 
-// 슬롯머신(3릴, 트리플 매치만 당첨) 설정. 심볼별 등장 확률(weight)은 의도적으로 노출하지 않는다.
+// 슬롯머신(3릴, 트리플 매치만 당첨) 설정.
+// tripleProbability: 셋 다 그 심볼일 확률(= 그 배당의 당첨 확률). 릴 3개가 독립이라
+// 서버가 (weight / 전체 weight)^3으로 계산해 내려준다.
 export interface SlotConfig {
   betUnit: number;
   minBet: number;
   maxBet: number;
   feeRate: number;
-  symbols: { name: string; multiplier: number }[];
+  symbols: {
+    name: string;
+    multiplier: number;
+    tripleProbability?: number;
+  }[];
 }
 
 // 슬롯머신 한 판의 결과 (백엔드 SlotPlayResponse와 1:1)
@@ -523,6 +535,8 @@ export interface SlotPlayResult {
   tripleMatch: boolean;
   multiplier: number;
   payout: number;
+  // ⚠️ 이름과 달리 순이익이 아니라 payout과 같은 값이 온다(SlotService가 net = payout으로 내려줌).
+  //    win도 "payout > 0"이라 배율 1x(본전)에서도 true다. 이익/본전/손실 판정은 payout - betAmount로 한다.
   netAmount: number;
   win: boolean;
   balanceAfter: number;

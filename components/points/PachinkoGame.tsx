@@ -5,6 +5,7 @@ import { pointsApi, notifyPointBalanceChanged } from '@/lib/api/points'
 import { pachinkoApi } from '@/lib/api/pachinko'
 import { ApiError } from '@/lib/api/client'
 import { MESSAGES } from '@/lib/messages'
+import GameOddsPanel, { GameLayoutWithOdds, formatProbability } from './GameOddsPanel'
 import type { PachinkoConfig, PachinkoPlayResult } from '@/types'
 
 // 보드 픽셀 치수. rows는 백엔드 설정값이라 가변이지만, 폭/행 높이는 고정폭 보드 안에서
@@ -50,10 +51,21 @@ function pegPositions(row: number, rows: number): number[] {
   return Array.from({ length: row + 1 }, (_, k) => BOARD_WIDTH / 2 + (2 * k - row) * (slotWidth / 2))
 }
 
+// 슬롯별 착지 확률을 배율별로 합산해 배율 내림차순으로 돌려준다(확률 공개 패널용).
+// 보드가 좌우 대칭이라 같은 배율이 여러 슬롯에 있는데, 패널은 "이 배율이 나올 확률"만 보여주면 되므로
+// 슬롯 번호는 지우고 합친다. 호출 전 두 배열의 길이가 같은지는 호출하는 쪽이 확인한다.
+function oddsByMultiplier(multipliers: number[], probabilities: number[]) {
+  const merged = new Map<number, number>()
+  multipliers.forEach((m, i) => merged.set(m, (merged.get(m) ?? 0) + probabilities[i]))
+  return [...merged]
+    .map(([multiplier, probability]) => ({ multiplier, probability }))
+    .sort((a, b) => b.multiplier - a.multiplier)
+}
+
 // 파칭코(플린코형 구슬 낙하) 플레이 화면. 유저 대 시스템(하우스) 게임이라 룰렛과 달리 상대가 없다.
 // 구슬 1개당 가격(ballPrice)이 정해져 있고, 유저가 고른 개수(ballCount)만큼 구슬을 동시에(약간의
 // 시차를 두고) 쏴서 각자 독립적으로 못판을 통과해 슬롯에 착지한 결과를 합산해 보여준다.
-// 배당표(슬롯별 배율)는 백엔드가 의도적으로 노출하지만, 못의 좌/우 확률은 노출하지 않는다.
+// 배당표(슬롯별 배율)와 서버가 계산한 슬롯별 착지 확률을 함께 받아 우측 확률 공개 패널에 보여준다.
 export default function PachinkoGame() {
   const [balance, setBalance] = useState<number | null>(null)
   const [config, setConfig] = useState<PachinkoConfig | null>(null)
@@ -183,131 +195,156 @@ export default function PachinkoGame() {
       ? config?.slotMultipliers.map((_, i) => result.balls.filter(b => b.slotIndex === i).length)
       : undefined
 
+  // 확률 공개 패널. 구버전 백엔드 응답이라 확률이 없거나, 배당표와 길이가 어긋나면(인덱스 1:1이
+  // 깨지면 엉뚱한 배율에 엉뚱한 확률이 합산된다) 패널 자체를 숨긴다.
+  const slotProbabilities = config?.slotProbabilities
+  const rightProbability = config?.rightProbability
+  const oddsPanel =
+    config &&
+    slotProbabilities &&
+    slotProbabilities.length === config.slotMultipliers.length &&
+    typeof rightProbability === 'number' ? (
+      <GameOddsPanel
+        headers={[MESSAGES.points.odds.multiplierHeader]}
+        rows={oddsByMultiplier(config.slotMultipliers, slotProbabilities).map(({ multiplier, probability }) => ({
+          key: String(multiplier),
+          cells: [`${multiplier}x`],
+          probability,
+        }))}
+        note={MESSAGES.points.odds.pachinkoNote(
+          formatProbability(1 - rightProbability),
+          formatProbability(rightProbability)
+        )}
+      />
+    ) : null
+
   return (
-    <div className="flex flex-col gap-6">
-      {/* 잔액 */}
-      <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-800/50">
-        <p className="text-xs text-neutral-500 dark:text-neutral-400">내 잔액</p>
-        <p className="mt-1 text-2xl font-bold text-orange-600 dark:text-orange-400">
-          {balance === null ? '—' : `${balance.toLocaleString()}P`}
-        </p>
-      </div>
-
-      {/* 보드 + 베팅 */}
-      <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
-        <label htmlFor="pachinko-ball-count" className="text-xs font-semibold text-neutral-500 dark:text-neutral-400">
-          구슬 개수
-        </label>
-        <input
-          id="pachinko-ball-count"
-          type="number"
-          value={ballCountInput}
-          onChange={e => setBallCountInput(e.target.value)}
-          step={1}
-          min={config?.minBalls ?? 1}
-          max={config?.maxBalls ?? undefined}
-          disabled={!config || playing}
-          className="mt-2 w-full rounded border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-blue-400 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-blue-500"
-        />
-        {totalCost !== null && (
-          <p className="mt-1 text-right text-[11px] text-neutral-400 dark:text-neutral-500">
-            총 비용 {totalCost.toLocaleString()}P
-          </p>
-        )}
-
-        {config && (
-          <div className="relative mx-auto my-5" style={{ width: BOARD_WIDTH, height: boardHeight }}>
-            {/* 못 */}
-            {Array.from({ length: rows }, (_, row) => (
-              <div key={row}>
-                {pegPositions(row, rows).map((x, k) => (
-                  <span
-                    key={k}
-                    className="absolute h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-neutral-300 dark:bg-neutral-600"
-                    style={{ left: x, top: row * ROW_HEIGHT + ROW_HEIGHT / 2 }}
-                  />
-                ))}
-              </div>
-            ))}
-
-            {/* 구슬들 — 요청한 개수만큼 렌더링, 각자 서버가 정한 경로로 낙하한다 */}
-            {Array.from({ length: ballsInFlight }, (_, i) => (
-              <div
-                key={i}
-                ref={el => { ballRefs.current[i] = el }}
-                className="absolute h-3.5 w-3.5 rounded-full bg-orange-500 shadow"
-                style={{ transform: `translate(${BOARD_WIDTH / 2 - BALL_SIZE / 2}px, 0px)` }}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* 배당표(슬롯) — 실물 플린코판처럼 항상 노출한다. 착지 개수가 있으면 함께 표시. */}
-        {config && (
-          <div className="relative mx-auto" style={{ width: BOARD_WIDTH, height: 28 }}>
-            {config.slotMultipliers.map((m, i) => {
-              const count = landedCounts?.[i] ?? 0
-              return (
-                <div
-                  key={i}
-                  className={`absolute flex h-7 flex-col items-center justify-center rounded text-[10px] font-bold leading-tight ${
-                    count > 0
-                      ? 'bg-orange-500 text-white'
-                      : 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400'
-                  }`}
-                  style={{ left: i * slotWidth + 1, width: slotWidth - 2 }}
-                >
-                  <span>{m}x</span>
-                  {count > 0 && <span className="text-[9px] font-normal">{count}개</span>}
-                </div>
-              )
-            })}
-          </div>
-        )}
-
-        <button
-          type="button"
-          onClick={handlePlay}
-          disabled={!config || playing}
-          className="mt-4 w-full rounded bg-orange-500 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {playing ? '구슬 낙하 중…' : '구슬 쏘기'}
-        </button>
-
-        {config && (
-          <p className="mt-2 text-center text-[11px] text-neutral-400 dark:text-neutral-500">
-            구슬 개당 {config.ballPrice.toLocaleString()}P · {config.minBalls.toLocaleString()}개 ~{' '}
-            {config.maxBalls.toLocaleString()}개 · 수수료 {Math.round(config.feeRate * 100)}%
-          </p>
-        )}
-        {error && <p className="mt-2 text-center text-xs text-red-500">{error}</p>}
-      </div>
-
-      {/* 결과 */}
-      {result && !playing && (
-        <div
-          className={`animate-fade-in-up rounded-lg border p-4 ${
-            result.win
-              ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-500/10'
-              : 'border-red-200 bg-red-50 dark:border-red-500/30 dark:bg-red-500/10'
-          }`}
-        >
-          <p
-            className={`text-sm font-bold ${
-              result.win ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400'
-            }`}
-          >
-            {result.win
-              ? MESSAGES.points.pachinko.win(Math.abs(result.netAmount).toLocaleString())
-              : MESSAGES.points.pachinko.lose(Math.abs(result.netAmount).toLocaleString())}
-          </p>
-          <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-            구슬 {result.ballCount}개 · 총 비용 {result.totalCost.toLocaleString()}P · 수수료{' '}
-            {result.fee.toLocaleString()}P 차감 · 총 획득 {result.totalPayout.toLocaleString()}P · 잔액{' '}
-            {result.balanceAfter.toLocaleString()}P
+    <GameLayoutWithOdds odds={oddsPanel}>
+      <div className="flex flex-col gap-6">
+        {/* 잔액 */}
+        <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-800/50">
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">내 잔액</p>
+          <p className="mt-1 text-2xl font-bold text-orange-600 dark:text-orange-400">
+            {balance === null ? '—' : `${balance.toLocaleString()}P`}
           </p>
         </div>
-      )}
-    </div>
+
+        {/* 보드 + 베팅 */}
+        <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+          <label htmlFor="pachinko-ball-count" className="text-xs font-semibold text-neutral-500 dark:text-neutral-400">
+            구슬 개수
+          </label>
+          <input
+            id="pachinko-ball-count"
+            type="number"
+            value={ballCountInput}
+            onChange={e => setBallCountInput(e.target.value)}
+            step={1}
+            min={config?.minBalls ?? 1}
+            max={config?.maxBalls ?? undefined}
+            disabled={!config || playing}
+            className="mt-2 w-full rounded border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-blue-400 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-blue-500"
+          />
+          {totalCost !== null && (
+            <p className="mt-1 text-right text-[11px] text-neutral-400 dark:text-neutral-500">
+              총 비용 {totalCost.toLocaleString()}P
+            </p>
+          )}
+
+          {config && (
+            <div className="relative mx-auto my-5" style={{ width: BOARD_WIDTH, height: boardHeight }}>
+              {/* 못 */}
+              {Array.from({ length: rows }, (_, row) => (
+                <div key={row}>
+                  {pegPositions(row, rows).map((x, k) => (
+                    <span
+                      key={k}
+                      className="absolute h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-neutral-300 dark:bg-neutral-600"
+                      style={{ left: x, top: row * ROW_HEIGHT + ROW_HEIGHT / 2 }}
+                    />
+                  ))}
+                </div>
+              ))}
+
+              {/* 구슬들 — 요청한 개수만큼 렌더링, 각자 서버가 정한 경로로 낙하한다 */}
+              {Array.from({ length: ballsInFlight }, (_, i) => (
+                <div
+                  key={i}
+                  ref={el => { ballRefs.current[i] = el }}
+                  className="absolute h-3.5 w-3.5 rounded-full bg-orange-500 shadow"
+                  style={{ transform: `translate(${BOARD_WIDTH / 2 - BALL_SIZE / 2}px, 0px)` }}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* 배당표(슬롯) — 실물 플린코판처럼 항상 노출한다. 착지 개수가 있으면 함께 표시. */}
+          {config && (
+            <div className="relative mx-auto" style={{ width: BOARD_WIDTH, height: 28 }}>
+              {config.slotMultipliers.map((m, i) => {
+                const count = landedCounts?.[i] ?? 0
+                return (
+                  <div
+                    key={i}
+                    className={`absolute flex h-7 flex-col items-center justify-center rounded text-[10px] font-bold leading-tight ${
+                      count > 0
+                        ? 'bg-orange-500 text-white'
+                        : 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400'
+                    }`}
+                    style={{ left: i * slotWidth + 1, width: slotWidth - 2 }}
+                  >
+                    <span>{m}x</span>
+                    {count > 0 && <span className="text-[9px] font-normal">{count}개</span>}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={handlePlay}
+            disabled={!config || playing}
+            className="mt-4 w-full rounded bg-orange-500 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {playing ? '구슬 낙하 중…' : '구슬 쏘기'}
+          </button>
+
+          {config && (
+            <p className="mt-2 text-center text-[11px] text-neutral-400 dark:text-neutral-500">
+              구슬 개당 {config.ballPrice.toLocaleString()}P · {config.minBalls.toLocaleString()}개 ~{' '}
+              {config.maxBalls.toLocaleString()}개 · 수수료 {Math.round(config.feeRate * 100)}%
+            </p>
+          )}
+          {error && <p className="mt-2 text-center text-xs text-red-500">{error}</p>}
+        </div>
+
+        {/* 결과 */}
+        {result && !playing && (
+          <div
+            className={`animate-fade-in-up rounded-lg border p-4 ${
+              result.win
+                ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-500/10'
+                : 'border-red-200 bg-red-50 dark:border-red-500/30 dark:bg-red-500/10'
+            }`}
+          >
+            <p
+              className={`text-sm font-bold ${
+                result.win ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400'
+              }`}
+            >
+              {result.win
+                ? MESSAGES.points.pachinko.win(Math.abs(result.netAmount).toLocaleString())
+                : MESSAGES.points.pachinko.lose(Math.abs(result.netAmount).toLocaleString())}
+            </p>
+            <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+              구슬 {result.ballCount}개 · 총 비용 {result.totalCost.toLocaleString()}P · 수수료{' '}
+              {result.fee.toLocaleString()}P 차감 · 총 획득 {result.totalPayout.toLocaleString()}P · 잔액{' '}
+              {result.balanceAfter.toLocaleString()}P
+            </p>
+          </div>
+        )}
+      </div>
+    </GameLayoutWithOdds>
   )
 }

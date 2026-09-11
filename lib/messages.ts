@@ -276,7 +276,9 @@ export const MESSAGES = {
       betRange: (min: string, max: string) => `${min}P ~ ${max}P 사이로 베팅하셈`,
       betUnitMismatch: (unit: string) => `${unit}P 단위로만 베팅하셈`,
       playFailed: 'ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ릴! 실패!',
+      // amount는 순이익(돌려받은 금액 - 배팅액). 배율 1x 트리플은 이익이 0이라 win이 아니라 breakEven.
       win: (amount: string) => `트리플 매치! ${amount}P 벌음 ㅊㅋㅊㅋ`,
+      breakEven: (amount: string) => `본전! ${amount}P 그대로 돌려받음`,
       lose: (amount: string) => `ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ${amount}P 날림... ㅠ`,
     },
     pointInfo: {
@@ -296,6 +298,25 @@ export const MESSAGES = {
       slotDescription:
         '릴 3개를 돌려 셋이 모두 같은 그림이 나오면 배당을 받는 슬롯머신이에요. 판마다 배팅액의 일부가 수수료로 빠져나가요.',
     },
+    // 게임센터 각 게임 우측의 "확률 공개" 패널 문구. 확률·배율 수치는 전부 서버 config에서 받아
+    // 끼워 넣는다 — 여기에 숫자를 적으면 백엔드 yaml만 바꿔도 조용히 거짓말이 된다.
+    odds: {
+      title: '확률 공개',
+      outcomeHeader: '결과',
+      multiplierHeader: '배율',
+      amountHeader: '금액',
+      probabilityHeader: '확률',
+      rouletteWin: '승리',
+      rouletteLose: '패배',
+      rouletteWinAmount: '+배팅액',
+      rouletteLoseAmount: '−배팅액',
+      rouletteNote: '상대가 누구든 확률은 동일해요.',
+      // left/right는 formatProbability로 포맷된 문자열("50%"). 좌우가 같으면 한 번만 말한다.
+      pachinkoNote: (left: string, right: string) =>
+        left === right
+          ? `못에 부딪힐 때마다 구슬이 왼쪽·오른쪽으로 튕길 확률은 각각 ${right}예요.`
+          : `못에 부딪힐 때마다 구슬이 왼쪽으로 ${left}, 오른쪽으로 ${right} 확률로 튕겨요.`,
+    },
     gameCenter: {
       // 게임센터 허브(룰렛·파칭코·슬롯 공통) 로그인 게이트/헤더 문구.
       title: '게임센터',
@@ -304,15 +325,12 @@ export const MESSAGES = {
     },
     roulettePage: {
       loginGateSuffix: '후 룰렛을 이용할 수 있습니다.',
-      description: '원하는 만큼 배팅ㄱㄱ 쫄?',
     },
     pachinkoPage: {
       loginGateSuffix: '후 파칭코를 이용할 수 있습니다.',
-      description: '구슬 떨어뜨리고 배율 ㄱㄱ',
     },
     slotPage: {
       loginGateSuffix: '후 슬롯머신을 이용할 수 있습니다.',
-      description: '트리플 매치 뜨면 대박',
     },
     // 헤더 사용자 메뉴 > "출석하기"로 열리는 출석 모달(달력·버튼·결과·보상 안내) 문구.
     // 포인트/경험치 수치는 전부 서버(CheckInCalendar.dailyAmount·dailyExp, milestones[].bonus)에서

@@ -4,7 +4,7 @@ import type { RouletteConfig, RouletteOpponent, RouletteSpinResult } from '@/typ
 // 룰렛(베팅형 대결) API. 조회·플레이 모두 로그인 필수이며, apiClient가 credentials:'include'로
 // 호출하므로 쿠키가 자동 전송된다.
 export const rouletteApi = {
-  // 베팅 단위/최소/최대·수수료율. 승률은 백엔드가 의도적으로 내려주지 않는다.
+  // 베팅 단위/최소/최대·수수료율·승률(확률 공개 패널용).
   getConfig: () =>
     apiClient.get<RouletteConfig>('/api/roulette/config'),
 

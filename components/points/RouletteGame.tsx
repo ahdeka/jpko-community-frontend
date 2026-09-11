@@ -6,6 +6,7 @@ import { rouletteApi } from '@/lib/api/roulette'
 import { ApiError } from '@/lib/api/client'
 import { MESSAGES } from '@/lib/messages'
 import RouletteConsentModal from './RouletteConsentModal'
+import GameOddsPanel, { GameLayoutWithOdds } from './GameOddsPanel'
 import type { RouletteConfig, RouletteOpponent, RouletteSpinResult } from '@/types'
 
 // 휠 세그먼트 구성. 12시 방향(0deg)부터 시계방향으로 승/패가 번갈아 나온다.
@@ -47,7 +48,7 @@ function computeNextRotation(currentRotation: number, win: boolean): number {
 }
 
 // 룰렛(베팅형 대결) 플레이 화면. 상대는 처음엔 랜덤이고, 원하면 다음 스핀부터 고정할 수 있다.
-// 승률은 백엔드가 의도적으로 내려주지 않으므로 안내 문구에도 구체적 수치를 넣지 않는다.
+// 승률은 서버 config로 받아 우측 확률 공개 패널에 보여준다.
 export default function RouletteGame() {
   const [balance, setBalance] = useState<number | null>(null)
   const [config, setConfig] = useState<RouletteConfig | null>(null)
@@ -223,150 +224,173 @@ export default function RouletteGame() {
       ? SEGMENT_OUTCOMES.map(() => opponent.opponentNickname)
       : SEGMENT_OUTCOMES.map(() => UNKNOWN_OPPONENT_LABEL)
 
+  // 확률 공개 패널. 구버전 백엔드 응답이라 승률이 없으면 패널 자체를 숨긴다(NaN% 방지).
+  const winProbability = config?.winProbability
+  const oddsPanel = config && typeof winProbability === 'number' ? (
+    <GameOddsPanel
+      headers={[MESSAGES.points.odds.outcomeHeader, MESSAGES.points.odds.amountHeader]}
+      rows={[
+        {
+          key: 'win',
+          cells: [MESSAGES.points.odds.rouletteWin, MESSAGES.points.odds.rouletteWinAmount],
+          probability: winProbability,
+        },
+        {
+          key: 'lose',
+          cells: [MESSAGES.points.odds.rouletteLose, MESSAGES.points.odds.rouletteLoseAmount],
+          probability: 1 - winProbability,
+        },
+      ]}
+      note={MESSAGES.points.odds.rouletteNote}
+    />
+  ) : null
+
   return (
-    <div className="flex flex-col gap-6">
-      {/* 잔액 */}
-      <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-800/50">
-        <p className="text-xs text-neutral-500 dark:text-neutral-400">내 잔액</p>
-        <p className="mt-1 text-2xl font-bold text-orange-600 dark:text-orange-400">
-          {balance === null ? '—' : `${balance.toLocaleString()}P`}
-        </p>
-      </div>
-
-      {/* 상대 */}
-      <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
-        <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400">대결 상대</p>
-        {opponentLoading ? (
-          <p className="mt-1 text-sm text-neutral-400">불러오는 중…</p>
-        ) : opponent ? (
-          <div className="mt-1 flex items-center justify-between gap-3">
-            <p className="text-sm text-neutral-800 dark:text-neutral-100">
-              <span className="font-semibold">{opponent.opponentNickname}</span>님으로 고정됨
-            </p>
-            <button
-              type="button"
-              onClick={handleUnlock}
-              disabled={spinning}
-              className="shrink-0 rounded border border-neutral-300 px-2.5 py-1 text-xs text-neutral-600 hover:bg-neutral-100 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
-            >
-              고정 해제
-            </button>
-          </div>
-        ) : (
-          <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-            {MESSAGES.points.roulette.randomOpponentHint}
+    <GameLayoutWithOdds odds={oddsPanel}>
+      <div className="flex flex-col gap-6">
+        {/* 잔액 */}
+        <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-800/50">
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">내 잔액</p>
+          <p className="mt-1 text-2xl font-bold text-orange-600 dark:text-orange-400">
+            {balance === null ? '—' : `${balance.toLocaleString()}P`}
           </p>
-        )}
-      </div>
-
-      {/* 휠 + 베팅 */}
-      <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
-        <label htmlFor="bet-amount" className="text-xs font-semibold text-neutral-500 dark:text-neutral-400">
-          배팅액
-        </label>
-        <input
-          id="bet-amount"
-          type="number"
-          value={betAmount}
-          onChange={e => setBetAmount(e.target.value)}
-          step={config?.betUnit ?? 1}
-          min={config?.minBet ?? 0}
-          max={config?.maxBet ?? undefined}
-          disabled={!config || spinning}
-          className="mt-2 w-full rounded border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-blue-400 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-blue-500"
-        />
-
-        {/* 휠 본체. transform(회전각)만 인라인으로 매번 바뀌고, transition 자체는
-            globals.css의 .roulette-wheel이 관리한다(reduced-motion에서 덮어쓸 수 있도록). */}
-        <div className="relative mx-auto my-5 h-40 w-40">
-          <div className="absolute left-1/2 top-0 z-10 -translate-x-1/2 -translate-y-full">
-            <div className="h-0 w-0 border-x-8 border-t-[14px] border-x-transparent border-t-orange-500" />
-          </div>
-          <div
-            onTransitionEnd={handleWheelTransitionEnd}
-            style={{ transform: `rotate(${rotation}deg)`, background: WHEEL_BACKGROUND }}
-            className="roulette-wheel relative h-40 w-40 overflow-hidden rounded-full border-4 border-white shadow-inner dark:border-neutral-900"
-          >
-            {wheelLabels.map((label, i) => {
-              const angle = i * SEGMENT_DEG + SEGMENT_DEG / 2
-              return (
-                <span
-                  key={i}
-                  className="absolute left-1/2 top-1/2 w-12 text-center text-[9px] font-bold leading-tight text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]"
-                  style={{ transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(-56px)` }}
-                >
-                  {truncateForWheel(label)}
-                </span>
-              )
-            })}
-          </div>
-          <div className="absolute inset-0 m-auto flex h-11 w-11 items-center justify-center rounded-full bg-white text-[10px] font-bold text-neutral-400 shadow dark:bg-neutral-900 dark:text-neutral-500">
-            승 / 패
-          </div>
         </div>
 
-        <button
-          type="button"
-          onClick={handleSpin}
-          disabled={!config || spinning}
-          className="w-full rounded bg-orange-500 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {spinning ? '스핀 중…' : '스핀'}
-        </button>
-
-        {config && (
-          <p className="mt-2 text-center text-[11px] text-neutral-400 dark:text-neutral-500">
-            {config.betUnit.toLocaleString()}P 단위 · {config.minBet.toLocaleString()}P ~{' '}
-            {config.maxBet.toLocaleString()}P · 수수료 {Math.round(config.feeRate * 100)}%
-          </p>
-        )}
-        {error && <p className="mt-2 text-center text-xs text-red-500">{error}</p>}
-      </div>
-
-      {/* 결과 */}
-      {result && (
-        <div
-          className={`animate-fade-in-up rounded-lg border p-4 ${
-            result.win
-              ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-500/10'
-              : 'border-red-200 bg-red-50 dark:border-red-500/30 dark:bg-red-500/10'
-          }`}
-        >
-          <p
-            className={`text-sm font-bold ${
-              result.win ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400'
-            }`}
-          >
-            {result.win
-              ? MESSAGES.points.roulette.win(result.opponentNickname, result.resultAmount.toLocaleString())
-              : MESSAGES.points.roulette.lose(result.opponentNickname, result.resultAmount.toLocaleString())}
-          </p>
-          <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-            수수료 {result.fee.toLocaleString()}P 차감 · 잔액 {result.balanceAfter.toLocaleString()}P
-          </p>
-
-          {!result.opponentLocked && (
-            <button
-              type="button"
-              onClick={() => handleLock(result.opponentId)}
-              disabled={lockPending}
-              className="mt-3 rounded border border-orange-300 px-2.5 py-1 text-xs font-medium text-orange-600 hover:bg-orange-100 disabled:opacity-50 dark:border-orange-500/40 dark:text-orange-400 dark:hover:bg-orange-500/10"
-            >
-              {result.opponentNickname}님으로 고정하기
-            </button>
+        {/* 상대 */}
+        <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+          <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400">대결 상대</p>
+          {opponentLoading ? (
+            <p className="mt-1 text-sm text-neutral-400">불러오는 중…</p>
+          ) : opponent ? (
+            <div className="mt-1 flex items-center justify-between gap-3">
+              <p className="text-sm text-neutral-800 dark:text-neutral-100">
+                <span className="font-semibold">{opponent.opponentNickname}</span>님으로 고정됨
+              </p>
+              <button
+                type="button"
+                onClick={handleUnlock}
+                disabled={spinning}
+                className="shrink-0 rounded border border-neutral-300 px-2.5 py-1 text-xs text-neutral-600 hover:bg-neutral-100 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
+              >
+                고정 해제
+              </button>
+            </div>
+          ) : (
+            <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+              {MESSAGES.points.roulette.randomOpponentHint}
+            </p>
           )}
         </div>
-      )}
 
-      <RouletteConsentModal
-        open={consentOpen}
-        onAgree={() => {
-          setAgreed(true)
-          setConsentOpen(false)
-          setError('')
-        }}
-        onClose={() => setConsentOpen(false)}
-      />
-    </div>
+        {/* 휠 + 베팅 */}
+        <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+          <label htmlFor="bet-amount" className="text-xs font-semibold text-neutral-500 dark:text-neutral-400">
+            배팅액
+          </label>
+          <input
+            id="bet-amount"
+            type="number"
+            value={betAmount}
+            onChange={e => setBetAmount(e.target.value)}
+            step={config?.betUnit ?? 1}
+            min={config?.minBet ?? 0}
+            max={config?.maxBet ?? undefined}
+            disabled={!config || spinning}
+            className="mt-2 w-full rounded border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-blue-400 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-blue-500"
+          />
+
+          {/* 휠 본체. transform(회전각)만 인라인으로 매번 바뀌고, transition 자체는
+              globals.css의 .roulette-wheel이 관리한다(reduced-motion에서 덮어쓸 수 있도록). */}
+          <div className="relative mx-auto my-5 h-40 w-40">
+            <div className="absolute left-1/2 top-0 z-10 -translate-x-1/2 -translate-y-full">
+              <div className="h-0 w-0 border-x-8 border-t-[14px] border-x-transparent border-t-orange-500" />
+            </div>
+            <div
+              onTransitionEnd={handleWheelTransitionEnd}
+              style={{ transform: `rotate(${rotation}deg)`, background: WHEEL_BACKGROUND }}
+              className="roulette-wheel relative h-40 w-40 overflow-hidden rounded-full border-4 border-white shadow-inner dark:border-neutral-900"
+            >
+              {wheelLabels.map((label, i) => {
+                const angle = i * SEGMENT_DEG + SEGMENT_DEG / 2
+                return (
+                  <span
+                    key={i}
+                    className="absolute left-1/2 top-1/2 w-12 text-center text-[9px] font-bold leading-tight text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]"
+                    style={{ transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(-56px)` }}
+                  >
+                    {truncateForWheel(label)}
+                  </span>
+                )
+              })}
+            </div>
+            <div className="absolute inset-0 m-auto flex h-11 w-11 items-center justify-center rounded-full bg-white text-[10px] font-bold text-neutral-400 shadow dark:bg-neutral-900 dark:text-neutral-500">
+              승 / 패
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleSpin}
+            disabled={!config || spinning}
+            className="w-full rounded bg-orange-500 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {spinning ? '스핀 중…' : '스핀'}
+          </button>
+
+          {config && (
+            <p className="mt-2 text-center text-[11px] text-neutral-400 dark:text-neutral-500">
+              {config.betUnit.toLocaleString()}P 단위 · {config.minBet.toLocaleString()}P ~{' '}
+              {config.maxBet.toLocaleString()}P · 수수료 {Math.round(config.feeRate * 100)}%
+            </p>
+          )}
+          {error && <p className="mt-2 text-center text-xs text-red-500">{error}</p>}
+        </div>
+
+        {/* 결과 */}
+        {result && (
+          <div
+            className={`animate-fade-in-up rounded-lg border p-4 ${
+              result.win
+                ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-500/10'
+                : 'border-red-200 bg-red-50 dark:border-red-500/30 dark:bg-red-500/10'
+            }`}
+          >
+            <p
+              className={`text-sm font-bold ${
+                result.win ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400'
+              }`}
+            >
+              {result.win
+                ? MESSAGES.points.roulette.win(result.opponentNickname, result.resultAmount.toLocaleString())
+                : MESSAGES.points.roulette.lose(result.opponentNickname, result.resultAmount.toLocaleString())}
+            </p>
+            <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+              수수료 {result.fee.toLocaleString()}P 차감 · 잔액 {result.balanceAfter.toLocaleString()}P
+            </p>
+
+            {!result.opponentLocked && (
+              <button
+                type="button"
+                onClick={() => handleLock(result.opponentId)}
+                disabled={lockPending}
+                className="mt-3 rounded border border-orange-300 px-2.5 py-1 text-xs font-medium text-orange-600 hover:bg-orange-100 disabled:opacity-50 dark:border-orange-500/40 dark:text-orange-400 dark:hover:bg-orange-500/10"
+              >
+                {result.opponentNickname}님으로 고정하기
+              </button>
+            )}
+          </div>
+        )}
+
+        <RouletteConsentModal
+          open={consentOpen}
+          onAgree={() => {
+            setAgreed(true)
+            setConsentOpen(false)
+            setError('')
+          }}
+          onClose={() => setConsentOpen(false)}
+        />
+      </div>
+    </GameLayoutWithOdds>
   )
 }
