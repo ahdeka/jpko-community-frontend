@@ -8,6 +8,11 @@ import { noticesApi } from '@/lib/api/notices'
 // 규모가 커지면 분할 sitemap으로 확장하면 된다.
 const MAX_ENTRIES = 200
 
+// sitemap.ts는 기본으로 "빌드 시 1회 생성 후 캐시"된다(Next 문서: 요청 시점 API가 없으면 캐시).
+// 그대로 두면 배포 시점의 글 목록에서 멈춰 새 글이 다음 배포 전까지 빠지므로,
+// 1시간마다 백그라운드에서 다시 생성한다(ISR). 재생성 중에도 직전 버전을 계속 응답한다.
+export const revalidate = 3600
+
 // /sitemap.xml 생성. 백엔드 조회 실패 시에도 정적 라우트는 항상 포함되도록 개별 catch.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date()

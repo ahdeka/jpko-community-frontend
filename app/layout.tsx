@@ -27,7 +27,9 @@ export const metadata: Metadata = {
   // 각 페이지가 자기 경로의 canonical을 자동으로 갖는다. (예: /posts/34 → {metadataBase}/posts/34)
   // 하위 페이지가 alternates를 따로 정의하지 않는 한 이 설정이 상속된다.
   // 목적: apex·vercel.app·쿼리스트링이 붙은 주소로 들어와도 정본(www)을 한 곳으로 모은다.
-  alternates: { canonical: './' },
+  // types: 모든 페이지 <head>에 <link rel="alternate" type="application/rss+xml">를 넣어
+  // 검색 로봇·RSS 리더가 피드 주소(/rss.xml)를 스스로 찾게 한다.
+  alternates: { canonical: './', types: { 'application/rss+xml': '/rss.xml' } },
   openGraph: {
     type: 'website',
     siteName: SITE_NAME,
