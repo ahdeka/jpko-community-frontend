@@ -47,13 +47,20 @@ export const metadata: Metadata = {
   robots: INDEXING_ENABLED
     ? { index: true, follow: true }
     : { index: false, follow: false },
-  // 검색엔진 사이트 소유확인 토큰.
+  // 검색엔진·광고 사이트 소유확인 토큰.
   // verification.other는 키를 meta name으로 그대로 쓰므로
-  // <meta name="naver-site-verification" content="..."> 가 모든 페이지 <head>에 렌더된다.
+  // <meta name="naver-site-verification" content="..."> 가 모든 페이지에 렌더된다.
   // 네이버는 HTML 파일 방식(public/naver...html)도 함께 두어 이중으로 대비한다.
+  //
+  // google-adsense-account: AdSense 사이트 소유권 확인용(광고 게재용 스크립트와는 별개).
+  // 게시자 ID는 페이지 소스에 그대로 노출되는 공개 값이라 하드코딩해도 된다.
+  // 참고: 이 버전 Next는 동적 페이지(게시글 상세 등)에서 일반 브라우저에는 메타데이터를
+  // <body> 끝에 스트리밍하지만, Google 크롤러(Mediapartners-Google 등 htmlLimitedBots)와
+  // 홈(/)에는 <head>로 내보낸다. AdSense 확인은 이 경로로 이뤄지므로 문제없다.
   verification: {
     other: {
       'naver-site-verification': '346693e372af463e0e73cf3b3cd1067ece082a76',
+      'google-adsense-account': 'ca-pub-9994919174977368',
     },
   },
 }
