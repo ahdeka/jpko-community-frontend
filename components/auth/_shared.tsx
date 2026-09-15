@@ -63,7 +63,8 @@ export function AgreementRow({
   checked: boolean
   onChange: () => void
   error?: string
-  href: string
+  // 없으면 링크 없이 label 문장을 그대로 보여준다(예: "만 14세 이상입니다.")
+  href?: string
   label: string
 }) {
   return (
@@ -77,17 +78,23 @@ export function AgreementRow({
         />
         <span className="text-sm text-neutral-700 dark:text-neutral-300">
           <span className="text-red-500">[필수]</span>{' '}
-          <Link
-            href={href}
-            target="_blank"
-            rel="noopener noreferrer"
-            // 링크 클릭이 라벨로 버블링돼 체크박스가 토글되는 것을 막는다
-            onClick={e => e.stopPropagation()}
-            className="text-blue-600 dark:text-blue-400 underline underline-offset-2"
-          >
-            {label}
-          </Link>
-          에 동의합니다.
+          {href ? (
+            <>
+              <Link
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                // 링크 클릭이 라벨로 버블링돼 체크박스가 토글되는 것을 막는다
+                onClick={e => e.stopPropagation()}
+                className="text-blue-600 dark:text-blue-400 underline underline-offset-2"
+              >
+                {label}
+              </Link>
+              에 동의합니다.
+            </>
+          ) : (
+            label
+          )}
         </span>
       </label>
       {error && <p className="text-xs text-red-500 mt-1 ml-6">{error}</p>}

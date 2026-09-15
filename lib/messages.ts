@@ -75,6 +75,7 @@ export const MESSAGES = {
       nicknamePattern: '닉네임은 한글, 영문, 숫자만 사용할 수 있습니다.',
       termsRequired: '이용약관에 동의해주세요.',
       privacyRequired: '개인정보처리방침에 동의해주세요.',
+      ageRequired: '만 14세 이상만 가입할 수 있습니다.',
       duplicateEmail: '이미 가입된 이메일입니다. 로그인을 이용해주세요.',
       duplicateLoginId: '이미 사용 중인 아이디입니다.',
       duplicateNickname: '이미 사용 중인 닉네임입니다.',

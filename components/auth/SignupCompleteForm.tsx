@@ -17,6 +17,7 @@ type FieldName =
   | 'nickname'
   | 'termsAgreed'
   | 'privacyAgreed'
+  | 'ageConfirmed'
 type FieldErrors = Partial<Record<FieldName, string>>
 
 // 토큰 검증 결과. verifying → (성공)ready / (실패)invalid.
@@ -39,6 +40,8 @@ export default function SignupCompleteForm({ token }: { token: string }) {
   const [nickname, setNickname] = useState('')
   const [termsAgreed, setTermsAgreed] = useState(false)
   const [privacyAgreed, setPrivacyAgreed] = useState(false)
+  // 만 14세 이상 확인. 가입 게이트로만 쓰고 백엔드로는 보내지 않는다(저장 컬럼 없음).
+  const [ageConfirmed, setAgeConfirmed] = useState(false)
 
   const [touched, setTouched] = useState<Partial<Record<FieldName, boolean>>>({})
   const [submitted, setSubmitted] = useState(false)
@@ -110,15 +113,17 @@ export default function SignupCompleteForm({ token }: { token: string }) {
 
     if (!termsAgreed) errs.termsAgreed = MESSAGES.auth.signup.termsRequired
     if (!privacyAgreed) errs.privacyAgreed = MESSAGES.auth.signup.privacyRequired
+    if (!ageConfirmed) errs.ageConfirmed = MESSAGES.auth.signup.ageRequired
 
     return errs
-  }, [loginId, password, passwordConfirm, nickname, termsAgreed, privacyAgreed])
+  }, [loginId, password, passwordConfirm, nickname, termsAgreed, privacyAgreed, ageConfirmed])
 
-  const allAgreed = termsAgreed && privacyAgreed
+  const allAgreed = termsAgreed && privacyAgreed && ageConfirmed
   function toggleAll() {
     const next = !allAgreed
     setTermsAgreed(next)
     setPrivacyAgreed(next)
+    setAgeConfirmed(next)
   }
 
   function visibleError(field: FieldName): string | undefined {
@@ -233,6 +238,7 @@ export default function SignupCompleteForm({ token }: { token: string }) {
   const nicknameError = visibleError('nickname')
   const termsError = visibleError('termsAgreed')
   const privacyError = visibleError('privacyAgreed')
+  const ageError = visibleError('ageConfirmed')
 
   return (
     <>
@@ -364,6 +370,14 @@ export default function SignupCompleteForm({ token }: { token: string }) {
               error={privacyError}
               href="/privacy"
               label="개인정보처리방침"
+            />
+          </div>
+          <div className="mt-2">
+            <AgreementRow
+              checked={ageConfirmed}
+              onChange={() => setAgeConfirmed(v => !v)}
+              error={ageError}
+              label="만 14세 이상입니다."
             />
           </div>
         </div>
