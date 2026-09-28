@@ -21,6 +21,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: SITE_URL, lastModified: now, changeFrequency: 'hourly', priority: 1 },
     { url: `${SITE_URL}/posts`, lastModified: now, changeFrequency: 'hourly', priority: 0.9 },
     { url: `${SITE_URL}/notices`, lastModified: now, changeFrequency: 'weekly', priority: 0.5 },
+    // 사이트 신뢰성 페이지. 거의 바뀌지 않지만, 검색엔진과 광고 심사가 "운영 주체와 연락처가
+    // 밝혀져 있는지"를 보기 때문에 색인 대상에 명시적으로 포함한다.
+    { url: `${SITE_URL}/about`, lastModified: now, changeFrequency: 'yearly', priority: 0.4 },
+    { url: `${SITE_URL}/contact`, lastModified: now, changeFrequency: 'yearly', priority: 0.4 },
   ]
 
   const [categoriesRes, postsRes, noticesRes] = await Promise.all([
@@ -37,6 +41,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }))
 
   // 목록(요약) 조회라 게시글 조회수는 증가하지 않는다.
+  //
+  // ⚠️ 내용이 빈약한 글은 상세 페이지에서 noindex 처리되지만(lib/site.ts isIndexablePost),
+  //    여기서는 걸러내지 못한다. 목록 응답(PostSummaryResponse)에 본문이 없고,
+  //    본문을 보려면 글마다 상세를 조회해야 하는데 그 API는 호출할 때마다 조회수를 올린다
+  //    (1시간마다 재생성되므로 전체 글 조회수가 계속 부풀게 된다).
+  //    → 그래서 sitemap에는 전부 담고 색인 여부는 페이지가 판정한다. 그 결과 GSC 색인 보고서에
+  //      "제출된 URL이 noindex입니다" 항목이 뜨는데, 페널티가 아니라 이 구조의 부작용이다.
+  //      백엔드 목록 응답에 본문 길이(또는 색인 가능 여부) 필드가 생기면 여기서도 걸러낼 것.
   const postRoutes: MetadataRoute.Sitemap = (postsRes?.data?.posts?.content ?? []).map(post => ({
     url: `${SITE_URL}/posts/${post.id}`,
     lastModified: new Date(post.createdAt),

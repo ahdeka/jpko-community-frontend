@@ -8,7 +8,7 @@ import { authHeaders } from '@/lib/api/server'
 import { ApiError } from '@/lib/api/client'
 import { buildListHref, encodeListContext, parseListContext, type ListContext } from '@/lib/list-context'
 import { searchQueryParams } from '@/lib/search'
-import { excerpt } from '@/lib/site'
+import { excerpt, isIndexablePost, INDEXING_ENABLED } from '@/lib/site'
 import PostDetail from '@/components/post/PostDetail'
 import ViewMarker from '@/components/post/ViewMarker'
 import PostList from '@/components/post/PostList'
@@ -40,11 +40,22 @@ export async function generateMetadata({
   if (!post) return { title: '게시글' }
 
   const description = excerpt(post.content)
+
+  // 내용이 빈약한 글은 색인에서 제외한다(사이트 안에서는 그대로 보인다).
+  // 판정에 쓰는 post는 위에서 이미 조회한 값이라 추가 요청이 없다 — 즉 조회수에도 영향이 없다.
+  //
+  // robots 키를 "아예 넣지 않는" 분기가 중요하다. 루트 레이아웃이 INDEXING_ENABLED에 따라
+  // 전역 색인 차단을 걸어두므로, 여기서 index:true를 주면 차단 게이트를 뚫어버린다.
+  // 색인해도 되는 글은 아무 말도 하지 않고 루트의 결정을 그대로 상속시킨다.
+  const indexable = INDEXING_ENABLED && isIndexablePost(post.content, post.commentCount)
+
   return {
     title: post.title,
     description,
     openGraph: { type: 'article', title: post.title, description },
     twitter: { card: 'summary_large_image', title: post.title, description },
+    // follow는 살려둔다 — 이 글이 색인되지 않더라도 링크를 타고 다른 글은 발견되게 한다.
+    ...(indexable ? {} : { robots: { index: false, follow: true } }),
   }
 }
 

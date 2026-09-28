@@ -14,7 +14,17 @@ export default function Footer() {
       {/* 색상 반전(라이트/다크) 토글. 위치는 본문 우측 하단이지만 DOM/영역상은 푸터에 속한다. */}
       <ThemeToggle />
 
+      {/* 소개·문의는 사이트가 누가 운영하며 어디로 연락하면 되는지를 밝히는 자리다.
+          법적 문서(약관·개인정보)와 함께 전 페이지 하단에 고정 노출한다. */}
       <nav className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs">
+        <Link href="/about" className="text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200">
+          사이트 소개
+        </Link>
+        <span className="text-neutral-300 dark:text-neutral-700">|</span>
+        <Link href="/contact" className="text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200">
+          문의
+        </Link>
+        <span className="text-neutral-300 dark:text-neutral-700">|</span>
         <Link href="/terms" className="text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200">
           이용약관
         </Link>
