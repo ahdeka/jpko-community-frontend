@@ -73,6 +73,9 @@ export const MESSAGES = {
       nicknameRequired: '닉네임을 입력해주세요.',
       nicknameLength: '닉네임은 2자 이상 20자 이하여야 합니다.',
       nicknamePattern: '닉네임은 한글, 영문, 숫자만 사용할 수 있습니다.',
+      // 백엔드 BLACKLIST_NICKNAME(400) — 운영진 사칭·비속어 등 금칙어.
+      // 어떤 단어가 걸렸는지는 알려주지 않는다(금칙어 목록을 역으로 캐내는 걸 막기 위해).
+      nicknameBlacklisted: '사용할 수 없는 닉네임입니다. 다른 닉네임을 입력해주세요.',
       termsRequired: '이용약관에 동의해주세요.',
       privacyRequired: '개인정보처리방침에 동의해주세요.',
       ageRequired: '만 14세 이상만 가입할 수 있습니다.',
@@ -143,6 +146,22 @@ export const MESSAGES = {
       nicknameSameAsCurrent: '현재 닉네임과 동일합니다.',
       nicknameChanged: '닉네임이 변경되었습니다.',
       nicknameChangeFailed: '닉네임 변경에 실패했습니다.',
+      nicknameDuplicate: '이미 사용 중인 닉네임입니다.',
+      // 백엔드 BLACKLIST_NICKNAME(400). 걸린 단어는 밝히지 않는다(목록 역추적 방지).
+      nicknameBlacklisted: '사용할 수 없는 닉네임입니다. 다른 닉네임을 입력해주세요.',
+      // 변경 버튼을 누르기 전 보여주는 안내 — 한 번 바꾸면 되돌릴 수 없다는 걸 미리 알린다.
+      nicknameCooldownWarning: (days: number) =>
+        `닉네임을 변경하면 ${days}일 동안 다시 변경할 수 없습니다.`,
+      // 변경 직전 확인창. 실수로 바꿔서 한 달간 묶이는 상황을 막는다.
+      nicknameChangeConfirm: (next: string, days: number) =>
+        `닉네임을 '${next}'(으)로 변경할까요?\n변경 후 ${days}일 동안은 다시 변경할 수 없습니다.`,
+      // 쿨타임으로 폼이 잠겼을 때의 안내. until은 다시 변경 가능해지는 날짜, remaining은 남은 기간.
+      nicknameCooldownLocked: (until: string, remaining: string) =>
+        `닉네임은 ${until}부터 다시 변경할 수 있습니다. (약 ${remaining} 남음)`,
+      // 백엔드 NICKNAME_CHANGE_COOLDOWN(400) — 프론트 잠금을 뚫고 요청이 나간 경우
+      // (기기 시계 오차, 다른 탭에서 먼저 변경 등). 서버 판정이 최종이다.
+      nicknameCooldownRejected: (days: number) =>
+        `닉네임은 변경 후 ${days}일이 지나야 다시 변경할 수 있습니다.`,
       currentPasswordRequired: '현재 비밀번호를 입력해주세요.',
       newPasswordLength: '새 비밀번호는 8~50자 사이여야 합니다.',
       passwordMismatch: '새 비밀번호가 일치하지 않습니다.',
@@ -164,6 +183,10 @@ export const MESSAGES = {
       bullets: [
         '계정이 즉시 비활성화되며 다시 로그인할 수 없습니다.',
         '닉네임·이메일 등 개인정보는 익명 처리되며 복구할 수 없습니다.',
+        // 백엔드 User.withdraw()가 loginId를 'del-{id}'로 치환하고 password를 NULL로 지운다.
+        // 아이디가 반납되므로, 탈퇴 후 같은 아이디로 새로 가입하는 것 자체는 가능하다
+        // (다만 새 계정이므로 기존 활동 내역과는 연결되지 않는다).
+        '로그인 아이디와 비밀번호는 즉시 폐기됩니다. 같은 아이디로 다시 가입하더라도 이전 계정과는 연결되지 않습니다.',
         "작성하신 글과 댓글은 삭제되지 않고 '탈퇴회원'으로 표시됩니다.",
         '모든 기기에서 로그아웃됩니다.',
         '접속 IP는 관련 법령에 따라 6개월간 보관 후 파기됩니다.',

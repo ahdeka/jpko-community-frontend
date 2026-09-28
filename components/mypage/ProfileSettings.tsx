@@ -1,10 +1,19 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { usersApi } from '@/lib/api/users'
 import { ApiError } from '@/lib/api/client'
 import { MESSAGES } from '@/lib/messages'
+import { formatDate, formatRemainingTime } from '@/lib/format'
+import {
+  NICKNAME_RE,
+  NICKNAME_MIN,
+  NICKNAME_MAX,
+  NICKNAME_COOLDOWN_DAYS,
+  isBlacklistedNickname,
+  getNicknameCooldown,
+} from '@/lib/nickname'
 import WithdrawModal from '@/components/mypage/WithdrawModal'
 
 // 자기소개 최대 길이 — 백엔드 UpdateBioRequest @Size(max=200)와 일치시킨다.
@@ -13,9 +22,6 @@ const BIO_MAX = 200
 // 입력 공통 스타일 (게시글 폼과 동일 톤)
 const inputClass =
   'w-full rounded border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-blue-400 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-blue-500'
-
-// 백엔드 UpdateNicknameRequest @Pattern 미러링: 한글(완성형)·영문·숫자만 허용(공백·특수문자 불가).
-const NICKNAME_RE = /^[가-힣a-zA-Z0-9]+$/
 
 // 백엔드 에러 code를 "비밀번호 변경" 화면 맥락에 맞는 메시지로 변환한다.
 // 백엔드는 에러 응답 code에 ErrorCode enum 이름(name())을 그대로 실어 보내므로,
@@ -32,6 +38,24 @@ function passwordErrorMessage(err: unknown): string {
       return MESSAGES.mypage.profileSettings.passwordMismatch
     default:
       return err.message // 그 외에는 서버 메시지를 그대로 노출
+  }
+}
+
+// 백엔드 에러 code를 "닉네임 변경" 맥락의 메시지로 변환한다(비밀번호 쪽과 같은 방식).
+// 백엔드 UserService.validateNewNickname의 검사 순서와 1:1로 대응한다.
+function nicknameErrorMessage(err: unknown): string {
+  if (!(err instanceof ApiError)) return MESSAGES.mypage.profileSettings.nicknameChangeFailed
+  switch (err.code) {
+    case 'SAME_AS_CURRENT_NICKNAME':
+      return MESSAGES.mypage.profileSettings.nicknameSameAsCurrent
+    case 'BLACKLIST_NICKNAME':
+      return MESSAGES.mypage.profileSettings.nicknameBlacklisted
+    case 'NICKNAME_CHANGE_COOLDOWN':
+      return MESSAGES.mypage.profileSettings.nicknameCooldownRejected(NICKNAME_COOLDOWN_DAYS)
+    case 'DUPLICATE_NICKNAME':
+      return MESSAGES.mypage.profileSettings.nicknameDuplicate
+    default:
+      return err.message || MESSAGES.mypage.profileSettings.nicknameChangeFailed
   }
 }
 
@@ -88,13 +112,35 @@ export default function ProfileSettings() {
   const [nickMsg, setNickMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [nickLoading, setNickLoading] = useState(false)
 
+  // 닉네임 변경 쿨타임(마지막 변경 + 30일). 잠금 여부는 서버가 내려준 시각으로만 판단한다.
+  //
+  // 이 값은 렌더 시점에 한 번 계산되므로, 화면을 띄워둔 채 쿨타임이 끝나면 잠금이 저절로 풀리진
+  // 않는다(새로고침하거나 fetchUser()가 돌면 갱신됨). 30일 단위 제약이라 타이머까지 두지 않았다.
+  const cooldown = useMemo(
+    () => getNicknameCooldown(user?.nicknameChangeableAt),
+    [user?.nicknameChangeableAt]
+  )
+
   async function handleNickname(e: React.FormEvent) {
     e.preventDefault()
     setNickMsg(null)
 
+    // 폼은 잠겨 있지만 엔터 제출 등으로 들어올 수 있어 한 번 더 막는다(서버도 막지만 왕복을 아낌).
+    if (cooldown.locked && cooldown.until) {
+      setNickMsg({
+        type: 'error',
+        text: MESSAGES.mypage.profileSettings.nicknameCooldownLocked(
+          formatDate(cooldown.until),
+          formatRemainingTime(cooldown.until)
+        ),
+      })
+      return
+    }
+
     const trimmed = nickname.trim()
-    // 백엔드와 동일 기준(trim → 2~20자 → 한글·영문·숫자 패턴)으로 1차 검증
-    if (trimmed.length < 2 || trimmed.length > 20) {
+    // 백엔드와 동일 기준(trim → 2~20자 → 한글·영문·숫자 패턴 → 금칙어)으로 1차 검증.
+    // 순서도 백엔드 validateNewNickname과 맞춰, 같은 입력에 같은 메시지가 나오게 한다.
+    if (trimmed.length < NICKNAME_MIN || trimmed.length > NICKNAME_MAX) {
       setNickMsg({ type: 'error', text: MESSAGES.mypage.profileSettings.nicknameLength })
       return
     }
@@ -106,18 +152,32 @@ export default function ProfileSettings() {
       setNickMsg({ type: 'error', text: MESSAGES.mypage.profileSettings.nicknameSameAsCurrent })
       return
     }
+    if (isBlacklistedNickname(trimmed)) {
+      setNickMsg({ type: 'error', text: MESSAGES.mypage.profileSettings.nicknameBlacklisted })
+      return
+    }
+
+    // 성공하면 30일간 되돌릴 수 없으므로 마지막으로 한 번 확인받는다.
+    const confirmed = window.confirm(
+      MESSAGES.mypage.profileSettings.nicknameChangeConfirm(trimmed, NICKNAME_COOLDOWN_DAYS)
+    )
+    if (!confirmed) return
 
     setNickLoading(true)
     try {
       await usersApi.updateNickname(trimmed)
-      // 헤더 등 다른 곳의 닉네임도 즉시 갱신되도록 사용자 정보 재조회
+      // 헤더 등 다른 곳의 닉네임도 즉시 갱신되도록 사용자 정보 재조회.
+      // 이때 새 nicknameChangeableAt도 함께 와서 폼이 곧바로 쿨타임 잠금 상태로 바뀐다.
       await fetchUser()
       setNickMsg({ type: 'success', text: MESSAGES.mypage.profileSettings.nicknameChanged })
     } catch (err) {
-      setNickMsg({
-        type: 'error',
-        text: err instanceof ApiError ? err.message : MESSAGES.mypage.profileSettings.nicknameChangeFailed,
-      })
+      // 쿨타임 거부는 화면이 알고 있던 상태가 서버와 어긋났다는 뜻이다(기기 시계 오차,
+      // 다른 탭에서 먼저 변경 등). 서버 기준 값을 다시 받아 폼 잠금을 맞춰준다.
+      // 여기서 실패하더라도 아래 에러 메시지는 그대로 보여줘야 하므로 무시한다.
+      if (err instanceof ApiError && err.code === 'NICKNAME_CHANGE_COOLDOWN') {
+        await fetchUser().catch(() => {})
+      }
+      setNickMsg({ type: 'error', text: nicknameErrorMessage(err) })
     } finally {
       setNickLoading(false)
     }
@@ -203,7 +263,7 @@ export default function ProfileSettings() {
 
       <div className="border-t border-neutral-100 dark:border-neutral-800" />
 
-      {/* 닉네임 변경 */}
+      {/* 닉네임 변경 — 한 번 바꾸면 30일간 잠기므로, 잠금 상태와 그 이유를 항상 폼 옆에 같이 보여준다. */}
       <section>
         <h3 className="mb-3 text-sm font-bold text-neutral-900 dark:text-neutral-100">닉네임 변경</h3>
         <form onSubmit={handleNickname} className="flex flex-col gap-2 sm:flex-row sm:items-start">
@@ -212,20 +272,31 @@ export default function ProfileSettings() {
               type="text"
               value={nickname}
               onChange={e => setNickname(e.target.value)}
-              maxLength={20}
+              maxLength={NICKNAME_MAX}
               placeholder="닉네임"
-              className={inputClass}
+              disabled={cooldown.locked}
+              // 잠금 중에는 입력 자체를 막고, 왜 못 쓰는지는 폼 아래 안내 문구가 설명한다.
+              className={`${inputClass} disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:text-neutral-400 dark:disabled:bg-neutral-800 dark:disabled:text-neutral-500`}
             />
             {nickMsg && <div className="mt-1"><Notice type={nickMsg.type}>{nickMsg.text}</Notice></div>}
           </div>
           <button
             type="submit"
-            disabled={nickLoading}
-            className="shrink-0 rounded bg-neutral-800 px-4 py-2 text-sm text-white hover:bg-neutral-700 disabled:opacity-50 dark:bg-neutral-700 dark:hover:bg-neutral-600"
+            disabled={nickLoading || cooldown.locked}
+            className="shrink-0 rounded bg-neutral-800 px-4 py-2 text-sm text-white hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-neutral-700 dark:hover:bg-neutral-600"
           >
             {nickLoading ? '변경 중…' : '변경'}
           </button>
         </form>
+        {/* 잠금 중이면 언제 풀리는지, 아니면 바꾸면 어떤 제약이 생기는지 — 둘 중 하나는 항상 보인다. */}
+        <p className="mt-2 text-xs text-neutral-500 dark:text-neutral-400">
+          {cooldown.locked && cooldown.until
+            ? MESSAGES.mypage.profileSettings.nicknameCooldownLocked(
+                formatDate(cooldown.until),
+                formatRemainingTime(cooldown.until)
+              )
+            : MESSAGES.mypage.profileSettings.nicknameCooldownWarning(NICKNAME_COOLDOWN_DAYS)}
+        </p>
       </section>
 
       <div className="border-t border-neutral-100 dark:border-neutral-800" />

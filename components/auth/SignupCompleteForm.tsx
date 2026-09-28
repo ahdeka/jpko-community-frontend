@@ -8,7 +8,8 @@ import { ApiError } from '@/lib/api/client'
 import { useAuth } from '@/lib/auth-context'
 import { MESSAGES } from '@/lib/messages'
 import RedirectingOverlay from './RedirectingOverlay'
-import { inputClass, NICKNAME_RE, LOGINID_RE, PasswordToggle, AgreementRow } from './_shared'
+import { inputClass, LOGINID_RE, PasswordToggle, AgreementRow } from './_shared'
+import { NICKNAME_RE, isBlacklistedNickname } from '@/lib/nickname'
 
 type FieldName =
   | 'loginId'
@@ -109,6 +110,10 @@ export default function SignupCompleteForm({ token }: { token: string }) {
       errs.nickname = MESSAGES.auth.signup.nicknameLength
     } else if (!NICKNAME_RE.test(trimmedNickname)) {
       errs.nickname = MESSAGES.auth.signup.nicknamePattern
+    } else if (isBlacklistedNickname(trimmedNickname)) {
+      // 백엔드 NicknamePolicy와 같은 판정을 미리 돌려, 가입 마지막 단계에서 튕기는 걸 줄인다.
+      // 최종 판정은 서버가 하며, 목록이 어긋나면 아래 BLACKLIST_NICKNAME 처리로 흡수된다.
+      errs.nickname = MESSAGES.auth.signup.nicknameBlacklisted
     }
 
     if (!termsAgreed) errs.termsAgreed = MESSAGES.auth.signup.termsRequired
@@ -189,6 +194,9 @@ export default function SignupCompleteForm({ token }: { token: string }) {
           setServerErrors(prev => ({ ...prev, loginId: MESSAGES.auth.signup.duplicateLoginId }))
         } else if (err.code === 'DUPLICATE_NICKNAME') {
           setServerErrors(prev => ({ ...prev, nickname: MESSAGES.auth.signup.duplicateNickname }))
+        } else if (err.code === 'BLACKLIST_NICKNAME') {
+          // 프론트 금칙어 목록이 백엔드보다 낡았을 때만 여기 온다(정상 경로는 제출 전에 걸림).
+          setServerErrors(prev => ({ ...prev, nickname: MESSAGES.auth.signup.nicknameBlacklisted }))
         } else if (err.code === 'PASSWORD_MISMATCH') {
           setServerErrors(prev => ({ ...prev, passwordConfirm: MESSAGES.auth.signup.passwordMismatch }))
         } else {

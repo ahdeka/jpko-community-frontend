@@ -9,7 +9,10 @@
 const KST_OFFSET = '+09:00'
 const KST_TIMEZONE = 'Asia/Seoul'
 
-function parseServerDate(dateString: string): Date {
+// 백엔드 LocalDateTime 문자열을 다루는 곳은 반드시 이 함수를 거쳐야 한다.
+// new Date()를 직접 쓰면 실행 환경(UTC 서버, 해외 거주자 PC)에 따라 최대 하루 가까이
+// 어긋나, 같은 값을 쓰는 두 화면이 서로 다른 시각을 가리키게 된다.
+export function parseServerDate(dateString: string): Date {
   // 이미 Z 또는 ±hh:mm / ±hhmm 오프셋이 붙어 있으면 그 타임존 정보를 신뢰한다.
   const hasTimezone = /(?:Z|[+-]\d{2}:?\d{2})$/.test(dateString)
   return new Date(hasTimezone ? dateString : `${dateString}${KST_OFFSET}`)
@@ -68,4 +71,25 @@ export function formatSuspendDuration(minutes: number): string {
   if (minutes % 1440 === 0) return `${minutes / 1440}일`
   if (minutes % 60 === 0) return `${minutes / 60}시간`
   return `${minutes}분`
+}
+
+// "지금부터 해당 시각까지 얼마나 남았는지"를 사람이 읽는 문구로 바꾼다.
+// 닉네임 변경 쿨타임(30일) 안내처럼 "언제 풀리는지"보다 "얼마나 남았는지"가 더 와닿는 곳에서 쓴다.
+//
+// 이미 지났으면(0 이하) '곧'을 돌려준다. 경계에서 프론트가 "지났다"고 본 순간에도 서버는
+// 아직 거부할 수 있으므로(서버 기준 시계가 최종) "지금 가능"이라 단정하지 않는다.
+//
+// 남은 값은 항상 올림한다. 29일 12시간 남았는데 "29일"이라고 하면 실제보다 짧게 느껴져,
+// 그날 다시 와서 또 막히는 일이 생긴다. "약 ○○ 남음" 문구와 함께 쓰는 걸 전제로 한 어림값이다.
+export function formatRemainingTime(dateString: string): string {
+  const target = parseServerDate(dateString)
+  if (Number.isNaN(target.getTime())) return '곧'
+
+  const diffMs = target.getTime() - Date.now()
+  if (diffMs <= 0) return '곧'
+
+  // diffMs > 0 이므로 올림한 hours는 항상 1 이상이다(= "0시간" 표기가 나올 수 없다).
+  const hours = Math.ceil(diffMs / 3_600_000)
+  if (hours < 24) return `${hours}시간`
+  return `${Math.ceil(hours / 24)}일`
 }

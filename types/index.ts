@@ -57,6 +57,14 @@ export interface User {
   // 자기소개(최대 200자). 백엔드 /api/auth/me(UserInfoResponse)가 내려주며, 없으면 null.
   // 마이페이지 자기소개 편집의 현재 값으로 쓴다.
   bio: string | null;
+  // 닉네임을 다시 바꿀 수 있게 되는 시각(마지막 변경 + 30일).
+  // 백엔드 타입이 LocalDateTime이라 타임존 표기가 없는 ISO 문자열("2026-10-28T16:01:05")이며
+  // 벽시계 기준은 KST다. 파싱은 lib/format.ts의 parseServerDate로만 할 것.
+  //  - null      : 한 번도 안 바꿈 → 지금 바로 변경 가능
+  //  - 미래 시각 : 쿨타임 중 → 마이페이지 닉네임 폼을 잠그고 남은 기간을 안내한다
+  //  - undefined : 이 필드를 모르는 구버전 백엔드(프론트 선배포). 잠그지 않고 서버 판정에 맡긴다
+  //                (level이 optional인 것과 같은 배포 스큐 방어)
+  nicknameChangeableAt?: string | null;
 }
 
 // 로그인/회원가입 응답 (백엔드 LoginResponse와 1:1)

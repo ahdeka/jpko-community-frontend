@@ -7,10 +7,10 @@ export const inputClass =
   'w-full border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 rounded px-3 py-2 text-sm outline-none transition-colors focus:border-blue-400 dark:focus:border-blue-500'
 
 // 백엔드 검증 미러링:
-//  - 닉네임: SignupCompleteRequest @Pattern — 한글(완성형)·영문·숫자만(공백·특수문자 불가).
 //  - 아이디: SignupCompleteRequest/SignupMigrationRequest @Pattern — 영문 소문자·숫자·언더바 4~20자.
 // 백엔드는 trim()/toLowerCase() 후 검사하므로 프론트도 정규화한 값 기준으로 검사한다.
-export const NICKNAME_RE = /^[가-힣a-zA-Z0-9]+$/
+//
+// 닉네임 규칙(NICKNAME_RE)과 금칙어는 가입 폼과 마이페이지가 함께 쓰므로 lib/nickname.ts에 모아뒀다.
 export const LOGINID_RE = /^[a-z0-9_]{4,20}$/
 
 // 비밀번호 표시/숨김 토글 버튼.
