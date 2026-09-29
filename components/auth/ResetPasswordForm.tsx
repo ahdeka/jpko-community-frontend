@@ -43,7 +43,7 @@ export default function ResetPasswordForm({ token }: { token: string }) {
           href="/forgot-password"
           className="w-full rounded bg-blue-600 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-700"
         >
-          비밀번호 찾기
+          아이디/비밀번호 찾기
         </Link>
       </div>
     )

@@ -202,7 +202,7 @@ export default function LoginForm() {
           href="/forgot-password"
           className="text-center text-neutral-500 hover:underline dark:text-neutral-400"
         >
-          비밀번호를 잊으셨나요?
+          아이디/비밀번호 찾기
         </Link>
       </div>
       </form>

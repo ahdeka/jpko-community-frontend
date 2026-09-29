@@ -86,12 +86,17 @@ export const authApi = {
   confirmEmailChange: (token: string) =>
     apiClient.post<void>(`/api/auth/email/confirm?token=${encodeURIComponent(token)}`),
 
-  // ===== 비밀번호 재설정 =====
+  // ===== 아이디/비밀번호 찾기 =====
 
-  // 이메일로 재설정 링크 발송을 요청한다.
-  // 계정 열거 방지를 위해 가입 여부와 무관하게 항상 200을 준다(프론트는 성공/실패를 구분할 수 없음).
-  requestPasswordReset: (email: string) =>
-    apiClient.post<void>('/api/auth/password-reset/request', { email }),
+  // 이메일 + Turnstile 토큰으로 계정 찾기 메일을 요청한다.
+  // 가입 여부와 무관하게 200을 준다(계정 열거 방지) — 차이는 메일 내용에만 있다.
+  //  - 가입된 이메일: 아이디 + 비밀번호 재설정 링크(/reset-password?token=, 30분 유효)
+  //  - 미가입/탈퇴 이메일: "연결된 계정 없음" 안내(단, MX 레코드가 없는 도메인이면 발송 생략)
+  // 실패 code: CAPTCHA_FAILED(400), INVALID_INPUT(400), EMAIL_SEND_FAILED(500).
+  findAccount: (body: {
+    email: string
+    turnstileToken: string
+  }) => apiClient.post<void>('/api/auth/find-account', body),
 
   // 메일 링크가 여는 /reset-password 페이지가 호출한다.
   // 실패 code: INVALID_VERIFICATION_TOKEN, EXPIRED_VERIFICATION_TOKEN, PASSWORD_MISMATCH.

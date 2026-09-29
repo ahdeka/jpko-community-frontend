@@ -19,7 +19,7 @@ export default function PrivacyPage() {
 
       <Section heading="이용 목적">
         <ul className="list-disc space-y-1 pl-5">
-          <li>회원 관리, 로그인, 이메일 인증과 비밀번호 재설정</li>
+          <li>회원 관리, 로그인, 이메일 인증과 아이디·비밀번호 찾기</li>
           <li>커뮤니티 운영과 게시물 관리</li>
           <li>도배·스팸·자동 가입 방지</li>
           <li>방문 통계, 성능 개선, 광고 게재</li>
@@ -38,7 +38,7 @@ export default function PrivacyPage() {
         <ul className="list-disc space-y-1 pl-5">
           <li><Label>Amazon Web Services</Label>: 서버·DB 운영, 이미지 저장, 인증 메일 발송</li>
           <li><Label>Vercel (미국)</Label>: 웹 호스팅, 방문 통계와 성능 측정</li>
-          <li><Label>Cloudflare (미국)</Label>: 로그인·가입 시 자동화 프로그램 차단(Turnstile)</li>
+          <li><Label>Cloudflare (미국)</Label>: 로그인·가입·아이디/비밀번호 찾기 시 자동화 프로그램 차단(Turnstile)</li>
         </ul>
         <p>
           Vercel과 Cloudflare는 해외 업체라 사이트를 이용하는 동안 IP와 브라우저 정보가 해당 업체 서버로 전송됩니다.
