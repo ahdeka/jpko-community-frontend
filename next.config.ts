@@ -12,6 +12,13 @@ const nextConfig: NextConfig = {
     //   나머지 절반의 수정은 app/posts/[id]/loading.tsx의 min-h-screen 주석 참고.
     appNewScrollHandler: true,
   },
+  async redirects() {
+    return [
+      // 비밀번호 찾기가 아이디/비밀번호 찾기로 통합되며 URL이 바뀌었다. 즐겨찾기 등 구 URL 진입을 살린다.
+      // 308(permanent)이라 브라우저·검색엔진이 영구 캐시한다 — 되돌릴 일 없는 이동이므로 적합.
+      { source: '/forgot-password', destination: '/find-account', permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;

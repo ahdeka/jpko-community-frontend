@@ -199,7 +199,7 @@ export default function LoginForm() {
         </Link>
         <span className="text-neutral-300 dark:text-neutral-700">|</span>
         <Link
-          href="/forgot-password"
+          href="/find-account"
           className="text-center text-neutral-500 hover:underline dark:text-neutral-400"
         >
           아이디/비밀번호 찾기

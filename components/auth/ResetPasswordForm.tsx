@@ -40,7 +40,7 @@ export default function ResetPasswordForm({ token }: { token: string }) {
           {MESSAGES.auth.resetPassword.missingTokenDescription}
         </p>
         <Link
-          href="/forgot-password"
+          href="/find-account"
           className="w-full rounded bg-blue-600 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-700"
         >
           아이디/비밀번호 찾기

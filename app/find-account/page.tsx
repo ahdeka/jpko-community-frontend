@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import FindAccountForm from '@/components/auth/FindAccountForm'
 
-// URL은 기존 링크 호환을 위해 /forgot-password를 유지한다(아이디 찾기도 이 화면에서 함께 처리).
+// 아이디/비밀번호 찾기 통합 화면. 구 URL(/forgot-password)은 next.config.ts에서 이곳으로 영구 리다이렉트한다.
 export const metadata: Metadata = { title: '아이디/비밀번호 찾기' }
 
 export default function FindAccountPage() {

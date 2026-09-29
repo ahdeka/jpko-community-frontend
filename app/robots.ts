@@ -16,7 +16,10 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: '*',
       allow: '/',
       // 인증/개인/작성 영역은 색인 대상이 아니므로 제외
-      disallow: ['/mypage', '/admin', '/login', '/signup', '/posts/new', '/posts/*/edit'],
+      disallow: [
+        '/mypage', '/admin', '/login', '/signup', '/find-account', '/reset-password',
+        '/posts/new', '/posts/*/edit',
+      ],
     },
     sitemap: `${SITE_URL}/sitemap.xml`,
     host: SITE_URL,

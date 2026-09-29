@@ -99,41 +99,44 @@ export default function FindAccountForm() {
     // React가 텍스트를 자동 이스케이프하므로 이메일을 그대로 렌더해도 XSS 위험이 없고,
     // 매우 긴 주소는 break-all로 줄바꿈해 레이아웃이 깨지지 않게 한다.
     return (
-      <div className="flex flex-col items-center gap-4 py-2 text-center">
-        <MailIcon />
-        <div>
-          <h1 className="text-lg font-bold">{MESSAGES.auth.findAccount.sentTitle}</h1>
-          <p className="mt-2 break-all text-sm font-semibold text-blue-700 dark:text-blue-400">{sentTo}</p>
-          <p className="mt-1 text-sm leading-relaxed text-neutral-600 dark:text-neutral-300">
-            {MESSAGES.auth.findAccount.sentInstructionPrefix}
-            <strong>{MESSAGES.auth.findAccount.sentInstructionEmphasis}</strong>
-            {MESSAGES.auth.findAccount.sentInstructionSuffix}
-          </p>
+      <div className="flex flex-col gap-4">
+        {/* 봉투 아이콘: "메일 관련 화면 → 지금 메일함으로 가야 한다"를 시각적으로 즉시 전달 */}
+        <div className="flex justify-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-500/10">
+            <svg
+              className="h-7 w-7 text-blue-600 dark:text-blue-400"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+              <polyline points="22,6 12,13 2,6" />
+            </svg>
+          </div>
         </div>
-        <div className="w-full rounded-md bg-neutral-50 px-3 py-2 text-xs text-neutral-500 dark:bg-neutral-900 dark:text-neutral-400">
-          <p>{MESSAGES.auth.findAccount.spamHint}</p>
-          <p className="mt-1">{MESSAGES.auth.findAccount.linkValidity}</p>
+
+        <div className="flex flex-col items-center gap-1 text-center">
+          <h1 className="text-xl font-bold">{MESSAGES.auth.findAccount.sentTitle}</h1>
+          {/* 입력한 이메일 주소를 강조 → 어느 메일함을 열지 목적지를 구체화한다 */}
+          <p className="break-all text-sm font-semibold text-blue-700 dark:text-blue-400">{sentTo}</p>
         </div>
-        <Link
-          href="/login"
-          className="w-full rounded bg-blue-600 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-700"
-        >
-          로그인하러 가기
+
+        <p className="text-center text-sm leading-relaxed text-neutral-600 dark:text-neutral-300">
+          {MESSAGES.auth.findAccount.linkValidity}
+        </p>
+
+        {/* 스팸함 안내는 부차 정보로 분리(작은 회색) → 메인 문구를 가볍게 유지 */}
+        <p className="text-center text-xs text-neutral-400 dark:text-neutral-500">
+          {MESSAGES.auth.findAccount.spamHint}
+        </p>
+
+        <Link href="/login" className="text-center text-sm text-blue-600 hover:underline dark:text-blue-400">
+          로그인으로 돌아가기
         </Link>
-        <button
-          type="button"
-          onClick={() => {
-            // 다른 이메일로 다시 시도. 폼이 다시 마운트되면 Turnstile 위젯도 새로 렌더돼 새 토큰을 받는다
-            // (이전 토큰은 이미 소진됐으므로 반드시 비운다).
-            setSentTo(null)
-            setTurnstileToken('')
-            setSubmitted(false)
-            setTouched({})
-          }}
-          className="text-sm text-blue-600 hover:underline dark:text-blue-400"
-        >
-          다른 이메일로 다시 시도
-        </button>
       </div>
     )
   }
@@ -145,7 +148,7 @@ export default function FindAccountForm() {
     <>
       <h1 className="mb-2 text-center text-xl font-bold">아이디/비밀번호 찾기</h1>
       <p className="mb-6 text-center text-xs text-neutral-500 dark:text-neutral-400">
-        가입한 이메일로 아이디와 비밀번호 재설정 링크를 보내드립니다.
+        입력하신 이메일로 안내 메일을 보내드립니다.
       </p>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
         <div>
@@ -188,16 +191,5 @@ export default function FindAccountForm() {
         </Link>
       </form>
     </>
-  )
-}
-
-function MailIcon() {
-  return (
-    <span className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-500/15">
-      <svg className="h-7 w-7 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <rect x="2" y="4" width="20" height="16" rx="2" />
-        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-      </svg>
-    </span>
   )
 }
