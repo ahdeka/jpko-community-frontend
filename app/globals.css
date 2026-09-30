@@ -60,7 +60,30 @@
   }
 }
 
-/* 탈퇴 회원 작성자명: 실제 닉네임보다 '덜 눈에 띄게' 흐린 회색 + 이탤릭.
+/* iOS Safari 입력창 자동 확대 방지.
+   iOS는 글자 크기가 16px 미만인 입력칸에 포커스하면 화면을 확대하고, 입력이 끝나도 원래 배율로
+   돌아오지 않는다(사용자가 직접 두 손가락으로 줄여야 함). 우리 입력칸은 대부분 text-sm(14px)이라
+   검색·로그인·댓글·글쓰기 전부 해당됐다.
+
+   해결: 폰 폭(Tailwind sm 미만 = 640px 미만)에서만 입력칸 글자를 16px로 올린다.
+   - 데스크탑(640px 이상)은 이 규칙이 적용되지 않아 기존 text-sm 그대로다.
+   - @layer 밖(unlayered)에 둔 것이 핵심이다. Tailwind v4 유틸리티(text-sm 등)는 layer 안에 있어서,
+     레이어 밖 규칙이 선택자 우선순위와 상관없이 항상 이긴다 → 각 입력칸 클래스를 하나하나 고칠 필요가 없다.
+   - 확대를 막으려고 viewport에 maximum-scale=1을 거는 방법도 있지만, 그건 사용자의 손가락 확대
+     자체를 막아버려 접근성(저시력 사용자)을 해친다. 글자를 16px로 맞추는 쪽이 정석이다.
+   - 체크박스·라디오·파일·버튼형 input은 글자 입력칸이 아니므로 제외한다(레이아웃 변화 방지).
+   - 글쓰기 에디터(Tiptap, contenteditable)는 본문 기본 글자(16px)를 그대로 써서 원래 확대되지 않는다. */
+@media (max-width: 639.98px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(
+      [type="button"]
+    ):not([type="submit"]):not([type="reset"]):not([type="image"]):not([type="color"]),
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
+/* 탈퇴 회원 작성자명:실제 닉네임보다 '덜 눈에 띄게' 흐린 회색 + 이탤릭.
    호출부(AuthorName)마다 기본 색·굵기 클래스가 달라(text-neutral-500, font-semibold 등),
    그것을 확실히 덮으려고 !important로 지정한다. 이 규칙은 @layer 밖(unlayered)이라
    Tailwind 유틸리티(layered)보다 우선순위가 높고, !important까지 더해 결과가 확정적이다.

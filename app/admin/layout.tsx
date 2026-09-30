@@ -47,8 +47,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         href={href}
         className={
           active
-            ? 'block rounded-md bg-orange-50 px-3 py-2 text-sm font-semibold text-orange-600 dark:bg-orange-500/10 dark:text-orange-400'
-            : 'block rounded-md px-3 py-2 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800'
+            ? 'block shrink-0 whitespace-nowrap rounded-md bg-orange-50 px-3 py-2 text-sm font-semibold text-orange-600 dark:bg-orange-500/10 dark:text-orange-400'
+            : 'block shrink-0 whitespace-nowrap rounded-md px-3 py-2 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800'
         }
       >
         {label}

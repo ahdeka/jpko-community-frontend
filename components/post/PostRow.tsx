@@ -104,6 +104,9 @@ export default function PostRow({
   )
 
   // compact: 홈/사이드바 미리보기 — 제목 + 우측 작성자만 한 줄
+  // 모바일(sm 미만)에서는 작성자를 숨겨 제목에 폭을 몰아준다. 폰 폭에서는 카테고리 뱃지·이미지 아이콘·
+  // 댓글수·작성자(레벨뱃지 포함)가 한 줄을 나눠 가져 제목이 몇 글자 못 보이고 잘렸다.
+  // 미리보기의 목적은 "무슨 글이 올라왔나"라 제목이 우선이고, 작성자는 상세·전체 목록에서 볼 수 있다.
   if (compact) {
     return (
       <li className={`relative flex items-center justify-between gap-3 ${liClass}`}>
@@ -119,7 +122,7 @@ export default function PostRow({
           isRoot={post.rootAuthor}
           level={post.authorLevel}
           nickname={linkNickname}
-          className={authorClass('shrink-0 text-xs text-neutral-500')}
+          className={authorClass('hidden shrink-0 text-xs text-neutral-500 sm:inline')}
         />
       </li>
     )
@@ -153,25 +156,53 @@ export default function PostRow({
     )
   }
 
-  // card (기본): 2줄 카드 — 제목 줄 + (좋아요>0·시간) 메타, 우측 작성자
+  // card (기본): 2줄 카드 — 제목 줄 + (좋아요·시간) 메타 + 작성자.
+  //
+  // 화면 폭에 따라 "작성자 위치"만 바뀐다. DOM은 하나이고 CSS Grid 배치만 달라진다:
+  //
+  //   모바일(sm 미만)                      데스크탑(sm 이상, 기존과 동일)
+  //   ┌──────────────────────────────┐     ┌──────────────────────┬────────┐
+  //   │ [자유][🖼] 제목 전체 폭 ... 3 │     │ [자유][🖼] 제목 ... 3 │        │
+  //   ├───────────────────┬──────────┤     ├──────────────────────┤ 작성자 │
+  //   │ 👍0 🕐17시간 전    │   작성자 │     │ 👍0 🕐17시간 전       │        │
+  //   └───────────────────┴──────────┘     └──────────────────────┴────────┘
+  //
+  // 이유: 폰 폭에서 작성자(레벨뱃지+닉네임, 최대 20자)가 오른쪽 열을 통째로 차지해 제목이 크게 잘렸다.
+  // 둘째 줄은 메타(좋아요·시간)만 있어 공간이 남으므로, 작성자를 그리로 내리면 제목이 전체 폭을 쓴다.
+  //
+  // 작성자를 모바일용/데스크탑용 두 번 그리지 않고 Grid 위치만 옮기는 이유:
+  //   - 같은 링크가 두 번 생기면 스크린리더·키보드 탭 순서에 중복으로 잡힌다.
+  //   - 아래 stretched link(행 전체 = 게시글 링크, 작성자만 프로필 링크) 구조를 한 벌로 유지할 수 있다.
+  //
+  // stretched link 동작은 기존과 같다: 게시글 Link의 after 오버레이가 li 전체(패딩 포함)를 덮으므로,
+  // 메타 줄이 Link 밖으로 나와도 메타를 누르면 여전히 게시글로 간다. 작성자는 링크일 때만 z-10으로
+  // 오버레이 위에 떠서 프로필로 간다(authorClass).
   return (
-    <li className={`relative flex items-center justify-between gap-3 ${liClass}`}>
+    <li
+      className={`relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 py-2.5 ${liClass}`}
+    >
+      {/* 제목: 모바일은 두 칸을 모두 차지(전체 폭), 데스크탑은 왼쪽 칸 */}
       <Link
         href={href}
-        className="flex min-w-0 flex-1 flex-col gap-1 py-2.5 after:absolute after:inset-0 after:content-['']"
+        className="col-span-2 min-w-0 after:absolute after:inset-0 after:content-[''] sm:col-span-1"
       >
         {titleRow}
-        <div className="flex items-center gap-2 text-xs text-neutral-500">
-          <LikeTimeMeta likeCount={post.likeCount} createdAt={post.createdAt} />
-        </div>
       </Link>
+      {/* 메타: 항상 2번째 줄 왼쪽 칸 */}
+      <div className="col-start-1 row-start-2 flex min-w-0 items-center gap-2 text-xs text-neutral-500">
+        <LikeTimeMeta likeCount={post.likeCount} createdAt={post.createdAt} />
+      </div>
+      {/* 작성자: 모바일은 2번째 줄 오른쪽, 데스크탑은 오른쪽 칸에서 두 줄에 걸쳐 세로 가운데.
+          모바일은 max-w로 폭을 제한해(닉네임 최대 20자) 메타 줄을 밀어내지 않고 말줄임 처리한다. */}
       <AuthorName
         author={post.author}
         isAdmin={post.adminAuthor}
         isRoot={post.rootAuthor}
         level={post.authorLevel}
         nickname={linkNickname}
-        className={authorClass('shrink-0 text-xs text-neutral-500')}
+        className={authorClass(
+          'col-start-2 row-start-2 max-w-[11rem] truncate text-right text-xs text-neutral-500 sm:row-span-2 sm:row-start-1 sm:max-w-none'
+        )}
       />
     </li>
   )

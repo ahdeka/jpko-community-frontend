@@ -153,10 +153,12 @@ export default function MyPageContent() {
 
   const isAdmin = user.role === 'ADMIN'
 
+  // shrink-0 + whitespace-nowrap: 좁은 화면(모바일)에서 탭이 폭을 나눠 가지며 "내가/쓴 글"처럼
+  // 세로로 줄바꿈되는 것을 막는다. 부모 nav가 overflow-x-auto라, 넘치는 탭은 가로 스크롤로 넘어간다.
   const tabButton = (key: Tab) =>
     tab === key
-      ? 'border-b-2 border-orange-500 px-3 py-2 text-sm font-semibold text-neutral-900 dark:text-white'
-      : 'border-b-2 border-transparent px-3 py-2 text-sm text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200'
+      ? 'shrink-0 whitespace-nowrap border-b-2 border-orange-500 px-3 py-2 text-sm font-semibold text-neutral-900 dark:text-white'
+      : 'shrink-0 whitespace-nowrap border-b-2 border-transparent px-3 py-2 text-sm text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200'
 
   return (
     <div className="flex flex-col gap-6">
