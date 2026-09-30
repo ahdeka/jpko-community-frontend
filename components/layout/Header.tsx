@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import UserMenu from './UserMenu'
 import NotificationBell from './NotificationBell'
+import ScrollFadeNav from '@/components/common/ScrollFadeNav'
 import type { Category } from '@/types'
 
 interface Props {
@@ -95,10 +96,19 @@ export default function Header({ categories }: Props) {
             (게임센터 링크까지 스크롤 컨테이너에 넣으면 카테고리가 많을 때 링크가 화면 밖으로 밀려나 안 보임)
           - flex-1 + min-w-0: 카테고리 nav가 남은 폭을 차지하되, min-w-0이 있어야 자식이 넘칠 때 실제로 스크롤된다.
         */}
+        {/*
+          ScrollFadeNav: 폰에서 카테고리가 넘칠 때 잘린 쪽 가장자리를 흐리게 해 "옆으로 더 있음"을 알리고,
+          현재 카테고리(aria-current)가 화면 밖이면 보이는 위치로 자동 스크롤한다. (activeKey=pathname)
+        */}
         <div className="flex items-center gap-3">
-          <nav className="flex flex-1 items-center gap-4 overflow-x-auto py-3 text-sm min-w-0">
+          <ScrollFadeNav
+            aria-label="카테고리"
+            activeKey={pathname}
+            className="flex flex-1 items-center gap-4 overflow-x-auto py-3 text-sm min-w-0"
+          >
             <Link
               href="/posts"
+              aria-current={pathname === '/posts' ? 'page' : undefined}
               className={
                 pathname === '/posts'
                   ? 'font-semibold text-neutral-900 dark:text-white whitespace-nowrap'
@@ -114,6 +124,7 @@ export default function Header({ categories }: Props) {
                 <Link
                   key={category.id}
                   href={href}
+                  aria-current={active ? 'page' : undefined}
                   className={
                     active
                       ? 'font-semibold text-neutral-900 dark:text-white whitespace-nowrap'
@@ -124,18 +135,20 @@ export default function Header({ categories }: Props) {
                 </Link>
               )
             })}
-          </nav>
+          </ScrollFadeNav>
           {/*
             게임센터 진입점. 카테고리 링크와 동일한 텍스트 스타일을 쓰되, shrink-0으로 스크롤에 눌리지 않고
             항상 우측에 노출된다. 게임센터 하위(룰렛/파칭코/슬롯) 어디에 있든 활성 강조가 유지되도록 startsWith로 판정한다.
+            모바일(sm 미만)에서는 왼쪽에 세로 구분선을 둔다: 스크롤되는 카테고리 줄과 붙어 있어
+            "카테고리 중 하나"처럼 보이던 것을 고정 메뉴로 구분한다. 데스크탑은 카테고리와 멀리 떨어져 있어 불필요.
           */}
           <Link
             href="/game-center"
             aria-current={pathname.startsWith('/game-center') ? 'page' : undefined}
             className={
               pathname.startsWith('/game-center')
-                ? 'mr-2 shrink-0 whitespace-nowrap text-sm font-semibold text-neutral-900 dark:text-white'
-                : 'mr-2 shrink-0 whitespace-nowrap text-sm text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-200'
+                ? 'mr-2 shrink-0 whitespace-nowrap border-l border-neutral-200 pl-3 text-sm font-semibold text-neutral-900 dark:border-neutral-700 dark:text-white sm:border-l-0 sm:pl-0'
+                : 'mr-2 shrink-0 whitespace-nowrap border-l border-neutral-200 pl-3 text-sm text-neutral-600 hover:text-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 sm:border-l-0 sm:pl-0'
             }
           >
             게임센터

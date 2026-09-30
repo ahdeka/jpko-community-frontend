@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { MESSAGES } from '@/lib/messages'
 import { isStaff } from '@/lib/role'
+import ScrollFadeNav from '@/components/common/ScrollFadeNav'
 
 // 관리자 영역 공통 레이아웃.
 // 1) 접근 제어: 로그인 + 운영진(ADMIN·ROOT)인 경우에만 콘텐츠를 렌더한다.
@@ -45,6 +46,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       <Link
         key={href}
         href={href}
+        aria-current={active ? 'page' : undefined}
         className={
           active
             ? 'block shrink-0 whitespace-nowrap rounded-md bg-orange-50 px-3 py-2 text-sm font-semibold text-orange-600 dark:bg-orange-500/10 dark:text-orange-400'
@@ -64,12 +66,14 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           <span className="inline-block h-2 w-2 rounded-full bg-orange-500" />
           <span className="text-sm font-bold text-neutral-900 dark:text-neutral-100">관리자</span>
         </div>
-        <nav className="flex gap-1 overflow-x-auto sm:flex-col sm:gap-0.5">
+        {/* 모바일에선 가로 스크롤 메뉴(4개가 360px 폭을 넘침) → 넘친 쪽 가장자리 페이드 + 현재 메뉴 자동 스크롤.
+            데스크탑(sm 이상)은 세로 사이드바라 가로로 넘치지 않아 페이드가 생기지 않는다. */}
+        <ScrollFadeNav aria-label="관리자 메뉴" activeKey={pathname} className="flex gap-1 overflow-x-auto sm:flex-col sm:gap-0.5">
           {navItem('/admin', '대시보드', true)}
           {navItem('/admin/notices', '공지사항 관리')}
           {navItem('/admin/users', '회원 관리')}
           {navItem('/admin/reports', '신고 관리')}
-        </nav>
+        </ScrollFadeNav>
       </aside>
 
       {/* 콘텐츠 */}

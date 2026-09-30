@@ -14,6 +14,7 @@ import MyRankingTab from '@/components/mypage/MyRankingTab'
 import ProfileSettings from '@/components/mypage/ProfileSettings'
 import PointInfoPopover from '@/components/common/PointInfoPopover'
 import LevelBadge from '@/components/common/LevelBadge'
+import ScrollFadeNav from '@/components/common/ScrollFadeNav'
 import { levelStyle, levelProgressPercent, expToNextLevel } from '@/lib/level'
 import type { UserLevelInfo } from '@/types'
 import { MESSAGES } from '@/lib/messages'
@@ -21,6 +22,16 @@ import { MESSAGES } from '@/lib/messages'
 type Tab = 'posts' | 'comments' | 'points' | 'ranking' | 'reports' | 'profile'
 
 const TABS: readonly Tab[] = ['posts', 'comments', 'points', 'ranking', 'reports', 'profile']
+
+// 탭 버튼 라벨. TABS 순서대로 렌더된다. Record<Tab, …>라 탭을 추가하고 라벨을 빠뜨리면 타입 오류가 난다.
+const TAB_LABELS: Record<Tab, string> = {
+  posts: '내가 쓴 글',
+  comments: '내가 쓴 댓글',
+  points: '포인트',
+  ranking: '랭킹',
+  reports: '내 신고',
+  profile: '프로필 설정',
+}
 
 // 딥링크(?tab=ranking 등)로 들어온 초기 탭을 고른다. 알 수 없는 값이면 기본 'posts'.
 function resolveInitialTab(raw: string | null): Tab {
@@ -162,8 +173,11 @@ export default function MyPageContent() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* 인사말 + 프로필 요약 */}
-      <div className="flex items-center justify-between gap-3">
+      {/* 인사말 + 프로필 요약.
+          flex-wrap: 폰 폭에서 관리자의 "관리자 페이지 →" 버튼이 같은 줄에 붙으면 닉네임이 "도…"까지
+          잘렸다. 한 줄에 다 안 들어가면 버튼이 다음 줄로 내려가 닉네임이 폭을 온전히 쓴다.
+          (일반 회원은 버튼이 없어 영향 없음, 데스크탑은 한 줄에 들어가 기존과 동일) */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-neutral-700 text-white dark:bg-neutral-600">
             <svg className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
@@ -224,26 +238,21 @@ export default function MyPageContent() {
 
       {/* 탭 네비게이션 */}
       <div className="border-b border-neutral-200 dark:border-neutral-800">
-        <nav className="-mb-px flex gap-1 overflow-x-auto">
-          <button type="button" className={tabButton('posts')} onClick={() => setTab('posts')}>
-            내가 쓴 글
-          </button>
-          <button type="button" className={tabButton('comments')} onClick={() => setTab('comments')}>
-            내가 쓴 댓글
-          </button>
-          <button type="button" className={tabButton('points')} onClick={() => setTab('points')}>
-            포인트
-          </button>
-          <button type="button" className={tabButton('ranking')} onClick={() => setTab('ranking')}>
-            랭킹
-          </button>
-          <button type="button" className={tabButton('reports')} onClick={() => setTab('reports')}>
-            내 신고
-          </button>
-          <button type="button" className={tabButton('profile')} onClick={() => setTab('profile')}>
-            프로필 설정
-          </button>
-        </nav>
+        {/* ScrollFadeNav: 폰에서 화면 밖으로 넘친 탭(내 신고·프로필 설정)이 있음을 가장자리 페이드로 알리고,
+            선택 탭(aria-current)이 화면 밖이면 보이는 위치로 당겨온다(?tab=reports 같은 딥링크 진입 등). */}
+        <ScrollFadeNav aria-label="마이페이지 메뉴" activeKey={tab} className="-mb-px flex gap-1 overflow-x-auto">
+          {TABS.map(key => (
+            <button
+              key={key}
+              type="button"
+              aria-current={tab === key ? 'true' : undefined}
+              className={tabButton(key)}
+              onClick={() => setTab(key)}
+            >
+              {TAB_LABELS[key]}
+            </button>
+          ))}
+        </ScrollFadeNav>
       </div>
 
       {/* 탭 콘텐츠 */}

@@ -103,7 +103,13 @@ export default function UserMenu({ user, onLogout }: Props) {
         aria-label="내 메뉴"
         className="flex items-center gap-2"
       >
-        <span className="text-sm text-neutral-600 dark:text-neutral-400">{user.nickname}</span>
+        {/* 모바일(sm 미만)에서는 닉네임을 숨기고 아바타만 둔다. 폰 폭에서 닉네임(최대 20자)이
+            헤더 검색창 폭을 크게 잡아먹었다. 닉네임은 메뉴를 열면 상단에 그대로 보이고,
+            버튼의 aria-label("내 메뉴")이 있어 스크린리더 안내도 유지된다.
+            데스크탑도 max-w + truncate로 아주 긴 닉네임이 헤더를 밀어내지 않게 한다. */}
+        <span className="hidden max-w-[10rem] truncate text-sm text-neutral-600 dark:text-neutral-400 sm:block">
+          {user.nickname}
+        </span>
         <span className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-700 text-white hover:bg-neutral-600 dark:bg-neutral-600 dark:hover:bg-neutral-500">
           <UserIcon />
         </span>
