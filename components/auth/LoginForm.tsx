@@ -10,6 +10,7 @@ import { useRedirectIfAuthenticated } from '@/lib/use-auth-guard'
 import { MESSAGES } from '@/lib/messages'
 import RedirectingOverlay from './RedirectingOverlay'
 import Turnstile, { type TurnstileHandle } from './Turnstile'
+import PasswordInput from '@/components/common/PasswordInput'
 
 interface FieldErrors {
   // 아이디 입력 칸의 에러.
@@ -151,11 +152,11 @@ export default function LoginForm() {
       </div>
 
       <div>
-        <input
-          type="password"
+        <PasswordInput
           placeholder="비밀번호"
           value={password}
           onChange={e => setPassword(e.target.value)}
+          autoComplete="current-password"
           className={inputClass}
         />
         {fieldErrors.password && (

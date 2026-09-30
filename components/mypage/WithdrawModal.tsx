@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth-context'
 import { usersApi } from '@/lib/api/users'
 import { ApiError } from '@/lib/api/client'
 import { MESSAGES } from '@/lib/messages'
+import PasswordInput from '@/components/common/PasswordInput'
 
 // 회원 탈퇴 확인 모달.
 // 되돌릴 수 없는 파괴적 작업이므로 (1) 본인 확인용 비밀번호 (2) 안내 확인 체크를
@@ -176,10 +177,9 @@ export default function WithdrawModal({ open, onClose }: { open: boolean; onClos
                 <label htmlFor="withdraw-password" className="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">
                   본인 확인을 위해 현재 비밀번호를 입력해주세요.
                 </label>
-                <input
+                <PasswordInput
                   id="withdraw-password"
                   ref={passwordRef}
-                  type="password"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   autoComplete="current-password"

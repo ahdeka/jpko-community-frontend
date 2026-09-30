@@ -52,6 +52,12 @@
   select:disabled {
     cursor: not-allowed;
   }
+  /* Edge(구 IE 계열)는 비밀번호 칸에 자체 '보기' 눈 아이콘을 띄운다.
+     우리 PasswordInput의 토글과 아이콘이 2개로 겹치므로 브라우저 기본 버튼은 숨긴다. */
+  input::-ms-reveal,
+  input::-ms-clear {
+    display: none;
+  }
 }
 
 /* 탈퇴 회원 작성자명: 실제 닉네임보다 '덜 눈에 띄게' 흐린 회색 + 이탤릭.

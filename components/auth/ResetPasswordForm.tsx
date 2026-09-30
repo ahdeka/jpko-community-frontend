@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { authApi } from '@/lib/api/auth'
 import { ApiError } from '@/lib/api/client'
 import { MESSAGES } from '@/lib/messages'
+import PasswordInput from '@/components/common/PasswordInput'
 
 const inputClass =
   'w-full rounded border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none transition-colors focus:border-blue-400 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-blue-500'
@@ -95,16 +96,14 @@ export default function ResetPasswordForm({ token }: { token: string }) {
     <>
       <h1 className="mb-6 text-center text-xl font-bold">새 비밀번호 설정</h1>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
-        <input
-          type="password"
+        <PasswordInput
           placeholder="새 비밀번호 (8~50자)"
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
           autoComplete="new-password"
           className={inputClass}
         />
-        <input
-          type="password"
+        <PasswordInput
           placeholder="새 비밀번호 확인"
           value={newPasswordConfirm}
           onChange={(e) => setNewPasswordConfirm(e.target.value)}

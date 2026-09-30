@@ -15,6 +15,7 @@ import {
   getNicknameCooldown,
 } from '@/lib/nickname'
 import WithdrawModal from '@/components/mypage/WithdrawModal'
+import PasswordInput from '@/components/common/PasswordInput'
 
 // 자기소개 최대 길이 — 백엔드 UpdateBioRequest @Size(max=200)와 일치시킨다.
 const BIO_MAX = 200
@@ -305,24 +306,21 @@ export default function ProfileSettings() {
       <section>
         <h3 className="mb-3 text-sm font-bold text-neutral-900 dark:text-neutral-100">비밀번호 변경</h3>
         <form onSubmit={handlePassword} className="flex max-w-md flex-col gap-3">
-          <input
-            type="password"
+          <PasswordInput
             value={currentPassword}
             onChange={e => setCurrentPassword(e.target.value)}
             placeholder="현재 비밀번호"
             autoComplete="current-password"
             className={inputClass}
           />
-          <input
-            type="password"
+          <PasswordInput
             value={newPassword}
             onChange={e => setNewPassword(e.target.value)}
             placeholder="새 비밀번호 (8~50자)"
             autoComplete="new-password"
             className={inputClass}
           />
-          <input
-            type="password"
+          <PasswordInput
             value={newPasswordConfirm}
             onChange={e => setNewPasswordConfirm(e.target.value)}
             placeholder="새 비밀번호 확인"

@@ -8,7 +8,8 @@ import { ApiError } from '@/lib/api/client'
 import { useAuth } from '@/lib/auth-context'
 import { MESSAGES } from '@/lib/messages'
 import RedirectingOverlay from './RedirectingOverlay'
-import { inputClass, LOGINID_RE, PasswordToggle, AgreementRow } from './_shared'
+import { inputClass, LOGINID_RE, AgreementRow } from './_shared'
+import { PasswordToggle } from '@/components/common/PasswordInput'
 import { NICKNAME_RE, isBlacklistedNickname } from '@/lib/nickname'
 
 type FieldName =
