@@ -98,9 +98,13 @@ export default async function RootLayout({
       <body className="flex min-h-screen flex-col bg-neutral-100 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
         <AuthProvider>
           <Header categories={categories} />
-          {/* flex-1로 본문이 남은 높이를 채워, 짧은 페이지에서도 footer가 하단에 붙는다 */}
-          <div className="mx-auto w-full max-w-5xl flex-1 px-4 pb-6">
-            <main className="rounded-b-lg border border-t-0 border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900 sm:p-6">
+          {/* flex-1로 본문이 남은 높이를 채워, 짧은 페이지에서도 footer가 하단에 붙는다.
+              모바일(sm 미만)은 본문 카드를 화면 끝까지 붙인다(full-bleed): 바깥 여백(px-4) + 카드 테두리 +
+              안쪽 여백(p-4)이 겹쳐 양옆 약 33px씩 버려졌고, 헤더 로고(16px)와 본문 시작선(33px)도 어긋났다.
+              바깥 여백과 좌우 테두리·둥근 모서리를 없애 본문 시작선을 헤더와 같은 16px에 맞춘다.
+              데스크탑(sm 이상)은 기존의 떠 있는 카드 모양 그대로다. */}
+          <div className="mx-auto w-full max-w-5xl flex-1 pb-6 sm:px-4">
+            <main className="border-b border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900 sm:rounded-b-lg sm:border-x sm:p-6">
               {children}
             </main>
           </div>

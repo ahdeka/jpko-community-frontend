@@ -30,7 +30,7 @@ interface Props {
 // 좋아요 아이콘
 function LikeIcon() {
   return (
-    <svg className="w-2.5 h-2.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg className="h-3 w-3 shrink-0 sm:h-2.5 sm:w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M7 10v12" />
       <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z" />
     </svg>
@@ -40,7 +40,7 @@ function LikeIcon() {
 // 시계 아이콘 (작성 시간 앞에 표시)
 function ClockIcon() {
   return (
-    <svg className="w-2.5 h-2.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg className="h-3 w-3 shrink-0 sm:h-2.5 sm:w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="9" />
       <path d="M12 7v5l3 2" />
     </svg>
@@ -48,15 +48,17 @@ function ClockIcon() {
 }
 
 // 좋아요(연한 주황) + 시간(시계 아이콘) 메타. 좋아요는 0이어도 항상 노출해 구조를 통일한다.
-// 글씨는 text-[10px]로 본문/작성자보다 한 단계 작게 둔다.
+// 글씨는 본문/작성자(12px)보다 한 단계 작게 둔다: 데스크탑 10px, 모바일 11px.
+// 모바일을 1px 키운 이유: 폰 화면에서 10px은 좋아요 수·시간을 읽기 힘들었다(모바일 권장 최소 11~12px).
+// 아이콘도 글씨에 맞춰 모바일에서 한 단계(10px→12px) 키운다.
 function LikeTimeMeta({ likeCount, createdAt }: { likeCount: number; createdAt: string }) {
   return (
     <>
-      <span className="flex items-center gap-0.5 text-[10px] text-orange-400">
+      <span className="flex items-center gap-0.5 text-[11px] text-orange-400 sm:text-[10px]">
         <LikeIcon />
         {likeCount}
       </span>
-      <span className="flex items-center gap-0.5 text-[10px]">
+      <span className="flex items-center gap-0.5 text-[11px] sm:text-[10px]">
         <ClockIcon />
         {formatRelativeTime(createdAt)}
       </span>

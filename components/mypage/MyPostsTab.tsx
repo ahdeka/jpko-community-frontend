@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usersApi } from '@/lib/api/users'
 import { ApiError } from '@/lib/api/client'
 import { formatDate } from '@/lib/format'
+import { categoryShortLabel } from '@/lib/category'
 import { MESSAGES } from '@/lib/messages'
 import type { MyPost } from '@/types'
 
@@ -75,7 +76,9 @@ export default function MyPostsTab() {
               href={`/posts/${post.id}`}
               className="flex items-center gap-3 px-1 py-3 hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
             >
-              <span className="shrink-0 text-xs text-blue-600 dark:text-blue-400">[{post.categoryName}]</span>
+              {/* 약칭(자유·워홀·생활): 전체 이름("[자유게시판]")은 폰 폭에서 제목 자리를 크게 뺏었다.
+                  공개 프로필·게시글 목록 배지와 같은 약칭을 써서 표기도 통일한다. */}
+              <span className="shrink-0 text-xs text-blue-600 dark:text-blue-400">[{categoryShortLabel(post.categoryName)}]</span>
               <span className="min-w-0 flex-1 truncate text-sm text-neutral-800 dark:text-neutral-100">
                 {post.title}
               </span>

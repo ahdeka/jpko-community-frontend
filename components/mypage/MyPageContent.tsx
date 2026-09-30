@@ -224,8 +224,11 @@ export default function MyPageContent() {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <StatCard label="내가 쓴 글" value={postCount} accent="text-neutral-900 dark:text-white" />
         <StatCard label="내가 쓴 댓글" value={commentCount} accent="text-neutral-900 dark:text-white" />
-        {/* 포인트 카드: 라벨 우측에 룰렛 설명 팝오버 */}
-        <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-800/50">
+        {/* 포인트 카드: 라벨 우측에 룰렛 설명 팝오버.
+            모바일(2열)에서는 두 칸을 모두 차지한다(col-span-2). 카드 3개를 2열에 넣으면 포인트 카드만
+            셋째 줄 왼쪽에 덩그러니 남고 오른쪽이 비었다. 모바일도 3열로 좁히는 방법은 쓰지 않았다 —
+            포인트는 5~6자리(예: 20,000P)까지 커져, 폰 폭 1/3 칸에서는 숫자가 넘치거나 잘린다. */}
+        <div className="col-span-2 rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-800/50 sm:col-span-1">
           <div className="flex items-center justify-between">
             <p className="text-xs text-neutral-500 dark:text-neutral-400">포인트</p>
             <PointInfoPopover />
