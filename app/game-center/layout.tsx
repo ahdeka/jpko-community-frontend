@@ -18,9 +18,8 @@ const TABS = [
   { href: '/game-center/roulette', label: '룰렛' },
   { href: '/game-center/pachinko', label: '파칭코' },
   { href: '/game-center/slot', label: '슬롯' },
-  // 게임이 아니라 결과 보기라 맨 뒤에 둔다(기본 진입 탭은 계속 룰렛).
-  { href: '/game-center/ranking', label: '랭킹' },
 ] as const
+// 포인트 랭킹은 별도 탭이 아니라 각 게임 오른쪽 칸(확률 공개 위)에 있다 — GameRankingPanel 참고.
 
 export default function GameCenterLayout({ children }: { children: ReactNode }) {
   const { user, isLoading } = useAuth()

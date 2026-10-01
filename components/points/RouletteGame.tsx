@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { pointsApi, notifyPointBalanceChanged } from '@/lib/api/points'
 import { rouletteApi } from '@/lib/api/roulette'
 import { ApiError } from '@/lib/api/client'
@@ -49,7 +50,8 @@ function computeNextRotation(currentRotation: number, win: boolean): number {
 
 // 룰렛(베팅형 대결) 플레이 화면. 상대는 처음엔 랜덤이고, 원하면 다음 스핀부터 고정할 수 있다.
 // 승률은 서버 config로 받아 우측 확률 공개 패널에 보여준다.
-export default function RouletteGame() {
+// ranking: 게임 페이지(서버)가 넘겨주는 포인트 랭킹 패널. 우측 칸 확률 표 위에 그린다(GameLayoutWithOdds 참고).
+export default function RouletteGame({ ranking }: { ranking?: ReactNode }) {
   const [balance, setBalance] = useState<number | null>(null)
   const [config, setConfig] = useState<RouletteConfig | null>(null)
   const [opponent, setOpponent] = useState<RouletteOpponent | null>(null)
@@ -246,7 +248,7 @@ export default function RouletteGame() {
   ) : null
 
   return (
-    <GameLayoutWithOdds odds={oddsPanel}>
+    <GameLayoutWithOdds odds={oddsPanel} ranking={ranking}>
       <div className="flex flex-col gap-6">
         {/* 잔액 */}
         <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-800/50">

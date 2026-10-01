@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { pointsApi, notifyPointBalanceChanged } from '@/lib/api/points'
 import { pachinkoApi } from '@/lib/api/pachinko'
 import { ApiError } from '@/lib/api/client'
@@ -66,7 +67,8 @@ function oddsByMultiplier(multipliers: number[], probabilities: number[]) {
 // 구슬 1개당 가격(ballPrice)이 정해져 있고, 유저가 고른 개수(ballCount)만큼 구슬을 동시에(약간의
 // 시차를 두고) 쏴서 각자 독립적으로 못판을 통과해 슬롯에 착지한 결과를 합산해 보여준다.
 // 배당표(슬롯별 배율)와 서버가 계산한 슬롯별 착지 확률을 함께 받아 우측 확률 공개 패널에 보여준다.
-export default function PachinkoGame() {
+// ranking: 게임 페이지(서버)가 넘겨주는 포인트 랭킹 패널. 우측 칸 확률 표 위에 그린다(GameLayoutWithOdds 참고).
+export default function PachinkoGame({ ranking }: { ranking?: ReactNode }) {
   const [balance, setBalance] = useState<number | null>(null)
   const [config, setConfig] = useState<PachinkoConfig | null>(null)
 
@@ -219,7 +221,7 @@ export default function PachinkoGame() {
     ) : null
 
   return (
-    <GameLayoutWithOdds odds={oddsPanel}>
+    <GameLayoutWithOdds odds={oddsPanel} ranking={ranking}>
       <div className="flex flex-col gap-6">
         {/* 잔액 */}
         <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-800/50">

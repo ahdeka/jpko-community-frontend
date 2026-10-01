@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { pointsApi, notifyPointBalanceChanged } from '@/lib/api/points'
 import { slotApi } from '@/lib/api/slot'
 import { ApiError } from '@/lib/api/client'
@@ -69,7 +70,8 @@ function outcomeMessage(r: SlotPlayResult, outcome: SlotOutcome): string {
 }
 
 // 슬롯머신(3릴, 트리플 매치만 당첨) 플레이 화면. 유저 대 시스템(하우스) 게임이라 룰렛과 달리 상대가 없다.
-export default function SlotGame() {
+// ranking: 게임 페이지(서버)가 넘겨주는 포인트 랭킹 패널. 우측 칸 확률 표 위에 그린다(GameLayoutWithOdds 참고).
+export default function SlotGame({ ranking }: { ranking?: ReactNode }) {
   const [balance, setBalance] = useState<number | null>(null)
   const [config, setConfig] = useState<SlotConfig | null>(null)
 
@@ -207,7 +209,7 @@ export default function SlotGame() {
   const outcome = result ? slotOutcome(result) : null
 
   return (
-    <GameLayoutWithOdds odds={oddsPanel}>
+    <GameLayoutWithOdds odds={oddsPanel} ranking={ranking}>
       <div className="flex flex-col gap-6">
         {/* 잔액 */}
         <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-800/50">

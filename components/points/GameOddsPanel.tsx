@@ -89,15 +89,28 @@ export default function GameOddsPanel({
   )
 }
 
-// 게임 본체 + 우측 확률 패널 2단 레이아웃. 좁은 화면(lg 미만)에선 패널이 게임 아래로 내려간다.
-// odds가 없으면(config 로딩 중이거나 구버전 백엔드라 확률 필드가 없을 때) 1단 그대로 둔다 —
-// 빈 오른쪽 칸이 자리만 차지하지 않도록.
-export function GameLayoutWithOdds({ odds, children }: { odds: ReactNode; children: ReactNode }) {
-  if (!odds) return <>{children}</>
+// 게임 본체 + 우측 칸(포인트 랭킹 → 확률 공개 순) 2단 레이아웃. 좁은 화면(lg 미만)에선 우측 칸이
+// 게임 아래로 내려간다.
+// odds·ranking이 둘 다 없으면 1단 그대로 둔다 — 빈 오른쪽 칸이 자리만 차지하지 않도록.
+// (odds는 config 로딩 중이거나 구버전 백엔드라 확률 필드가 없을 때 null이다. ranking은 페이지가 넘겨주는
+//  서버 컴포넌트라 조회 실패 시 그 안에서 null을 그리므로, 칸은 남되 확률 표만 보인다.)
+export function GameLayoutWithOdds({
+  odds,
+  ranking,
+  children,
+}: {
+  odds: ReactNode
+  ranking?: ReactNode
+  children: ReactNode
+}) {
+  if (!odds && !ranking) return <>{children}</>
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_15rem] lg:items-start">
       <div className="min-w-0">{children}</div>
-      {odds}
+      <div className="flex flex-col gap-4">
+        {ranking}
+        {odds}
+      </div>
     </div>
   )
 }

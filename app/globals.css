@@ -122,6 +122,29 @@
   }
 }
 
+/* 환율 위젯 통화쌍 전환: 새 값이 아주 살짝(4px) 떠오르며 페이드인.
+   fade-in-up(12px)은 폼 카드용이라 작은 숫자 줄에는 움직임이 과하다. 시세판처럼 "값이 갱신됐다"는
+   느낌만 주고 눈이 따라가야 할 만큼 움직이지 않게 거리·시간을 줄였다.
+   key가 바뀌어 요소가 새로 마운트될 때마다 재생된다(ExchangeRateTicker 참고). */
+@keyframes rate-swap {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-rate-swap {
+  animation: rate-swap 0.4s ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-rate-swap {
+    animation: none;
+  }
+}
+
 /* 출석 도장이 "찍히는" 순간. 위에서 크게 내려와 종이에 탁 눌리듯 작아지며 자리를 잡는다.
    60% 지점에서 원래 크기보다 작아졌다가(0.88) 살짝 되튀는(1.06) 것이 "눌린" 느낌을 만든다.
    회전을 조금 섞어 손으로 찍은 듯 반듯하지 않게 보이게 한다.
