@@ -2,7 +2,9 @@ import SectionCard from '@/components/common/SectionCard'
 import { rankingApi } from '@/lib/api/points'
 import { MESSAGES } from '@/lib/messages'
 
-// 메인 페이지 사이드바의 포인트 상위 랭킹(top-size명). 서버 컴포넌트로 렌더한다.
+// 포인트 상위 랭킹(top-size명). 서버 컴포넌트로 렌더한다.
+// 예전엔 메인 사이드바에 있었으나, 포인트가 게임 전용 재화가 되면서 게임센터 > 랭킹 탭으로 옮겼다
+// (메인 그 자리는 엔화 환율 위젯).
 //  - /api/points/ranking/top은 비로그인도 조회 가능하므로 인증 헤더가 필요 없다.
 //  - "내 순위 보기" 링크는 마이페이지 랭킹 탭으로 딥링크한다(비로그인이면 마이페이지가 로그인으로 유도).
 //  - 조회 실패/빈 랭킹이어도 사이드바 나머지는 그려야 하므로 catch로 부분 실패를 흡수한다

@@ -18,6 +18,8 @@ const TABS = [
   { href: '/game-center/roulette', label: '룰렛' },
   { href: '/game-center/pachinko', label: '파칭코' },
   { href: '/game-center/slot', label: '슬롯' },
+  // 게임이 아니라 결과 보기라 맨 뒤에 둔다(기본 진입 탭은 계속 룰렛).
+  { href: '/game-center/ranking', label: '랭킹' },
 ] as const
 
 export default function GameCenterLayout({ children }: { children: ReactNode }) {

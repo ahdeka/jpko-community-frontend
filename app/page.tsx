@@ -4,7 +4,8 @@ import { noticesApi } from '@/lib/api/notices'
 import RecentPostsSection from '@/components/post/RecentPostsSection'
 import CategorySection from '@/components/post/CategorySection'
 import PopularSection from '@/components/home/PopularSection'
-import PointRankingSection from '@/components/home/PointRankingSection'
+import { Suspense } from 'react'
+import ExchangeRateSection from '@/components/home/ExchangeRateSection'
 import NoticeSection from '@/components/home/NoticeSection'
 import FeaturedNoticeBar from '@/components/home/FeaturedNoticeBar'
 import type { Category, NoticeSummary, PostSummary } from '@/types'
@@ -76,7 +77,12 @@ export default async function Home() {
             bulletColor="bg-orange-500"
             posts={weeklyPopularPosts}
           />
-          <PointRankingSection />
+          {/* 포인트 랭킹 자리(→ 게임센터 랭킹 탭으로 이동). 환율은 외부 API라 캐시가 비어 있는 첫 조회는
+              수 초 걸릴 수 있으므로 Suspense로 분리해, 그 동안에도 나머지 페이지는 먼저 스트리밍되게 한다.
+              실패 시 위젯이 null을 반환하므로 fallback도 null(빈 자리)로 맞춘다. */}
+          <Suspense fallback={null}>
+            <ExchangeRateSection />
+          </Suspense>
           <NoticeSection />
         </aside>
       </div>
