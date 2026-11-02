@@ -14,13 +14,19 @@
 
 ## 스크린샷
 
-| 메인 | 게시글 상세 |
+| 메인 | 카테고리 |
 |---|---|
-| ![메인](docs/screenshots/home.png) | ![게시글](docs/screenshots/post-detail.png) |
+| ![메인](docs/screenshots/home.png) | ![카테고리](docs/screenshots/category.png) |
 
-| 글쓰기 에디터 | 모바일 |
+| 게시글 상세 | 글쓰기 에디터 |
 |---|---|
-| ![에디터](docs/screenshots/post-editor.png) | ![모바일](docs/screenshots/mobile.png) |
+| ![게시글](docs/screenshots/post-detail.png) | ![에디터](docs/screenshots/post-editor.png) |
+
+| 로그인 (Cloudflare Turnstile) | |
+|---|---|
+| ![로그인](docs/screenshots/login.png) | |
+
+> 회원 닉네임과 IP 표시는 개인정보 보호를 위해 모자이크 처리했습니다.
 
 ---
 
