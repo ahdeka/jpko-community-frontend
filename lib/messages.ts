@@ -9,6 +9,7 @@ export const MESSAGES = {
     requestFailed: '요청에 실패했습니다.',
     fileTooLarge: '파일 용량이 너무 큽니다. 더 작은 파일로 다시 시도해주세요.',
     apiUrlMissing: 'NEXT_PUBLIC_API_URL 환경 변수가 설정되지 않았습니다.',
+    archived: '운영이 종료되어 읽기 전용으로 보관 중인 사이트입니다.',
     unsavedChangesConfirm:
       '작성 중인 내용이 있습니다.\n페이지를 벗어나면 저장되지 않은 변경 사항이 사라집니다. 이동하시겠습니까?',
     loginRequiredToReport: '신고하려면 로그인이 필요합니다.',

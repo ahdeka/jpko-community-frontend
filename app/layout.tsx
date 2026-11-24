@@ -4,6 +4,7 @@ import './globals.css'
 import { AuthProvider } from '@/lib/auth-context'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
+import ArchiveBanner from '@/components/layout/ArchiveBanner'
 import { categoriesApi } from '@/lib/api/categories'
 import type { Category } from '@/types'
 import { Analytics } from '@vercel/analytics/next';
@@ -105,6 +106,7 @@ export default async function RootLayout({
               데스크탑(sm 이상)은 기존의 떠 있는 카드 모양 그대로다. */}
           <div className="mx-auto w-full max-w-5xl flex-1 pb-6 sm:px-4">
             <main className="border-b border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900 sm:rounded-b-lg sm:border-x sm:p-6">
+              <ArchiveBanner />
               {children}
             </main>
           </div>

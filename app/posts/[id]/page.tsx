@@ -10,7 +10,6 @@ import { buildListHref, encodeListContext, parseListContext, type ListContext } 
 import { searchQueryParams } from '@/lib/search'
 import { excerpt, isIndexablePost, INDEXING_ENABLED } from '@/lib/site'
 import PostDetail from '@/components/post/PostDetail'
-import ViewMarker from '@/components/post/ViewMarker'
 import PostList from '@/components/post/PostList'
 import Pagination from '@/components/common/Pagination'
 import WriteButton from '@/components/post/WriteButton'
@@ -202,9 +201,6 @@ export default async function PostPage({
 
   return (
     <div>
-      {/* 이번 조회를 브라우저 쿠키로 표시 → 다음 새로고침부터 SSR이 백엔드로 전달해 조회수 중복 증가를 막는다.
-          이름은 백엔드 PostController의 `viewedPost_{id}`와 정확히 일치시켜야 한다. */}
-      <ViewMarker name={`viewedPost_${postId}`} />
       <PostDetail post={post} listHref={listHref} />
       <CommentList
         target={{ type: 'POST', id: postId }}

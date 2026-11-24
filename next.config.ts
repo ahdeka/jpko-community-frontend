@@ -16,7 +16,15 @@ const nextConfig: NextConfig = {
     return [
       // 비밀번호 찾기가 아이디/비밀번호 찾기로 통합되며 URL이 바뀌었다. 즐겨찾기 등 구 URL 진입을 살린다.
       // 308(permanent)이라 브라우저·검색엔진이 영구 캐시한다 — 되돌릴 일 없는 이동이므로 적합.
-      { source: '/forgot-password', destination: '/find-account', permanent: true },
+      // 아카이브 전환(2026-11-24): 로그인·글쓰기·마이페이지 등 상호작용 페이지는 삭제했다.
+      // 즐겨찾기·검색엔진에 남은 구 URL이 404 대신 홈으로 가도록 묶어서 보낸다.
+      // 아카이브는 되돌릴 일이 없지만, 혹시 몰라 permanent: false(307)로 둔다 — 브라우저가 영구 캐시하지 않게.
+      ...[
+        '/forgot-password', '/find-account', '/reset-password', '/verify-email-change',
+        '/login', '/signup', '/signup/:path*', '/mypage/:path*', '/notifications',
+        '/admin/:path*', '/game-center/:path*', '/roulette', '/pachinko', '/slot',
+        '/users/:path*', '/posts/new', '/posts/:id/edit',
+      ].map(source => ({ source, destination: '/', permanent: false })),
     ];
   },
 };

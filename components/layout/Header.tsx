@@ -2,25 +2,12 @@
 
 import Link from 'next/link'
 import Form from 'next/form'
-import { usePathname, useRouter } from 'next/navigation'
-import { useAuth } from '@/lib/auth-context'
-import UserMenu from './UserMenu'
-import NotificationBell from './NotificationBell'
+import { usePathname } from 'next/navigation'
 import ScrollFadeNav from '@/components/common/ScrollFadeNav'
 import type { Category } from '@/types'
 
 interface Props {
   categories: Category[]
-}
-
-// 비로그인 상태 프로필(로그인) 아이콘
-function UserIcon() {
-  return (
-    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-      <circle cx="12" cy="8" r="4" />
-      <path d="M4 20c0-4.42 3.58-7 8-7s8 2.58 8 7" />
-    </svg>
-  )
 }
 
 // 검색 아이콘
@@ -34,15 +21,7 @@ function SearchIcon() {
 }
 
 export default function Header({ categories }: Props) {
-  const { user, isLoading, logout } = useAuth()
-  const router = useRouter()
   const pathname = usePathname()
-
-  const handleLogout = async () => {
-    await logout()
-    router.push('/')
-    router.refresh()
-  }
 
   return (
     <header className="w-full border-b border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
@@ -68,26 +47,10 @@ export default function Header({ categories }: Props) {
               </button>
             </div>
           </Form>
-          <nav className="flex items-center gap-3 text-sm shrink-0">
-            {isLoading ? (
-              // 인증 확인 중에는 중립 스켈레톤을 보여, 로그인 사용자가 "로그인 아이콘 → 닉네임"으로
-              // 깜빡이는 것을 막는다. (로그아웃 사용자도 동일 자리에 부드럽게 로그인 아이콘이 들어옴)
-              <div className="h-8 w-8 animate-pulse rounded-full bg-neutral-200 dark:bg-neutral-700" aria-hidden="true" />
-            ) : user ? (
-              <>
-                <NotificationBell />
-                <UserMenu user={user} onLogout={handleLogout} />
-              </>
-            ) : (
-              <Link
-                href="/login"
-                aria-label="로그인"
-                className="flex items-center justify-center w-8 h-8 rounded-full bg-neutral-700 text-white hover:bg-neutral-600 dark:bg-neutral-600 dark:hover:bg-neutral-500"
-              >
-                <UserIcon />
-              </Link>
-            )}
-          </nav>
+          {/* 아카이브: 로그인·알림이 없으므로 사용자 영역 대신 보관 상태를 표시한다. */}
+          <span className="shrink-0 rounded-full border border-neutral-300 px-2.5 py-0.5 text-xs text-neutral-500 dark:border-neutral-700 dark:text-neutral-400">
+            아카이브
+          </span>
         </div>
 
         {/*
@@ -136,22 +99,17 @@ export default function Header({ categories }: Props) {
               )
             })}
           </ScrollFadeNav>
-          {/*
-            게임센터 진입점. 카테고리 링크와 동일한 텍스트 스타일을 쓰되, shrink-0으로 스크롤에 눌리지 않고
-            항상 우측에 노출된다. 게임센터 하위(룰렛/파칭코/슬롯) 어디에 있든 활성 강조가 유지되도록 startsWith로 판정한다.
-            모바일(sm 미만)에서는 왼쪽에 세로 구분선을 둔다: 스크롤되는 카테고리 줄과 붙어 있어
-            "카테고리 중 하나"처럼 보이던 것을 고정 메뉴로 구분한다. 데스크탑은 카테고리와 멀리 떨어져 있어 불필요.
-          */}
+          {/* 아카이브: 게임센터가 없어진 자리에 공지사항 진입점을 둔다. */}
           <Link
-            href="/game-center"
-            aria-current={pathname.startsWith('/game-center') ? 'page' : undefined}
+            href="/notices"
+            aria-current={pathname.startsWith('/notices') ? 'page' : undefined}
             className={
-              pathname.startsWith('/game-center')
+              pathname.startsWith('/notices')
                 ? 'mr-2 shrink-0 whitespace-nowrap border-l border-neutral-200 pl-3 text-sm font-semibold text-neutral-900 dark:border-neutral-700 dark:text-white sm:border-l-0 sm:pl-0'
                 : 'mr-2 shrink-0 whitespace-nowrap border-l border-neutral-200 pl-3 text-sm text-neutral-600 hover:text-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 sm:border-l-0 sm:pl-0'
             }
           >
-            게임센터
+            공지사항
           </Link>
         </div>
       </div>
