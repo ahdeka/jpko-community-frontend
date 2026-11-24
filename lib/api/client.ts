@@ -5,6 +5,9 @@ import { MESSAGES } from '@/lib/messages'
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL
 
+// 2026-11 운영 종료 후 읽기 전용 아카이브로 전환. 이 브랜치에서는 항상 켜져 있다.
+export const ARCHIVE_MODE = true
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -109,6 +112,23 @@ async function request<T>(
   // 다시 재발급하지 않고 그대로 에러를 던진다 — "재시도는 정확히 1회"(엣지케이스 ③).
   retry = true,
 ): Promise<ApiResponse<T>> {
+
+  // 아카이브 모드: API 서버가 내려간 뒤에는 서버(RSC)의 조회(GET)만 data/archive.json에서 응답하고,
+  // 브라우저 요청과 쓰기 요청은 모두 거절한다(로그인·글쓰기·추천 등은 더 이상 없다).
+  // 브라우저에서 거절되면 AuthProvider는 비로그인 상태로 두고, 화면은 읽기 전용으로 동작한다.
+  if (ARCHIVE_MODE) {
+    const method = (options?.method ?? 'GET').toUpperCase()
+    if (method !== 'GET' || typeof window !== 'undefined') {
+      throw new ApiError(MESSAGES.common.archived, 410, 'ARCHIVED')
+    }
+    const { archiveGet, ArchiveNotFound } = await import('@/lib/archive/server')
+    try {
+      return archiveGet<T>(endpoint)
+    } catch (e) {
+      if (e instanceof ArchiveNotFound) throw new ApiError(MESSAGES.common.requestFailed, 404, 'NOT_FOUND')
+      throw e
+    }
+  }
 
   if (!BASE_URL) {
     throw new Error(MESSAGES.common.apiUrlMissing)
@@ -215,6 +235,9 @@ export function uploadWithProgress<T>(
     retry?: boolean
   } = {},
 ): Promise<ApiResponse<T>> {
+  if (ARCHIVE_MODE) {
+    return Promise.reject(new ApiError(MESSAGES.common.archived, 410, 'ARCHIVED'))
+  }
   if (!BASE_URL) {
     return Promise.reject(new Error(MESSAGES.common.apiUrlMissing))
   }

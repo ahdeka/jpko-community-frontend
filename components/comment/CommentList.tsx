@@ -1,7 +1,6 @@
 import type { Comment } from '@/types'
-import { type CommentTarget, COMMENT_PAGE_SIZE } from '@/lib/api/comments'
+import { type CommentTarget } from '@/lib/api/comments'
 import CommentItem from './CommentItem'
-import CommentForm from './CommentForm'
 import Pagination from '@/components/common/Pagination'
 
 interface Props {
@@ -24,22 +23,7 @@ interface Props {
   preservedParams?: Record<string, string>
 }
 
-// 댓글 페이지 이동 URL을 Pagination과 동일한 규칙(cpage 파라미터 + #comments 앵커)으로 만든다.
-// 등록 직후 '마지막 페이지로 이동'에도 같은 형식을 써서 페이지네이션 링크와 어긋나지 않게 한다.
-function commentPageHref(basePath: string, page: number, preserved?: Record<string, string>): string {
-  const params = new URLSearchParams(preserved)
-  params.set('cpage', String(page))
-  return `${basePath}?${params.toString()}#comments`
-}
-
-export default function CommentList({ target, comments, page, totalPages, totalCount, topLevelTotal, basePath, preservedParams }: Props) {
-  // 새 최상위 댓글은 오름차순 목록의 맨 끝(= 마지막 페이지)에 붙는다.
-  // 등록 직후 그 페이지로 이동시켜 사용자가 방금 쓴 댓글을 바로 확인하게 한다.
-  // 페이징은 "최상위 댓글(삭제 포함)" 기준이므로 topLevelTotal로 계산해야 페이지 경계가 맞는다.
-  // 삽입 후 총 개수는 topLevelTotal+1이지만, 0-based 마지막 페이지 인덱스는 floor(topLevelTotal / SIZE)로
-  // 동일하게 떨어진다(예: 20개 꽉 찬 0페이지 → 21번째는 1페이지, floor(20/20)=1).
-  const lastPageHref = commentPageHref(basePath, Math.floor(topLevelTotal / COMMENT_PAGE_SIZE), preservedParams)
-
+export default function CommentList({ target, comments, page, totalPages, totalCount, basePath, preservedParams }: Props) {
   return (
     // id="comments": 신고 목록 등에서 "댓글" 대상을 클릭했을 때, 그리고 페이지 이동(#comments)
     // 시 이 영역으로 스크롤시키기 위한 앵커. lib/report.ts의 reportTargetHref도 이 값을 사용한다.
@@ -69,7 +53,7 @@ export default function CommentList({ target, comments, page, totalPages, totalC
         pageParam="cpage"
         hash="comments"
       />
-      <CommentForm target={target} lastPageHref={lastPageHref} />
+      {/* 아카이브: 댓글 작성 폼은 두지 않는다(읽기 전용). */}
     </div>
   )
 }

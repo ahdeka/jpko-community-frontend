@@ -4,8 +4,6 @@ import { noticesApi } from '@/lib/api/notices'
 import RecentPostsSection from '@/components/post/RecentPostsSection'
 import CategorySection from '@/components/post/CategorySection'
 import PopularSection from '@/components/home/PopularSection'
-import { Suspense } from 'react'
-import ExchangeRateSection from '@/components/home/ExchangeRateSection'
 import NoticeSection from '@/components/home/NoticeSection'
 import FeaturedNoticeBar from '@/components/home/FeaturedNoticeBar'
 import type { Category, NoticeSummary, PostSummary } from '@/types'
@@ -17,10 +15,8 @@ const RECENT_POSTS_LIMIT = 6
 // 메인페이지 렌더 순서만 이 slug를 최우선으로 끌어올린다.
 const PRIORITY_CATEGORY_SLUG = 'free'
 
-// 메인 페이지를 매 요청마다 동적 렌더한다(/posts 목록 페이지와 동일).
-// - 캐시 옵션 없는 fetch(게시글 목록)는 no-store가 되어 매번 최신 글을 받는다.
-// - revalidate를 지정한 fetch(카테고리 3600)는 그대로 캐시되어 불필요한 호출을 막는다.
-export const revalidate = 0
+// 아카이브 데이터는 바뀌지 않으므로 정적으로 만들어 둔다.
+export const dynamic = 'force-static'
 
 export default async function Home() {
   // 카테고리·게시글 목록과 메인 상단 중요 공지(featured)를 병렬로 조회한다.
@@ -28,12 +24,12 @@ export default async function Home() {
   // 메인 상단은 featured 공지를 보여준다. pinned 공지는 게시판 목록(/posts) 상단에만 노출된다.
   // 인기글은 오늘/주간을 각각 따로 조회한다(백엔드는 period별 캐시를 들고 있고,
   // 노출 개수는 백엔드 display-size 설정이 정한다 — 현재 각 5개).
-  const [categoriesRes, postListRes, featuredRes, todayPopularRes, weeklyPopularRes] =
+  // 아카이브: 인기글은 "오늘/주간" 구분 없이 운영 기간 전체 기준 한 목록만 보여준다.
+  const [categoriesRes, postListRes, featuredRes, popularRes] =
     await Promise.all([
       categoriesApi.getAll().catch(() => null),
       postsApi.getAll(0, RECENT_POSTS_LIMIT).catch(() => null),
       noticesApi.getFeatured().catch(() => null),
-      postsApi.getPopular('TODAY').catch(() => null),
       postsApi.getPopular('WEEKLY').catch(() => null),
     ])
 
@@ -51,8 +47,7 @@ export default async function Home() {
   const featuredNotices: NoticeSummary[] = featuredRes?.data ?? []
   const recentPosts: PostSummary[] = postListRes?.data?.posts?.content ?? []
   // 한쪽 인기글이 실패해도 나머지 사이드바는 그려야 하므로 빈 배열로 떨어뜨린다.
-  const todayPopularPosts: PostSummary[] = todayPopularRes?.data ?? []
-  const weeklyPopularPosts: PostSummary[] = weeklyPopularRes?.data ?? []
+  const popularPosts: PostSummary[] = popularRes?.data ?? []
 
   return (
     <div className="flex flex-col gap-6">
@@ -68,21 +63,10 @@ export default async function Home() {
         </div>
         <aside className="flex flex-col gap-6">
           <PopularSection
-            title="오늘 인기글"
+            title="인기글"
             bulletColor="bg-red-500"
-            posts={todayPopularPosts}
+            posts={popularPosts}
           />
-          <PopularSection
-            title="주간 인기글"
-            bulletColor="bg-orange-500"
-            posts={weeklyPopularPosts}
-          />
-          {/* 포인트 랭킹 자리(→ 게임센터 랭킹 탭으로 이동). 환율은 외부 API라 캐시가 비어 있는 첫 조회는
-              수 초 걸릴 수 있으므로 Suspense로 분리해, 그 동안에도 나머지 페이지는 먼저 스트리밍되게 한다.
-              실패 시 위젯이 null을 반환하므로 fallback도 null(빈 자리)로 맞춘다. */}
-          <Suspense fallback={null}>
-            <ExchangeRateSection />
-          </Suspense>
           <NoticeSection />
         </aside>
       </div>
